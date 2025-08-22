@@ -13,6 +13,9 @@ import com.example.tutorist.repo.SubjectsRepo;
 import com.example.tutorist.repo.TeacherProfileRepo;
 import com.example.tutorist.util.ValidationUtil;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
+
 import java.util.*;
 
 public class TeacherSubjectsActivity extends AppCompatActivity {
@@ -21,6 +24,8 @@ public class TeacherSubjectsActivity extends AppCompatActivity {
     private EditText etPrice;
     private RecyclerView rv;
     private TextView tvMsg;
+    private ListenerRegistration mapReg;
+    private boolean mapLoadedOnce = false;
 
     private final SubjectsRepo subjectsRepo = new SubjectsRepo();
     private final TeacherProfileRepo profileRepo = new TeacherProfileRepo();
@@ -56,7 +61,57 @@ public class TeacherSubjectsActivity extends AppCompatActivity {
 
         // Paralel başlat: biri önce biterse de listeyi kurar
         loadSubjects();
-        loadMyMap();
+        subscribeMyMap(); // EKLE
+    }
+    private void subscribeMyMap() {
+        if (mapReg != null) { mapReg.remove(); }
+
+        mapReg = FirebaseFirestore.getInstance()
+                .collection("teacherProfiles").document(uid)
+                .addSnapshotListener((snap, e) -> {
+                    if (e != null) {
+                        tvMsg.setText("Profil okunamadı: " + e.getMessage());
+                        return;
+                    }
+
+                    Map<String, Double> map = new HashMap<>();
+                    if (snap != null && snap.exists()) {
+                        // 1) Doğru nested map: subjectsMap: {english: 123, math: 111}
+                        Object raw = snap.get("subjectsMap");
+                        if (raw instanceof Map) {
+                            Map<?, ?> m = (Map<?, ?>) raw;
+                            for (Map.Entry<?, ?> en : m.entrySet()) {
+                                Object k = en.getKey(), v = en.getValue();
+                                if (k != null && v instanceof Number) {
+                                    map.put(String.valueOf(k), ((Number) v).doubleValue());
+                                }
+                            }
+                        }
+
+                        // 2) Eski/düz alanlar: subjectsMap.english = 123
+                        Map<String, Object> data = snap.getData();
+                        if (data != null) {
+                            for (Map.Entry<String, Object> en : data.entrySet()) {
+                                String k = en.getKey();
+                                Object v = en.getValue();
+                                if (k.startsWith("subjectsMap.") && v instanceof Number) {
+                                    String sid = k.substring("subjectsMap.".length());
+                                    map.put(sid, ((Number) v).doubleValue());
+                                }
+                            }
+                        }
+                    }
+
+                    priceMap.clear();
+                    priceMap.putAll(map);
+                    rebuildList();
+                });
+    }
+
+
+    @Override protected void onDestroy() {
+        if (mapReg != null) { mapReg.remove(); mapReg = null; }
+        super.onDestroy();
     }
 
     private void loadSubjects() {
@@ -78,15 +133,7 @@ public class TeacherSubjectsActivity extends AppCompatActivity {
                 });
     }
 
-    private void loadMyMap() {
-        profileRepo.loadSubjectsMap(uid)
-                .addOnSuccessListener(map -> {
-                    priceMap.clear();
-                    priceMap.putAll(map);
-                    rebuildList();
-                })
-                .addOnFailureListener(e -> tvMsg.setText("Profil okunamadı: " + e.getMessage()));
-    }
+
 
     private void rebuildList() {
         current.clear();
