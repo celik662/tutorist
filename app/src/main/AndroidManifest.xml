@@ -1,0 +1,35 @@
+<manifest package="com.example.tutorist"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
+    <application
+        android:allowBackup="true"
+        android:label="Tutorist"
+        android:theme="@style/Theme.Material3.DayNight.NoActionBar">
+        <activity android:name=".ui.auth.SplashActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".ui.auth.AuthActivity"/>
+        <activity android:name=".ui.auth.RoleSelectActivity"/>
+        <activity android:name=".ui.student.StudentMainActivity"/>
+        <activity android:name=".ui.teacher.TeacherMainActivity"/>
+        <activity android:name=".ui.auth.AuthLandingActivity"/>
+        <activity android:name=".ui.auth.LoginActivity"/>
+        <activity android:name=".ui.auth.RegisterActivity"/>
+        <activity android:name=".ui.auth.ForgotPasswordActivity"/>
+        <activity android:name=".ui.teacher.TeacherSubjectsActivity"/>
+        <activity android:name=".ui.teacher.TeacherAvailabilityActivity"/>
+        <activity android:name=".ui.teacher.TeacherProfileActivity"/>
+        <activity android:name=".ui.student.StudentProfileActivity"/>
+        <activity android:name=".ui.teacher.TeacherListActivity"/>
+        <activity android:name=".ui.teacher.TeacherDetailActivity"/>
+
+
+
+    </application>
+</manifest>

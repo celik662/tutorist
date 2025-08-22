@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "560091091839",
+    "project_id": "tutorist-f2a46",
+    "storage_bucket": "tutorist-f2a46.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:560091091839:android:79749dd499cbf4b512804a",
+        "android_client_info": {
+          "package_name": "com.example.tutorist"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAVNVnD2N_qx_6hYM-JkeA7CLwy1l5SFA4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

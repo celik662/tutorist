@@ -1,0 +1,9 @@
+<!-- res/layout/item_hour_slot.xml -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/tvHour"
+    android:layout_width="match_parent" android:layout_height="48dp"
+    android:layout_margin="6dp"
+    android:gravity="center"
+    android:background="@android:color/darker_gray"
+    android:textColor="@android:color/white"
+    android:textStyle="bold"/>

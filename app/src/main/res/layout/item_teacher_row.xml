@@ -1,0 +1,29 @@
+<!-- res/layout/item_teacher_row.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:padding="10dp"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:background="#FFFFFFFF">
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent" android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/tvName"
+            android:textStyle="bold" android:textSize="16sp"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1"/>
+
+        <TextView
+            android:id="@+id/tvPrice"
+            android:textSize="14sp"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvRating"
+        android:text="★ 5.0"
+        android:textSize="12sp"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:paddingTop="2dp"/>
+</LinearLayout>

@@ -1,0 +1,23 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:padding="16dp"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+
+    <TextView
+        android:text="Hangi rol ile devam edeceksiniz?"
+        android:textStyle="bold" android:textSize="18sp"
+        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+    <RadioGroup android:id="@+id/rgRole"
+        android:layout_width="match_parent" android:layout_height="wrap_content">
+        <RadioButton android:id="@+id/rbStudent"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="Öğrenci/ Veli"/>
+
+        <RadioButton android:id="@+id/rbTeacher"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="Öğretmen"/>
+    </RadioGroup>
+
+    <Button android:id="@+id/btnContinue" android:text="Devam"
+        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+</LinearLayout>

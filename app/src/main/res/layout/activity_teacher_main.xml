@@ -1,0 +1,19 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:padding="16dp"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+
+    <Button
+        android:id="@+id/btnSubjects"
+        android:text="Ders ve Ücret"
+        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+    <Button
+        android:id="@+id/btnAvailability"
+        android:text="Müsaitlik"
+        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+    <Button
+        android:id="@+id/btnProfile"
+        android:text="Profil"
+        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+</LinearLayout>

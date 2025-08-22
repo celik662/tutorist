@@ -1,0 +1,35 @@
+<!-- res/layout/activity_teacher_list.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:padding="12dp"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:textStyle="bold" android:textSize="18sp"
+        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+    <ProgressBar
+        android:id="@+id/progress"
+        style="?android:attr/progressBarStyle"
+        android:layout_gravity="center"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:padding="16dp"/>
+
+    <TextView
+        android:id="@+id/tvEmpty"
+        android:text="Bu dersi veren öğretmen bulunamadı."
+        android:visibility="gone"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:padding="8dp"/>
+
+    <TextView
+        android:id="@+id/tvError"
+        android:visibility="gone"
+        android:textColor="#B00020"
+        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvTeachers"
+        android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1"/>
+</LinearLayout>
