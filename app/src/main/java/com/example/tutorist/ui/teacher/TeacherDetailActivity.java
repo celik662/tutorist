@@ -32,6 +32,8 @@ public class TeacherDetailActivity extends AppCompatActivity {
     private final SlotsAdapter adapter = new SlotsAdapter(new ArrayList<>(), hour -> confirmBooking(hour));
 
     private final com.example.tutorist.repo.BookingRepo bookingRepo = new com.example.tutorist.repo.BookingRepo();
+    enum SlotState { AVAILABLE, BOOKED, PAST }
+
 
 
 
@@ -82,16 +84,25 @@ public class TeacherDetailActivity extends AppCompatActivity {
     }
 
     private void confirmBooking(int hour) {
+        // Önce oturum var mı kontrol et
+        String studentId = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+        if (studentId == null) {
+            Toast.makeText(this, "Lütfen önce giriş yapın.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
         new android.app.AlertDialog.Builder(this)
                 .setTitle("Dersi onayla")
-                .setMessage(String.format(Locale.getDefault(),
+                .setMessage(String.format(java.util.Locale.getDefault(),
                         "%s - %02d:00 için rezervasyon oluşturulsun mu?", selectedDateIso(), hour))
                 .setNegativeButton("Vazgeç", null)
                 .setPositiveButton("Onayla", (d, w) -> {
-                    String studentId = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
-                    android.util.Log.d("BOOK",
-                            "create " + com.example.tutorist.repo.BookingRepo.slotId(teacherId, selectedDateIso(), hour)
-                                    + " uid=" + studentId);
+                    android.util.Log.d(
+                            "BOOK",
+                            "create " + com.example.tutorist.repo.BookingRepo.slotId(
+                                    teacherId, selectedDateIso(), hour
+                            ) + " uid=" + studentId
+                    );
 
                     bookingRepo.createBooking(teacherId, studentId, subjectId, selectedDateIso(), hour)
                             .addOnSuccessListener(v -> {
@@ -102,7 +113,8 @@ public class TeacherDetailActivity extends AppCompatActivity {
                                 if (e instanceof com.google.firebase.firestore.FirebaseFirestoreException) {
                                     com.google.firebase.firestore.FirebaseFirestoreException fe =
                                             (com.google.firebase.firestore.FirebaseFirestoreException) e;
-                                    if (fe.getCode() == com.google.firebase.firestore.FirebaseFirestoreException.Code.ALREADY_EXISTS) {
+                                    if (fe.getCode() ==
+                                            com.google.firebase.firestore.FirebaseFirestoreException.Code.ALREADY_EXISTS) {
                                         Toast.makeText(this, "Bu saat dolu, başka bir saat seç.", Toast.LENGTH_LONG).show();
                                         loadSlotsForSelectedDate();
                                         return;
@@ -110,21 +122,8 @@ public class TeacherDetailActivity extends AppCompatActivity {
                                 }
                                 Toast.makeText(this, "Hata: " + e.getMessage(), Toast.LENGTH_LONG).show();
                             });
-
                 })
                 .show();
-    }
-    private String dayIdFromCal(Calendar c) {
-        switch (c.get(Calendar.DAY_OF_WEEK)) {
-            case Calendar.MONDAY:    return "mon";
-            case Calendar.TUESDAY:   return "tue";
-            case Calendar.WEDNESDAY: return "wed";
-            case Calendar.THURSDAY:  return "thu";
-            case Calendar.FRIDAY:    return "fri";
-            case Calendar.SATURDAY:  return "sat";
-            case Calendar.SUNDAY:    return "sun";
-        }
-        return "mon";
     }
 
 
@@ -164,140 +163,79 @@ public class TeacherDetailActivity extends AppCompatActivity {
         return iso.format(selected.getTime());
     }
 
+
     private void loadSlotsForSelectedDate() {
-        int dayMon1_7 = toMon1_7(selected);               // 1=Mon..7=Sun
-        int daySun1_7 = selected.get(Calendar.DAY_OF_WEEK); // 1=Sun..7=Sat
-        String dayId  = dayIdFromCal(selected);
+        int day = toMon1_7(selected);
 
-        android.util.Log.d("TeacherDetail", "loadSlots: teacherId=" + teacherId +
-                " date=" + selectedDateIso() +
-                " dayMon1_7=" + dayMon1_7 +
-                " daySun1_7=" + daySun1_7 +
-                " dayId=" + dayId);
-
-        // 1) weekly altında dayOfWeek (Mon=1..Sun=7) ile arama
         db.collection("availabilities").document(teacherId)
                 .collection("weekly")
-                .whereEqualTo("dayOfWeek", dayMon1_7)
+                .whereEqualTo("dayOfWeek", day)
                 .get()
-                .addOnSuccessListener(snap1 -> {
-                    android.util.Log.d("TeacherDetail", "q1(dayMon1_7) size=" + snap1.size());
-                    if (!snap1.isEmpty()) {
-                        buildApplySlotsFromDocs(snap1.getDocuments());
-                        return;
+                .addOnSuccessListener(snap -> {
+                    // 1) saatleri üret
+                    final List<Integer> hours = new ArrayList<>();
+                    for (DocumentSnapshot d : snap) {
+                        Integer sh = d.getLong("startHour") != null ? d.getLong("startHour").intValue() : 0;
+                        Integer eh = d.getLong("endHour") != null ? d.getLong("endHour").intValue() : 0;
+                        for (int h = sh; h < eh; h++) hours.add(h);
                     }
-                    // 2) Fallback: dayOfWeek (Sun=1..Sat=7) ile arama
-                    db.collection("availabilities").document(teacherId)
-                            .collection("weekly")
-                            .whereEqualTo("dayOfWeek", daySun1_7)
+
+                    // 2) geçmiş saatler -> past
+                    final Set<Integer> past = new HashSet<>();
+                    Calendar now = Calendar.getInstance();
+                    boolean isToday = isSameDay(now, selected);
+                    if (isToday) {
+                        int curHour = now.get(Calendar.HOUR_OF_DAY);
+                        for (int h : hours) if (h <= curHour) past.add(h);
+                    }
+
+                    // 3) pending/accepted -> booked (slotLocks'tan oku)
+                    final Set<Integer> booked = new HashSet<>();
+                    db.collection("slotLocks")
+                            .whereEqualTo("teacherId", teacherId)
+                            .whereEqualTo("date", selectedDateIso())
+                            .whereIn("status", Arrays.asList("pending", "accepted"))
                             .get()
-                            .addOnSuccessListener(snap2 -> {
-                                android.util.Log.d("TeacherDetail", "q2(daySun1_7) size=" + snap2.size());
-                                if (!snap2.isEmpty()) {
-                                    buildApplySlotsFromDocs(snap2.getDocuments());
-                                    return;
+                            .addOnSuccessListener(bSnap -> {
+                                for (DocumentSnapshot b : bSnap) {
+                                    Integer hour = b.getLong("hour") != null ? b.getLong("hour").intValue() : null;
+                                    if (hour != null) booked.add(hour);
                                 }
-                                // 3) Fallback: weekly/{mon..sun} tek doküman şeması
-                                db.collection("availabilities").document(teacherId)
-                                        .collection("weekly").document(dayId).get()
-                                        .addOnSuccessListener(doc -> {
-                                            android.util.Log.d("TeacherDetail", "q3(doc " + dayId + ") exists=" + doc.exists());
-                                            java.util.List<com.google.firebase.firestore.DocumentSnapshot> list =
-                                                    doc.exists() ? java.util.Collections.singletonList(doc)
-                                                            : java.util.Collections.emptyList();
-                                            buildApplySlotsFromDocs(list);
-                                        })
-                                        .addOnFailureListener(e -> {
-                                            android.util.Log.e("TeacherDetail", "q3 failed", e);
-                                            buildApplySlotsFromDocs(java.util.Collections.emptyList());
-                                        });
+                                applySlots(hours, past, booked);
                             })
                             .addOnFailureListener(e -> {
-                                android.util.Log.e("TeacherDetail", "q2 failed", e);
-                                buildApplySlotsFromDocs(java.util.Collections.emptyList());
+                                // slotLocks okunamazsa yine de past'la göster
+                                applySlots(hours, past, booked);
                             });
                 })
                 .addOnFailureListener(e -> {
-                    android.util.Log.e("TeacherDetail", "q1 failed", e);
-                    buildApplySlotsFromDocs(java.util.Collections.emptyList());
-                });
-    }
-
-    private Integer getInt(com.google.firebase.firestore.DocumentSnapshot d, String a, String b) {
-        Long v = d.getLong(a);
-        if (v == null && b != null) v = d.getLong(b);
-        return v != null ? v.intValue() : null;
-    }
-
-
-
-    private void buildApplySlotsFromDocs(java.util.List<com.google.firebase.firestore.DocumentSnapshot> docs) {
-        java.util.List<Integer> hours = new java.util.ArrayList<>();
-
-        for (com.google.firebase.firestore.DocumentSnapshot d : docs) {
-            // weekly/{mon} şemasında enabled=false olabilir
-            Boolean en = d.getBoolean("enabled");
-            if (en != null && !en) continue;
-
-            Integer sh = getInt(d, "startHour", "start");
-            Integer eh = getInt(d, "endHour",  "end");
-            android.util.Log.d("TeacherDetail", "doc " + d.getId() + " -> start=" + sh + " end=" + eh + " enabled=" + en);
-
-            if (sh == null || eh == null || eh <= sh) continue;
-            for (int h = sh; h < eh; h++) hours.add(h);
-        }
-
-        // bugünün geçmiş saatlerini disable
-        java.util.Set<Integer> disabled = new java.util.HashSet<>();
-        java.util.Calendar now = java.util.Calendar.getInstance();
-        if (isSameDay(now, selected)) {
-            int curHour = now.get(java.util.Calendar.HOUR_OF_DAY);
-            for (int h : hours) if (h <= curHour) disabled.add(h);
-        }
-
-        // rezervasyonlu saatleri düş (index yoksa yine uygula)
-        db.collection("bookings")
-                .whereEqualTo("teacherId", teacherId)
-                .whereEqualTo("date", selectedDateIso())
-                .whereIn("status", java.util.Arrays.asList("pending","accepted"))
-                .get()
-                .addOnSuccessListener(bSnap -> {
-                    for (com.google.firebase.firestore.DocumentSnapshot b : bSnap) {
-                        Integer hour = b.getLong("hour") != null ? b.getLong("hour").intValue() : null;
-                        if (hour != null) disabled.add(hour);
-                    }
-                    applySlots(hours, disabled);
-                })
-                .addOnFailureListener(e -> {
-                    android.util.Log.w("TeacherDetail", "bookings query failed (probably no index) -> showing raw slots", e);
-                    applySlots(hours, disabled);
+                    // availability okunamadıysa boş göster
+                    applySlots(Collections.emptyList(), Collections.emptySet(), Collections.emptySet());
                 });
     }
 
 
 
-    private boolean isSameDay(Calendar a, Calendar b) {
-        return a.get(Calendar.YEAR)==b.get(Calendar.YEAR)
-                && a.get(Calendar.DAY_OF_YEAR)==b.get(Calendar.DAY_OF_YEAR);
-    }
-
-    private void applySlots(java.util.List<Integer> hours, java.util.Set<Integer> disabled) {
-        java.util.List<SlotsAdapter.Row> rows = new java.util.ArrayList<>();
-        for (int h : hours) rows.add(new SlotsAdapter.Row(h, disabled.contains(h)));
+    private void applySlots(List<Integer> hours, Set<Integer> past, Set<Integer> booked) {
+        List<SlotsAdapter.Row> rows = new ArrayList<>();
+        for (int h : hours) {
+            SlotState st = SlotState.AVAILABLE;
+            if (booked.contains(h))      st = SlotState.BOOKED;
+            else if (past.contains(h))   st = SlotState.PAST;
+            rows.add(new SlotsAdapter.Row(h, st));
+        }
         adapter.replace(rows);
-
-        // EKRANDA BOŞ DURUM MESAJI GÖSTER
-        TextView tvEmpty = findViewById(R.id.tvEmpty); // layout’ta ekleyin
-        if (tvEmpty != null) {
-            tvEmpty.setVisibility(rows.isEmpty() ? android.view.View.VISIBLE : android.view.View.GONE);
-            if (rows.isEmpty()) tvEmpty.setText("Bu gün için öğretmenin müsait saati yok.");
-        }
     }
 
     // --- Slots Adapter ---
     static class SlotsAdapter extends RecyclerView.Adapter<SlotsAdapter.VH> {
         interface OnSlotClick { void onClick(int hour); }
-        static class Row { int hour; boolean disabled; Row(int h, boolean d){ hour=h; disabled=d; } }
+
+        static class Row {
+            int hour; SlotState state;
+            Row(int h, SlotState s){ hour=h; state=s; }
+            boolean disabled(){ return state != SlotState.AVAILABLE; }
+        }
 
         private final List<Row> items;
         private final OnSlotClick onSlotClick;
@@ -310,20 +248,49 @@ public class TeacherDetailActivity extends AppCompatActivity {
         }
 
         @Override public VH onCreateViewHolder(android.view.ViewGroup p, int vt) {
-            android.view.View v = android.view.LayoutInflater.from(p.getContext()).inflate(R.layout.item_hour_slot, p, false);
+            android.view.View v = android.view.LayoutInflater.from(p.getContext())
+                    .inflate(R.layout.item_hour_slot, p, false);
             return new VH(v);
         }
 
         @Override public void onBindViewHolder(VH h, int pos) {
             Row r = items.get(pos);
-            h.tv.setText(String.format(Locale.getDefault(), "%02d:00", r.hour));
-            h.itemView.setEnabled(!r.disabled);
-            h.tv.setAlpha(r.disabled ? 0.4f : 1f);
-            h.itemView.setOnClickListener(v -> { if (!r.disabled) onSlotClick.onClick(r.hour); });
+            h.tv.setText(String.format(java.util.Locale.getDefault(), "%02d:00", r.hour));
+
+            // görünüm ve tıklanabilirlik
+            boolean disabled = r.disabled();
+            h.itemView.setEnabled(!disabled);
+            h.tv.setAlpha(disabled ? 0.5f : 1f);
+
+            // arka planı duruma göre ver
+            if (r.state == SlotState.AVAILABLE) {
+                h.itemView.setBackgroundResource(R.drawable.bg_slot_available);
+            } else if (r.state == SlotState.BOOKED) {
+                h.itemView.setBackgroundResource(R.drawable.bg_slot_booked);
+            } else { // PAST
+                h.itemView.setBackgroundResource(R.drawable.bg_slot_past);
+            }
+
+            h.itemView.setOnClickListener(v -> {
+                if (!disabled) onSlotClick.onClick(r.hour);
+            });
         }
 
         @Override public int getItemCount(){ return items.size(); }
         void replace(List<Row> rows){ items.clear(); items.addAll(rows); notifyDataSetChanged(); }
     }
+
+    private Integer getInt(com.google.firebase.firestore.DocumentSnapshot d, String a, String b) {
+        Long v = d.getLong(a);
+        if (v == null && b != null) v = d.getLong(b);
+        return v != null ? v.intValue() : null;
+    }
+
+
+    private boolean isSameDay(Calendar a, Calendar b) {
+        return a.get(Calendar.YEAR)==b.get(Calendar.YEAR)
+                && a.get(Calendar.DAY_OF_YEAR)==b.get(Calendar.DAY_OF_YEAR);
+    }
+
 
 }

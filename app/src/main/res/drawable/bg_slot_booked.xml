@@ -1,0 +1,5 @@
+<!-- res/drawable/bg_slot_booked.xml -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#D6D6D6"/>
+    <corners android:radius="12dp"/>
+</shape>
