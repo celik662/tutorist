@@ -1,15 +1,8 @@
 // app/src/main/java/com/example/tutorist/repo/BookingRepo.java
 package com.example.tutorist.repo;
 
-import android.util.Log;
-
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FieldValue;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,15 +15,14 @@ public class BookingRepo {
     }
 
     public static String slotId(String teacherId, String dateIso, int hour) {
-        return teacherId + "_" + dateIso + "_" + hour;
+        return teacherId + "_" + dateIso + "_" + hour; // ör: rAst..._2025-08-27_9
     }
 
-    // BookingRepo.java (create kısmı)
-    // BookingRepo.java
+    /** ÇAKIŞMASIZ create: ilk commit kazanır, ikincisi "slot dolu" ile düşer */
     public Task<Void> createBooking(String teacherId, String studentId, String subjectId,
                                     String dateIso, int hour) {
         String id = slotId(teacherId, dateIso, hour);
-        DocumentReference dr = db.collection("bookings").document(id);
+        DocumentReference ref = doc(id);
 
         Map<String, Object> data = new HashMap<>();
         data.put("teacherId", teacherId);
@@ -42,19 +34,40 @@ public class BookingRepo {
         data.put("createdAt", FieldValue.serverTimestamp());
         data.put("updatedAt", FieldValue.serverTimestamp());
 
-        Log.d("BOOK", "create try id="+id+" uid="+FirebaseAuth.getInstance().getUid()+" payload="+data);
-
-        // set() -> belge yoksa "create" sayılır ve kuraldaki !exists koşuluna takılır.
-        return dr.set(data).addOnFailureListener(e -> {
-            if (e instanceof FirebaseFirestoreException) {
-                FirebaseFirestoreException fe = (FirebaseFirestoreException) e;
-                Log.e("BOOK", "create FAIL code="+fe.getCode()+" msg="+fe.getMessage(), fe);
-            } else {
-                Log.e("BOOK", "create FAIL", e);
+        return db.runTransaction(tr -> {
+            DocumentSnapshot snap = tr.get(ref);
+            if (snap.exists()) {
+                // Aynı slot zaten alınmış -> çatışma
+                throw new FirebaseFirestoreException(
+                        "Slot already taken",
+                        FirebaseFirestoreException.Code.ABORTED
+                );
             }
+            tr.set(ref, data); // create
+            return null;
         });
     }
 
+    // --- Status güncellemeleri ---
+    public Task<Void> accept(String bookingId) {
+        return doc(bookingId).update(
+                "status", "accepted",
+                "updatedAt", FieldValue.serverTimestamp()
+        );
+    }
 
+    public Task<Void> decline(String bookingId) {
+        return doc(bookingId).update(
+                "status", "declined",
+                "updatedAt", FieldValue.serverTimestamp()
+        );
+    }
 
+    /** Yalnızca pending iken öğrencinin iptali; kurallar zaten zorlar. */
+    public Task<Void> cancelByStudent(String bookingId) {
+        return doc(bookingId).update(
+                "status", "cancelled",
+                "updatedAt", FieldValue.serverTimestamp()
+        );
+    }
 }
