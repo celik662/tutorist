@@ -29,9 +29,10 @@ public class TeacherDetailActivity extends AppCompatActivity {
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private final Calendar selected = Calendar.getInstance(); // bugün
-    private final SlotsAdapter adapter = new SlotsAdapter(new ArrayList<>(), hour ->
-            Toast.makeText(this, "Seçildi: " + String.format(Locale.getDefault(), "%02d:00", hour), Toast.LENGTH_SHORT).show()
-    );
+    private final SlotsAdapter adapter = new SlotsAdapter(new ArrayList<>(), hour -> confirmBooking(hour));
+
+    private final com.example.tutorist.repo.BookingRepo bookingRepo = new com.example.tutorist.repo.BookingRepo();
+
 
 
     @Override protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -79,6 +80,40 @@ public class TeacherDetailActivity extends AppCompatActivity {
             }
         });
     }
+
+    private void confirmBooking(int hour) {
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Dersi onayla")
+                .setMessage(String.format(Locale.getDefault(),
+                        "%s - %02d:00 için rezervasyon oluşturulsun mu?", selectedDateIso(), hour))
+                .setNegativeButton("Vazgeç", null)
+                .setPositiveButton("Onayla", (d, w) -> {
+                    String studentId = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+                    android.util.Log.d("BOOK",
+                            "create " + com.example.tutorist.repo.BookingRepo.slotId(teacherId, selectedDateIso(), hour)
+                                    + " uid=" + studentId);
+
+                    bookingRepo.createBooking(teacherId, studentId, subjectId, selectedDateIso(), hour)
+                            .addOnSuccessListener(v -> {
+                                Toast.makeText(this, "Talep gönderildi.", Toast.LENGTH_SHORT).show();
+                                loadSlotsForSelectedDate();
+                            })
+                            .addOnFailureListener(e -> {
+                                if (e instanceof com.google.firebase.firestore.FirebaseFirestoreException) {
+                                    com.google.firebase.firestore.FirebaseFirestoreException fe =
+                                            (com.google.firebase.firestore.FirebaseFirestoreException) e;
+                                    if (fe.getCode() == com.google.firebase.firestore.FirebaseFirestoreException.Code.ALREADY_EXISTS) {
+                                        Toast.makeText(this, "Bu saat dolu, başka bir saat seç.", Toast.LENGTH_LONG).show();
+                                        loadSlotsForSelectedDate();
+                                        return;
+                                    }
+                                }
+                                Toast.makeText(this, "Hata: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                            });
+
+                })
+                .show();
+    }
     private String dayIdFromCal(Calendar c) {
         switch (c.get(Calendar.DAY_OF_WEEK)) {
             case Calendar.MONDAY:    return "mon";
@@ -92,18 +127,6 @@ public class TeacherDetailActivity extends AppCompatActivity {
         return "mon";
     }
 
-
-    private void collectHoursFromDoc(DocumentSnapshot d, List<Integer> hours) {
-        // enabled=false ise atla (weekly/{mon} şemasında olabilir)
-        Boolean en = d.getBoolean("enabled");
-        if (en != null && !en) return;
-
-        Integer sh = getInt(d, "startHour", "start");
-        Integer eh = getInt(d, "endHour",  "end");
-        if (sh == null || eh == null || eh <= sh) return;
-
-        for (int h = sh; h < eh; h++) hours.add(h);
-    }
 
 
     private void openDatePicker() {
