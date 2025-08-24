@@ -61,6 +61,36 @@ public class BookingRepo {
             return batch.commit();
         });
     }
+    // app/src/main/java/com/example/tutorist/repo/BookingRepo.java
+    public Task<Void> updateStatus(String teacherId, String dateIso, int hour, String newStatus) {
+        final String id = slotId(teacherId, dateIso, hour);
+        final DocumentReference bRef = bookingDoc(id);
+        final DocumentReference lRef = lockDoc(id);
+
+        Map<String,Object> m = new HashMap<>();
+        m.put("status", newStatus);
+        m.put("updatedAt", FieldValue.serverTimestamp());
+
+        WriteBatch batch = db.batch();
+        batch.update(bRef, m);
+        batch.update(lRef, m);
+        return batch.commit();
+    }
+
+    // BookingRepo.java içine ekle
+    public Task<Void> updateStatusById(String bookingId, String newStatus) {
+        final DocumentReference bRef = bookingDoc(bookingId);
+        final DocumentReference lRef = lockDoc(bookingId);
+
+        Map<String,Object> m = new HashMap<>();
+        m.put("status", newStatus);
+        m.put("updatedAt", FieldValue.serverTimestamp());
+
+        WriteBatch batch = db.batch();
+        batch.update(bRef, m);
+        batch.update(lRef, m);
+        return batch.commit();
+    }
 
 
 

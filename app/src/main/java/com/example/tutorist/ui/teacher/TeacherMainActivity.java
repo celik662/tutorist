@@ -17,7 +17,9 @@ public class TeacherMainActivity extends AppCompatActivity {
         Button btnSubjects = findViewById(R.id.btnSubjects);
         Button btnAvailability = findViewById(R.id.btnAvailability);
         Button btnProfile = findViewById(R.id.btnProfile);
-        //seedTestOnce();
+
+        findViewById(R.id.btnRequests).setOnClickListener(v ->
+                startActivity(new Intent(this, TeacherRequestsActivity.class)));
 
         // Savunmacı kontrol – biri null ise doğrudan uyarı verelim:
         if (btnSubjects == null || btnAvailability == null || btnProfile == null) {
@@ -31,19 +33,11 @@ public class TeacherMainActivity extends AppCompatActivity {
         btnAvailability.setOnClickListener(v ->
                 startActivity(new Intent(this, TeacherAvailabilityActivity.class)));
 
+
         btnProfile.setOnClickListener(v ->
                 startActivity(new Intent(this, TeacherProfileActivity.class)));
     }
-    private void seedTestOnce() {
-        String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
-        if (uid == null) return;
-        var db = com.google.firebase.firestore.FirebaseFirestore.getInstance();
-        java.util.Map<String,Object> m = new java.util.HashMap<>();
-        m.put("displayName", "Test Öğretmen");
-        m.put("subjectsMap.english", 123); // NUMBER!!!
-        db.collection("teacherProfiles").document(uid)
-                .set(m, com.google.firebase.firestore.SetOptions.merge());
-    }
+
     private void ensureTeacherProfileDoc() {
         String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
         if (uid == null) return;
