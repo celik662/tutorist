@@ -1,10 +1,15 @@
-// app/src/main/java/com/example/tutorist/repo/BookingRepo.java
 package com.example.tutorist.repo;
 
+import static android.content.ContentValues.TAG;
+
+import android.util.Log;
+
+import androidx.annotation.NonNull;
+
 import com.google.android.gms.tasks.Task;
-import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.*;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,11 +27,11 @@ public class BookingRepo {
         return db.collection("slotLocks").document(id);
     }
 
-    // BookingRepo.java
-// BookingRepo.java
+
+    /** Öğrenci → rezervasyon oluşturur; aynı id varsa kural reddeder. */
     public Task<Void> createBooking(String teacherId, String studentId, String subjectId,
                                     String dateIso, int hour) {
-        final String id  = slotId(teacherId, dateIso, hour);
+        final String id = slotId(teacherId, dateIso, hour);
         final DocumentReference bRef = bookingDoc(id);
         final DocumentReference lRef = lockDoc(id);
 
@@ -48,51 +53,60 @@ public class BookingRepo {
         lock.put("status", "pending");
         lock.put("updatedAt", FieldValue.serverTimestamp());
 
-        // Sadece slotLocks'a bak (varsa dolu say)
-        return lRef.get().continueWithTask(t -> {
-            DocumentSnapshot lockSnap = t.getResult();
-            if (lockSnap != null && lockSnap.exists()) {
+
+
+        WriteBatch batch = db.batch();
+        batch.set(bRef, booking);  // rules: bookings.create + !exists
+        batch.set(lRef, lock);     // rules: slotLocks.create + !exists
+        return batch.commit();
+    }
+
+    /** Öğretmen (accepted/declined) veya öğrenci (cancelled) → iki belgeyi birlikte güncelle */
+    public Task<Void> updateStatus(String teacherId, String dateIso, int hour, String newStatus){
+        final String id = slotId(teacherId, dateIso, hour);
+        return updateStatusById(id, newStatus);
+    }
+
+
+    /** Kolaylık: elinde bookingId varsa direkt */
+    public Task<Void> updateStatusById(@NonNull String bookingId, @NonNull String newStatus) {
+        Log.d("BookingRepo", "updateStatusById path=bookings/" + bookingId + " newStatus=" + newStatus);
+
+        return db.runTransaction(tr -> {
+            // ---------- TÜM OKUMALAR (READS) ----------
+            DocumentReference bRef = db.collection("bookings").document(bookingId);
+            DocumentSnapshot bSnap = tr.get(bRef); // 1. okuma
+            if (!bSnap.exists()) {
                 throw new FirebaseFirestoreException(
-                        "Slot already taken", FirebaseFirestoreException.Code.ALREADY_EXISTS);
+                        "Booking not found: " + bookingId,
+                        FirebaseFirestoreException.Code.NOT_FOUND
+                );
             }
-            WriteBatch batch = db.batch();
-            batch.set(bRef, booking);  // kurallar create + !exists ile koruyor
-            batch.set(lRef, lock);     // kurallar create + !exists ile koruyor
-            return batch.commit();
+
+            String teacherId = bSnap.getString("teacherId");
+            String date      = bSnap.getString("date");
+            Long   hourLong  = bSnap.getLong("hour");
+            int    hour      = hourLong == null ? -1 : hourLong.intValue();
+
+            DocumentReference lRef = null;
+            DocumentSnapshot lSnap = null;
+            if (teacherId != null && date != null && hour >= 0) {
+                String slotId = teacherId + "_" + date + "_" + hour;
+                lRef = db.collection("slotLocks").document(slotId);
+                lSnap = tr.get(lRef); // 2. okuma (VARSA)
+            }
+
+            // ---------- TÜM YAZMALAR (WRITES) ----------
+            Map<String, Object> up = new HashMap<>();
+            up.put("status", newStatus);
+            up.put("updatedAt", FieldValue.serverTimestamp());
+
+            tr.update(bRef, up);                 // booking yaz
+            if (lRef != null && lSnap.exists())  // slotLock varsa yaz
+                tr.update(lRef, up);
+
+            return null;
         });
     }
-    // app/src/main/java/com/example/tutorist/repo/BookingRepo.java
-    public Task<Void> updateStatus(String teacherId, String dateIso, int hour, String newStatus) {
-        final String id = slotId(teacherId, dateIso, hour);
-        final DocumentReference bRef = bookingDoc(id);
-        final DocumentReference lRef = lockDoc(id);
-
-        Map<String,Object> m = new HashMap<>();
-        m.put("status", newStatus);
-        m.put("updatedAt", FieldValue.serverTimestamp());
-
-        WriteBatch batch = db.batch();
-        batch.update(bRef, m);
-        batch.update(lRef, m);
-        return batch.commit();
-    }
-
-    // BookingRepo.java içine ekle
-    public Task<Void> updateStatusById(String bookingId, String newStatus) {
-        final DocumentReference bRef = bookingDoc(bookingId);
-        final DocumentReference lRef = lockDoc(bookingId);
-
-        Map<String,Object> m = new HashMap<>();
-        m.put("status", newStatus);
-        m.put("updatedAt", FieldValue.serverTimestamp());
-
-        WriteBatch batch = db.batch();
-        batch.update(bRef, m);
-        batch.update(lRef, m);
-        return batch.commit();
-    }
-
-
-
 
 }

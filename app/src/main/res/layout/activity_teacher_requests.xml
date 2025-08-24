@@ -3,13 +3,26 @@
     android:orientation="vertical" android:padding="16dp"
     android:layout_width="match_parent" android:layout_height="match_parent">
 
+    <!-- Sabit başlık: her zaman görünür -->
     <TextView
-        android:id="@+id/tvEmpty"
+        android:id="@+id/tvTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text=""
+        android:paddingBottom="8dp"
+        android:text="Gelen ders talepleri:"
         android:textColor="#555"
-        android:paddingBottom="8dp"/>
+        android:textStyle="bold"
+        android:textSize="20sp" />
+
+    <!-- Boş liste mesajı: sadece liste boşken görünür -->
+    <TextView
+        android:id="@+id/empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="8dp"
+        android:text="Şu an bekleyen talep yok."
+        android:textColor="#777"
+        android:visibility="gone" />
 
     <ProgressBar
         android:id="@+id/progress"
@@ -20,14 +33,10 @@
         android:visibility="gone"/>
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvList"
+        android:id="@+id/rv"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"/>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
 
 </LinearLayout>

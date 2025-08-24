@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.tutorist.R;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 
 import java.text.SimpleDateFormat;
@@ -33,6 +34,8 @@ public class TeacherDetailActivity extends AppCompatActivity {
 
     private final com.example.tutorist.repo.BookingRepo bookingRepo = new com.example.tutorist.repo.BookingRepo();
     enum SlotState { AVAILABLE, BOOKED, PAST }
+    private com.google.firebase.firestore.ListenerRegistration slotReg;
+
 
 
 
@@ -164,8 +167,16 @@ public class TeacherDetailActivity extends AppCompatActivity {
     }
 
 
+    @Override protected void onDestroy() {
+        if (slotReg != null) { slotReg.remove(); slotReg = null; }
+        super.onDestroy();
+    }
+
     private void loadSlotsForSelectedDate() {
         int day = toMon1_7(selected);
+
+        // önce varsa eski listener'ı kaldır
+        if (slotReg != null) { slotReg.remove(); slotReg = null; }
 
         db.collection("availabilities").document(teacherId)
                 .collection("weekly")
@@ -174,7 +185,7 @@ public class TeacherDetailActivity extends AppCompatActivity {
                 .addOnSuccessListener(snap -> {
                     // 1) saatleri üret
                     final List<Integer> hours = new ArrayList<>();
-                    for (DocumentSnapshot d : snap) {
+                    for (com.google.firebase.firestore.DocumentSnapshot d : snap.getDocuments()) {
                         Integer sh = d.getLong("startHour") != null ? d.getLong("startHour").intValue() : 0;
                         Integer eh = d.getLong("endHour") != null ? d.getLong("endHour").intValue() : 0;
                         for (int h = sh; h < eh; h++) hours.add(h);
@@ -182,37 +193,41 @@ public class TeacherDetailActivity extends AppCompatActivity {
 
                     // 2) geçmiş saatler -> past
                     final Set<Integer> past = new HashSet<>();
-                    Calendar now = Calendar.getInstance();
+                    java.util.Calendar now = java.util.Calendar.getInstance();
                     boolean isToday = isSameDay(now, selected);
                     if (isToday) {
-                        int curHour = now.get(Calendar.HOUR_OF_DAY);
+                        int curHour = now.get(java.util.Calendar.HOUR_OF_DAY);
                         for (int h : hours) if (h <= curHour) past.add(h);
                     }
 
-                    // 3) pending/accepted -> booked (slotLocks'tan oku)
-                    final Set<Integer> booked = new HashSet<>();
-                    db.collection("slotLocks")
+                    // Listener gelene kadar ekrana "booked yok" halini çiz (opsiyonel ama güzel)
+                    applySlots(hours, past, java.util.Collections.emptySet());
+
+                    // 3) pending/accepted -> booked (slotLocks'tan canlı dinle)
+                    slotReg = db.collection("slotLocks")
                             .whereEqualTo("teacherId", teacherId)
                             .whereEqualTo("date", selectedDateIso())
-                            .whereIn("status", Arrays.asList("pending", "accepted"))
-                            .get()
-                            .addOnSuccessListener(bSnap -> {
-                                for (DocumentSnapshot b : bSnap) {
-                                    Integer hour = b.getLong("hour") != null ? b.getLong("hour").intValue() : null;
-                                    if (hour != null) booked.add(hour);
+                            .whereIn("status", java.util.Arrays.asList("pending", "accepted"))
+                            .addSnapshotListener((bSnap, e) -> {
+                                Set<Integer> bookedNow = new HashSet<>();
+                                if (e == null && bSnap != null) {
+                                    for (com.google.firebase.firestore.DocumentSnapshot b : bSnap.getDocuments()) {
+                                        Long lh = b.getLong("hour");
+                                        if (lh != null) bookedNow.add(lh.intValue());
+                                    }
                                 }
-                                applySlots(hours, past, booked);
-                            })
-                            .addOnFailureListener(e -> {
-                                // slotLocks okunamazsa yine de past'la göster
-                                applySlots(hours, past, booked);
+                                applySlots(hours, past, bookedNow);
                             });
+
                 })
                 .addOnFailureListener(e -> {
                     // availability okunamadıysa boş göster
-                    applySlots(Collections.emptyList(), Collections.emptySet(), Collections.emptySet());
+                    applySlots(java.util.Collections.emptyList(),
+                            java.util.Collections.emptySet(),
+                            java.util.Collections.emptySet());
                 });
     }
+
 
 
 

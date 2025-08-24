@@ -1,28 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:padding="12dp"
-    android:layout_width="match_parent" android:layout_height="wrap_content">
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="@android:color/white"
+    android:layout_marginBottom="8dp"
+    android:elevation="1dp">
 
     <TextView
         android:id="@+id/tvLine"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textStyle="bold"/>
+        android:text="2025-08-25  13:00  • öğrenci=...  • ders=..."
+        android:textSize="15sp"
+        android:textColor="#222222"
+        android:paddingBottom="8dp"/>
 
     <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:gravity="end" android:paddingTop="8dp">
-
-        <Button
-            android:id="@+id/btnDecline"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Reddet"/>
-
-        <Space android:layout_width="12dp" android:layout_height="0dp"/>
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
 
         <Button
             android:id="@+id/btnAccept"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
             android:text="Kabul Et"/>
+
+        <Space
+            android:layout_width="8dp"
+            android:layout_height="0dp"/>
+
+        <Button
+            android:id="@+id/btnDecline"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="Reddet"/>
     </LinearLayout>
+
 </LinearLayout>
