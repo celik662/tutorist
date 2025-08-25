@@ -28,17 +28,24 @@ public class BookingRepo {
     }
 
 
-    /** Öğrenci → rezervasyon oluşturur; aynı id varsa kural reddeder. */
-    public Task<Void> createBooking(String teacherId, String studentId, String subjectId,
-                                    String dateIso, int hour) {
-        final String id = slotId(teacherId, dateIso, hour);
+    // BookingRepo.java
+    public Task<Void> createBooking(String teacherId,
+                                    String studentId,
+                                    String studentName,   // <— eklendi
+                                    String subjectId,
+                                    String subjectName,   // <— eklendi
+                                    String dateIso,
+                                    int hour) {
+        final String id  = slotId(teacherId, dateIso, hour);
         final DocumentReference bRef = bookingDoc(id);
         final DocumentReference lRef = lockDoc(id);
 
         Map<String, Object> booking = new HashMap<>();
         booking.put("teacherId", teacherId);
         booking.put("studentId", studentId);
+        booking.put("studentName", studentName);   // <— eklendi
         booking.put("subjectId", subjectId);
+        booking.put("subjectName", subjectName);   // <— eklendi
         booking.put("date", dateIso);
         booking.put("hour", hour);
         booking.put("status", "pending");
@@ -53,19 +60,20 @@ public class BookingRepo {
         lock.put("status", "pending");
         lock.put("updatedAt", FieldValue.serverTimestamp());
 
-
-
-        WriteBatch batch = db.batch();
-        batch.set(bRef, booking);  // rules: bookings.create + !exists
-        batch.set(lRef, lock);     // rules: slotLocks.create + !exists
-        return batch.commit();
+        // Slot çakışması kontrolü (varsa ALREADY_EXISTS fırlatır)
+        return lRef.get().continueWithTask(t -> {
+            DocumentSnapshot lockSnap = t.getResult();
+            if (lockSnap != null && lockSnap.exists()) {
+                throw new FirebaseFirestoreException(
+                        "Slot already taken", FirebaseFirestoreException.Code.ALREADY_EXISTS);
+            }
+            WriteBatch batch = db.batch();
+            batch.set(bRef, booking);
+            batch.set(lRef, lock);
+            return batch.commit();
+        });
     }
 
-    /** Öğretmen (accepted/declined) veya öğrenci (cancelled) → iki belgeyi birlikte güncelle */
-    public Task<Void> updateStatus(String teacherId, String dateIso, int hour, String newStatus){
-        final String id = slotId(teacherId, dateIso, hour);
-        return updateStatusById(id, newStatus);
-    }
 
 
     /** Kolaylık: elinde bookingId varsa direkt */

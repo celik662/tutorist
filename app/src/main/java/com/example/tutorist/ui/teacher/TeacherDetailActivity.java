@@ -100,32 +100,58 @@ public class TeacherDetailActivity extends AppCompatActivity {
                         "%s - %02d:00 için rezervasyon oluşturulsun mu?", selectedDateIso(), hour))
                 .setNegativeButton("Vazgeç", null)
                 .setPositiveButton("Onayla", (d, w) -> {
-                    android.util.Log.d(
-                            "BOOK",
-                            "create " + com.example.tutorist.repo.BookingRepo.slotId(
-                                    teacherId, selectedDateIso(), hour
-                            ) + " uid=" + studentId
-                    );
+                    if (studentId == null) {
+                        Toast.makeText(this, "Lütfen önce giriş yapın.", Toast.LENGTH_LONG).show();
+                        return;
+                    }
 
-                    bookingRepo.createBooking(teacherId, studentId, subjectId, selectedDateIso(), hour)
-                            .addOnSuccessListener(v -> {
-                                Toast.makeText(this, "Talep gönderildi.", Toast.LENGTH_SHORT).show();
-                                loadSlotsForSelectedDate();
+                    // Öğrencinin görünen adını çek (fullName yoksa email, o da yoksa "Öğrenci")
+                    FirebaseFirestore.getInstance().collection("users").document(studentId).get()
+                            .addOnSuccessListener(doc -> {
+                                String studentName = null;
+                                Object fn = doc.get("fullName");
+                                if (fn != null) studentName = String.valueOf(fn);
+                                if (studentName == null || studentName.trim().isEmpty()) {
+                                    Object em = doc.get("email");
+                                    if (em != null) studentName = String.valueOf(em);
+                                }
+                                if (studentName == null || studentName.trim().isEmpty()) studentName = "Öğrenci";
+
+                                android.util.Log.d("BOOK",
+                                        "create " + com.example.tutorist.repo.BookingRepo.slotId(teacherId, selectedDateIso(), hour)
+                                                + " uid=" + studentId + " name=" + studentName);
+
+                                bookingRepo.createBooking(
+                                                teacherId,
+                                                studentId,
+                                                studentName,             // <— yeni parametre
+                                                subjectId,
+                                                subjectName,             // <— yeni parametre
+                                                selectedDateIso(),
+                                                hour
+                                        )
+                                        .addOnSuccessListener(v -> {
+                                            Toast.makeText(this, "Talep gönderildi.", Toast.LENGTH_SHORT).show();
+                                            loadSlotsForSelectedDate();
+                                        })
+                                        .addOnFailureListener(e -> {
+                                            if (e instanceof com.google.firebase.firestore.FirebaseFirestoreException) {
+                                                com.google.firebase.firestore.FirebaseFirestoreException fe =
+                                                        (com.google.firebase.firestore.FirebaseFirestoreException) e;
+                                                if (fe.getCode() == com.google.firebase.firestore.FirebaseFirestoreException.Code.ALREADY_EXISTS) {
+                                                    Toast.makeText(this, "Bu saat dolu, başka bir saat seç.", Toast.LENGTH_LONG).show();
+                                                    loadSlotsForSelectedDate();
+                                                    return;
+                                                }
+                                            }
+                                            Toast.makeText(this, "Hata: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                                        });
                             })
                             .addOnFailureListener(e -> {
-                                if (e instanceof com.google.firebase.firestore.FirebaseFirestoreException) {
-                                    com.google.firebase.firestore.FirebaseFirestoreException fe =
-                                            (com.google.firebase.firestore.FirebaseFirestoreException) e;
-                                    if (fe.getCode() ==
-                                            com.google.firebase.firestore.FirebaseFirestoreException.Code.ALREADY_EXISTS) {
-                                        Toast.makeText(this, "Bu saat dolu, başka bir saat seç.", Toast.LENGTH_LONG).show();
-                                        loadSlotsForSelectedDate();
-                                        return;
-                                    }
-                                }
-                                Toast.makeText(this, "Hata: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                                Toast.makeText(this, "Ad bilgisi okunamadı: " + e.getMessage(), Toast.LENGTH_LONG).show();
                             });
                 })
+
                 .show();
     }
 

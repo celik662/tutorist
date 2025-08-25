@@ -10,14 +10,12 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.example.tutorist.R;
 import com.example.tutorist.repo.BookingRepo;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.*;
-
 import java.util.*;
 
 public class TeacherRequestsActivity extends AppCompatActivity {
@@ -35,12 +33,16 @@ public class TeacherRequestsActivity extends AppCompatActivity {
 
 
     static class Row {
-        String id, studentId, subjectId, date;
+        String id, studentId, studentName, subjectId, subjectName, date;
         int hour;
-        Row(String id, String studentId, String subjectId, String date, int hour){
-            this.id=id; this.studentId=studentId; this.subjectId=subjectId; this.date=date; this.hour=hour;
+        Row(String id, String studentId, String studentName,
+            String subjectId, String subjectName, String date, int hour){
+            this.id=id; this.studentId=studentId; this.studentName=studentName;
+            this.subjectId=subjectId; this.subjectName=subjectName;
+            this.date=date; this.hour=hour;
         }
     }
+
 
     private final List<Row> items = new ArrayList<>();
 
@@ -96,16 +98,21 @@ public class TeacherRequestsActivity extends AppCompatActivity {
 
                     items.clear();
                     for (DocumentSnapshot d : snap) {
-                        // Debug için doküman id’sini de yazdırmak faydalı:
-                        Log.v(TAG, "doc=" + d.getId() + " data=" + d.getData());
-
                         String id = d.getId();
                         String studentId = String.valueOf(d.get("studentId"));
                         String subjectId = String.valueOf(d.get("subjectId"));
                         String date = String.valueOf(d.get("date"));
                         int hour = d.getLong("hour") != null ? d.getLong("hour").intValue() : 0;
-                        items.add(new Row(id, studentId, subjectId, date, hour));
+
+                        String studentName = d.getString("studentName");
+                        if (studentName == null || studentName.trim().isEmpty()) studentName = studentId;
+
+                        String subjectName = d.getString("subjectName");
+                        if (subjectName == null || subjectName.trim().isEmpty()) subjectName = subjectId;
+
+                        items.add(new Row(id, studentId, studentName, subjectId, subjectName, date, hour));
                     }
+
                     items.sort(Comparator.comparing((Row r) -> r.date).thenComparingInt(r -> r.hour));
                     adapter.notifyDataSetChanged();
                     empty.setVisibility(items.isEmpty() ? View.VISIBLE : View.GONE);
@@ -158,8 +165,11 @@ public class TeacherRequestsActivity extends AppCompatActivity {
 
         @Override public void onBindViewHolder(VH h, int pos){
             Row r = items.get(pos);
-            h.tv.setText(String.format(Locale.getDefault(),
-                    "%s  %02d:00  • öğrenci=%s  • ders=%s", r.date, r.hour, r.studentId, r.subjectId));
+            h.tv.setText(String.format(
+                    Locale.getDefault(),
+                    "%s  %02d:00\nÖğrenci adı: %s\nDers adı: %s",
+                    r.date, r.hour, r.studentName, r.subjectName
+            ));
 
             h.btnAcc.setOnClickListener(v -> {
                 h.btnAcc.setEnabled(false);

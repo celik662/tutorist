@@ -2,4 +2,10 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="status_pending">#FF8F00</color>   <!-- Turuncu -->
+    <color name="status_accepted">#2E7D32</color>  <!-- Yeşil -->
+    <color name="status_declined">#C62828</color>  <!-- Kırmızı -->
+    <color name="status_cancelled">#1565C0</color> <!-- Mavi -->
+
+
 </resources>
