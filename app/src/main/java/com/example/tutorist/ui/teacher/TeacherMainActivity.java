@@ -26,6 +26,10 @@ public class TeacherMainActivity extends AppCompatActivity {
 
         findViewById(R.id.btnRequests).setOnClickListener(v ->
                 startActivity(new Intent(this, TeacherRequestsActivity.class)));
+        findViewById(R.id.btnTeacherPast)
+                .setOnClickListener(v ->
+                        startActivity(new android.content.Intent(this, com.example.tutorist.ui.teacher.TeacherPastActivity.class)));
+
 
         // Savunmacı kontrol – biri null ise doğrudan uyarı verelim:
         if (btnSubjects == null || btnAvailability == null || btnProfile == null) {

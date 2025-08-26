@@ -1,0 +1,18 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:padding="16dp"
+    android:layout_width="match_parent" android:layout_height="wrap_content">
+
+    <RatingBar
+        android:id="@+id/ratingBar"
+        android:numStars="5"
+        android:stepSize="1"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+
+    <EditText
+        android:id="@+id/etNote"
+        android:hint="Ders özeti / geri bildirim"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:inputType="textMultiLine"
+        android:minLines="4" android:gravity="top"
+        android:layout_marginTop="8dp"/>
+</LinearLayout>

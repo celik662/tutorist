@@ -37,6 +37,8 @@ public class HistoryFragment extends Fragment {
         int hour;
         Double price;
         String teacherName;
+        java.util.Date endAt;
+        boolean hasReview;
     }
 
     private final List<Row> items = new ArrayList<>();
@@ -66,7 +68,13 @@ public class HistoryFragment extends Fragment {
         rbHistory = v.findViewById(R.id.rbHistory);
 
         rv.setLayoutManager(new LinearLayoutManager(requireContext()));
-        adapter = new Adapter(items, this::onCancelClicked, this::teacherNameOf, this::priceOf);
+        adapter = new Adapter(
+                items,
+                this::onCancelClicked,
+                this::teacherNameOf,
+                this::priceOf,
+                this::onReviewClicked   // <-- yeni callback
+        );
         rv.setAdapter(adapter);
 
         rgFilter.setOnCheckedChangeListener((g, id) -> {
@@ -119,6 +127,17 @@ public class HistoryFragment extends Fragment {
                 r.date       = String.valueOf(d.get("date"));
                 r.hour       = d.getLong("hour") != null ? d.getLong("hour").intValue() : 0;
 
+                // endAt (Timestamp -> Date)
+                Object ts = d.get("endAt");
+                if (ts instanceof com.google.firebase.Timestamp)
+                    r.endAt = ((com.google.firebase.Timestamp) ts).toDate();
+                else if (ts instanceof java.util.Date)
+                    r.endAt = (java.util.Date) ts;
+
+                r.hasReview = false;  // varsayılan
+                // Yorum var mı? (isteğe bağlı, varsa gösterimi engelle)
+                checkReviewExists(r); // aşağıda
+
                 r.teacherName = teacherNameOf(r.teacherId);
                 r.price       = priceOf(r.teacherId, r.subjectId);
                 teacherIdsSeen.add(r.teacherId);
@@ -137,6 +156,14 @@ public class HistoryFragment extends Fragment {
         });
     }
 
+    private void checkReviewExists(Row r) {
+        db.collection("teacherReviews").document(r.id).get()
+                .addOnSuccessListener(ds -> {
+                    r.hasReview = ds.exists();
+                    if (isAdded()) adapter.notifyDataSetChanged();
+                })
+                .addOnFailureListener(e -> { /* yok say */ });
+    }
     private void ensureTeacherProfileLoaded(String teacherId) {
         if (teacherNameCache.containsKey(teacherId) && teacherPricesCache.containsKey(teacherId)) return;
 
@@ -197,34 +224,41 @@ public class HistoryFragment extends Fragment {
         interface OnCancel { void run(Row r); }
         interface NameProvider { String apply(String teacherId); }
         interface PriceProvider { Double apply(String teacherId, String subjectId); }
+        interface OnReview { void run(Row r); }
 
         private final List<Row> items;
         private final OnCancel onCancel;
         private final NameProvider nameProvider;
         private final PriceProvider priceProvider;
+        private final OnReview onReview;
 
-        Adapter(List<Row> items, OnCancel onCancel, NameProvider nameProvider, PriceProvider priceProvider) {
+        Adapter(List<Row> items, OnCancel onCancel, NameProvider nameProvider, PriceProvider priceProvider, OnReview onReview) {
             this.items = items;
             this.onCancel = onCancel;
             this.nameProvider = nameProvider;
             this.priceProvider = priceProvider;
+            this.onReview = onReview;
         }
 
         static class VH extends RecyclerView.ViewHolder {
-            TextView tv1, tv2; Button btnCancel;
+            TextView tv1, tv2; Button btnCancel,btnReview;
             VH(View v){
                 super(v);
                 tv1 = v.findViewById(R.id.tvLine1);
                 tv2 = v.findViewById(R.id.tvLine2);
                 btnCancel = v.findViewById(R.id.btnCancel);
+                btnReview = v.findViewById(R.id.btnReview);
             }
+
         }
+
 
         @NonNull @Override public VH onCreateViewHolder(@NonNull ViewGroup p, int vt) {
             View v = LayoutInflater.from(p.getContext()).inflate(R.layout.item_student_booking, p, false);
             return new VH(v);
         }
 
+        @SuppressLint("SetTextI18n")
         @Override public void onBindViewHolder(@NonNull VH h, int pos) {
             Row r = items.get(pos);
 
@@ -250,9 +284,22 @@ public class HistoryFragment extends Fragment {
             }
             h.tv2.setText(ss);
 
+            boolean canReview = r.endAt != null
+                    && new java.util.Date().after(r.endAt)
+                    && ("accepted".equals(r.status) || "completed".equals(r.status))
+                    && !r.hasReview; // Firestore'dan teacherReviews/{bookingId} yoksa false
+
+
             boolean cancellable = "pending".equalsIgnoreCase(r.status);
             h.btnCancel.setVisibility(cancellable ? View.VISIBLE : View.GONE);
             h.btnCancel.setOnClickListener(v -> onCancel.run(r));
+
+            // >>> EKLE: Yorum Yaz butonu bağlama
+            h.btnReview.setVisibility(canReview ? View.VISIBLE : View.GONE);
+            h.btnReview.setOnClickListener(v -> {
+                h.btnReview.setEnabled(false); // çift tık önle
+                onReview.run(r);               // dışarıdaki callback'in
+            });
         }
 
         private static class StatusUi {
@@ -280,5 +327,10 @@ public class HistoryFragment extends Fragment {
 
 
         @Override public int getItemCount(){ return items.size(); }
+    }
+    private void onReviewClicked(Row r) {
+        Toast.makeText(requireContext(),
+                "Yorum yaz: " + teacherNameOf(r.teacherId), Toast.LENGTH_SHORT).show();
+        // TODO: Review dialog/ekranını aç ve teacherReviews/{bookingId} yaz.
     }
 }

@@ -26,31 +26,53 @@ public class BookingRepo {
     private DocumentReference lockDoc(String id){
         return db.collection("slotLocks").document(id);
     }
+    // yardımcı:
+    private static java.util.Date buildDate(String dateIso, int hour) {
+        String[] p = dateIso.split("-");
+        int y = Integer.parseInt(p[0]);
+        int m = Integer.parseInt(p[1]); // 1..12
+        int d = Integer.parseInt(p[2]);
+        java.util.Calendar c = java.util.Calendar.getInstance(java.util.TimeZone.getDefault());
+        c.set(java.util.Calendar.YEAR, y);
+        c.set(java.util.Calendar.MONTH, m - 1); // 0-based
+        c.set(java.util.Calendar.DAY_OF_MONTH, d);
+        c.set(java.util.Calendar.HOUR_OF_DAY, hour);
+        c.set(java.util.Calendar.MINUTE, 0);
+        c.set(java.util.Calendar.SECOND, 0);
+        c.set(java.util.Calendar.MILLISECOND, 0);
+        return c.getTime();
+    }
 
 
     // BookingRepo.java
     public Task<Void> createBooking(String teacherId,
                                     String studentId,
-                                    String studentName,   // <— eklendi
+                                    String studentName,
                                     String subjectId,
-                                    String subjectName,   // <— eklendi
+                                    String subjectName,
                                     String dateIso,
                                     int hour) {
         final String id  = slotId(teacherId, dateIso, hour);
         final DocumentReference bRef = bookingDoc(id);
         final DocumentReference lRef = lockDoc(id);
 
+        java.util.Date startAt = buildDate(dateIso, hour);
+        java.util.Date endAt   = new java.util.Date(startAt.getTime() + 60L*60L*1000L); // 1 saat
+
+        // ÖNCE map’i oluştur
         Map<String, Object> booking = new HashMap<>();
         booking.put("teacherId", teacherId);
         booking.put("studentId", studentId);
-        booking.put("studentName", studentName);   // <— eklendi
+        booking.put("studentName", studentName);   // yeni
         booking.put("subjectId", subjectId);
-        booking.put("subjectName", subjectName);   // <— eklendi
+        booking.put("subjectName", subjectName);   // yeni
         booking.put("date", dateIso);
         booking.put("hour", hour);
         booking.put("status", "pending");
         booking.put("createdAt", FieldValue.serverTimestamp());
         booking.put("updatedAt", FieldValue.serverTimestamp());
+        booking.put("startAt", startAt);
+        booking.put("endAt",   endAt);
 
         Map<String, Object> lock = new HashMap<>();
         lock.put("teacherId", teacherId);
@@ -73,6 +95,7 @@ public class BookingRepo {
             return batch.commit();
         });
     }
+
 
 
 

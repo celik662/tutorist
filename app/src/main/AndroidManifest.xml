@@ -29,6 +29,8 @@
         <activity android:name=".ui.teacher.TeacherListActivity"/>
         <activity android:name=".ui.teacher.TeacherDetailActivity"/>
         <activity android:name=".ui.teacher.TeacherRequestsActivity" />
+        <activity android:name=".ui.teacher.TeacherPastActivity" />
+
         <service
             android:name=".push.AppMessagingService"
             android:exported="false">

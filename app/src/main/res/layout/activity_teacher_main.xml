@@ -20,7 +20,7 @@
             android:id="@+id/btnRequests"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Gelen Talepler"/>
+            android:text="Bekleyen Ders Talepleri"/>
 
         <TextView
             android:id="@+id/badgeRequests"
@@ -35,6 +35,12 @@
             android:background="@drawable/bg_badge_circle"
             android:visibility="gone"/>
     </FrameLayout>
+
+    <Button
+        android:id="@+id/btnTeacherPast"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Geçmiş Dersler"/>
 
     <Button
         android:id="@+id/btnProfile"
