@@ -6,6 +6,7 @@
     <color name="status_accepted">#2E7D32</color>  <!-- Yeşil -->
     <color name="status_declined">#C62828</color>  <!-- Kırmızı -->
     <color name="status_cancelled">#1565C0</color> <!-- Mavi -->
+    <color name="push_notification">#fc0320</color> <!-- Bildirim kırmızısı -->
 
 
 </resources>

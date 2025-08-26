@@ -2,12 +2,18 @@ package com.example.tutorist.ui.teacher;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.example.tutorist.R;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 
 public class TeacherMainActivity extends AppCompatActivity {
+    private ListenerRegistration pendingReg;
 
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
@@ -62,5 +68,44 @@ public class TeacherMainActivity extends AppCompatActivity {
             });
         });
     }
+
+
+    private void subscribePendingBadge() {
+        TextView badge = findViewById(R.id.badgeRequests);
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (pendingReg != null) pendingReg.remove();
+
+        pendingReg = FirebaseFirestore.getInstance().collection("bookings")
+                .whereEqualTo("teacherId", uid)
+                .whereEqualTo("status", "pending")
+                .addSnapshotListener((snap, e) -> {
+                    int count = (snap != null) ? snap.size() : 0;
+                    if (count > 0) {
+                        badge.setText(String.valueOf(Math.min(count, 99)));
+                        badge.setVisibility(View.VISIBLE);
+                    } else {
+                        badge.setVisibility(View.GONE);
+                    }
+                });
+        pendingReg = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("bookings")
+                .whereEqualTo("teacherId", uid)
+                .whereEqualTo("status", "pending")
+                .addSnapshotListener((snap, e) -> {
+                    int count = (snap != null) ? snap.size() : 0;
+                    if (count > 0) {
+                        badge.setText(String.valueOf(Math.min(count, 99)));
+                        badge.setVisibility(View.VISIBLE);
+                    } else {
+                        badge.setVisibility(View.GONE);
+                    }
+                });
+
+    }
+
+
+    @Override protected void onStart() { super.onStart(); subscribePendingBadge(); }
+    @Override protected void onDestroy() { if (pendingReg!=null) pendingReg.remove(); super.onDestroy(); }
+
 
 }

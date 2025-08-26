@@ -12,11 +12,29 @@
         android:text="Müsaitlik"
         android:layout_width="match_parent" android:layout_height="wrap_content"/>
 
-    <Button
-        android:id="@+id/btnRequests"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Gelen Talepler"/>
+        android:layout_height="wrap_content">
+
+        <Button
+            android:id="@+id/btnRequests"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Gelen Talepler"/>
+
+        <TextView
+            android:id="@+id/badgeRequests"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="end|top"
+            android:translationX="-8dp"
+            android:translationY="8dp"
+            android:gravity="center"
+            android:textColor="@android:color/white"
+            android:textSize="12sp"
+            android:background="@drawable/bg_badge_circle"
+            android:visibility="gone"/>
+    </FrameLayout>
 
     <Button
         android:id="@+id/btnProfile"

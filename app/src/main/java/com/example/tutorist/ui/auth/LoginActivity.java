@@ -1,5 +1,7 @@
 package com.example.tutorist.ui.auth;
 
+import static android.content.Intent.getIntent;
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -55,6 +57,13 @@ public class LoginActivity extends AppCompatActivity {
             startActivity(new Intent(this, ForgotPasswordActivity.class).putExtra("email", email));
         });
         btnResendVerify.setOnClickListener(v -> resendVerification());
+
+
+        com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
+                .addOnSuccessListener(t -> {
+                    // AppMessagingService.onNewToken çağrılmayabilir; token’ı burada da kaydedelim:
+                    new com.example.tutorist.push.AppMessagingService().onNewToken(t);
+                });
     }
 
     private void doLogin() {
