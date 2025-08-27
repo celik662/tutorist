@@ -36,6 +36,29 @@ public class TeacherPastActivity extends AppCompatActivity {
     private final List<Row> items = new ArrayList<>();
     private Adapter adapter;
 
+    // --- EKLENDİ: UI yardımcıları ---
+    private void setLoading(boolean loading) {
+        progress.setVisibility(loading ? View.VISIBLE : View.GONE);
+        if (loading) {
+            rv.setVisibility(View.GONE);
+            empty.setVisibility(View.GONE);
+            empty.setText("");
+        }
+    }
+    private void updateEmptyState() {
+        boolean isEmpty = adapter.getItemCount() == 0;
+        empty.setText(isEmpty ? "Henüz tamamlanmış dersiniz yok." : "");
+        empty.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+        rv.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+    }
+    private void showErrorState(String message) {
+        progress.setVisibility(View.GONE);
+        rv.setVisibility(View.GONE);
+        empty.setText(message != null ? message : "Bir şeyler ters gitti.");
+        empty.setVisibility(View.VISIBLE);
+    }
+    // --- /EKLENDİ ---
+
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
         setContentView(R.layout.activity_teacher_past);
@@ -52,10 +75,15 @@ public class TeacherPastActivity extends AppCompatActivity {
         adapter = new Adapter(items, this::onAddSummary, this::onViewSummary);
         rv.setAdapter(adapter);
 
-        boolean isEmpty = items.isEmpty();
-        empty.setText(isEmpty ? "Henüz tamamlanmış dersiniz yok." : "");
-        empty.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
-        rv.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+        // EKLENDİ: adapter değiştiğinde boş/dolu görünümünü güncelle
+        adapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
+            @Override public void onChanged() { updateEmptyState(); }
+            @Override public void onItemRangeInserted(int positionStart, int itemCount) { updateEmptyState(); }
+            @Override public void onItemRangeRemoved(int positionStart, int itemCount) { updateEmptyState(); }
+        });
+
+        // İlk açılışta yükleme göster
+        setLoading(true);
     }
 
     @Override protected void onStart() {
@@ -69,8 +97,7 @@ public class TeacherPastActivity extends AppCompatActivity {
 
     private void listenPast() {
         if (reg != null) { reg.remove(); reg = null; }
-        progress.setVisibility(View.VISIBLE);
-        empty.setText("");
+        setLoading(true);
 
         // Asıl (indexed) sorgu
         Query q = db.collection("bookings")
@@ -80,7 +107,7 @@ public class TeacherPastActivity extends AppCompatActivity {
                 .orderBy("endAt", Query.Direction.DESCENDING);
 
         reg = q.addSnapshotListener((snap, e) -> {
-            progress.setVisibility(View.GONE);
+            setLoading(false);
 
             if (e != null) {
                 // Index henüz "READY" değilse buraya düşer
@@ -90,7 +117,7 @@ public class TeacherPastActivity extends AppCompatActivity {
                     listenPastFallback(); // <-- geçici çözüm
                     return;
                 }
-                Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+                showErrorState(e.getMessage());
                 return;
             }
 
@@ -99,19 +126,17 @@ public class TeacherPastActivity extends AppCompatActivity {
     }
 
     // Index hazır olana kadar kullanılacak basit sorgu:
-// Sadece teacherId ile çek -> client-side filtrele & sırala
+    // Sadece teacherId ile çek -> client-side filtrele & sırala
     private void listenPastFallback() {
         if (reg != null) { reg.remove(); reg = null; }
-        progress.setVisibility(View.VISIBLE);
-        empty.setText("");
+        setLoading(true);
 
         reg = db.collection("bookings")
                 .whereEqualTo("teacherId", uid)
                 .addSnapshotListener((snap, e) -> {
-                    progress.setVisibility(View.GONE);
+                    setLoading(false);
                     if (e != null || snap == null) {
-                        Toast.makeText(this, e != null ? e.getMessage() : "Hata",
-                                Toast.LENGTH_LONG).show();
+                        showErrorState(e != null ? e.getMessage() : "Hata");
                         return;
                     }
                     items.clear();
@@ -150,7 +175,7 @@ public class TeacherPastActivity extends AppCompatActivity {
                     });
 
                     adapter.notifyDataSetChanged();
-                    //empty.setText(items.isEmpty() ? "Henüz tamamlanmış dersiniz yok." : "");
+                    updateEmptyState(); // EKLENDİ
                 });
     }
 
@@ -184,7 +209,7 @@ public class TeacherPastActivity extends AppCompatActivity {
         });
 
         adapter.notifyDataSetChanged();
-        empty.setText(items.isEmpty() ? "Henüz tamamlanmış dersiniz yok." : "");
+        updateEmptyState(); // EKLENDİ
     }
 
 
@@ -196,15 +221,15 @@ public class TeacherPastActivity extends AppCompatActivity {
                         return;
                     }
                     String note = String.valueOf(doc.get("note"));
-                    Number rating = (Number) doc.get("rating");
                     new AlertDialog.Builder(this)
-                            .setTitle("Özet / Puan")
-                            .setMessage("Puan: " + (rating!=null?rating.intValue():"-") + "\n\n" + note)
+                            .setTitle("Ders Notu")
+                            .setMessage(note != null ? note : "")
                             .setPositiveButton("Kapat", null)
                             .show();
                 })
                 .addOnFailureListener(e -> Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show());
     }
+
 
     private void onAddSummary(Row r) {
         // Dialog: Rating + Note
@@ -268,7 +293,7 @@ public class TeacherPastActivity extends AppCompatActivity {
             Row r = items.get(pos);
             h.tv1.setText(r.studentName + " • " + r.subjectName);
             h.tv2.setText(String.format(Locale.getDefault(), "%s %02d:00  • Durum: %s", r.date, r.hour,
-                    "completed".equals(r.status) ? "Tamamlandı" : "Onaylı"));
+                    "Tamamlandı"));
 
             h.btnSummary.setVisibility(r.hasNote ? View.GONE : View.VISIBLE);
             h.btnView.setVisibility(r.hasNote ? View.VISIBLE : View.GONE);

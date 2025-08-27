@@ -2,10 +2,13 @@ package com.example.tutorist.ui.student;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
-import android.view.*;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.*;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -32,13 +35,16 @@ public class HistoryFragment extends Fragment {
     private ListenerRegistration reg;
     private String uid;
 
+    private Filter currentFilter = Filter.PENDING;
+
     static class Row {
         String id, teacherId, subjectId, subjectName, status, date;
         int hour;
         Double price;
         String teacherName;
         java.util.Date endAt;
-        boolean hasReview;
+        boolean hasReview;      // öğrenci -> teacherReviews/{bookingId}
+        boolean hasTeacherNote; // öğretmen -> teacherNotes/{bookingId}
     }
 
     private final List<Row> items = new ArrayList<>();
@@ -73,19 +79,29 @@ public class HistoryFragment extends Fragment {
                 this::onCancelClicked,
                 this::teacherNameOf,
                 this::priceOf,
-                this::onReviewClicked   // <-- yeni callback
+                this::onReviewClicked,
+                this::onNoteClicked
         );
         rv.setAdapter(adapter);
 
-        rgFilter.setOnCheckedChangeListener((g, id) -> {
-            Filter f = rbPending.isChecked() ? Filter.PENDING : Filter.HISTORY;
-            listen(f);
+        // Adapter değiştikçe boş/dolu durumu otomatik güncelle
+        adapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
+            @Override public void onChanged() { updateEmptyState(); }
+            @Override public void onItemRangeInserted(int positionStart, int itemCount) { updateEmptyState(); }
+            @Override public void onItemRangeRemoved(int positionStart, int itemCount) { updateEmptyState(); }
         });
+
+        rgFilter.setOnCheckedChangeListener((g, id) -> {
+            currentFilter = rbPending.isChecked() ? Filter.PENDING : Filter.HISTORY;
+            listen(currentFilter);
+        });
+
+        setLoading(true);
     }
 
     @Override public void onStart() {
         super.onStart();
-        if (uid != null) listen(Filter.PENDING);
+        if (uid != null) listen(currentFilter);
     }
 
     @Override public void onStop() {
@@ -93,21 +109,42 @@ public class HistoryFragment extends Fragment {
         super.onStop();
     }
 
+    // ---------------- UI yardımcıları ----------------
+    private void setLoading(boolean loading) {
+        if (!isAdded()) return;
+        progress.setVisibility(loading ? View.VISIBLE : View.GONE);
+        if (loading) {
+            rv.setVisibility(View.GONE);
+            empty.setVisibility(View.GONE);
+            empty.setText("");
+        }
+    }
+
+    private void updateEmptyState() {
+        if (!isAdded()) return;
+        boolean isEmpty = adapter.getItemCount() == 0;
+        empty.setText(isEmpty
+                ? (currentFilter == Filter.PENDING ? "Bekleyen talebin yok." : "Geçmiş kaydın yok.")
+                : "");
+        empty.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+        rv.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+    }
+    // -------------------------------------------------
+
     private void listen(Filter filter) {
         if (reg != null) { reg.remove(); reg = null; }
-        progress.setVisibility(View.VISIBLE);
-        empty.setText("");
+        setLoading(true);
 
         Query q = db.collection("bookings").whereEqualTo("studentId", uid);
         if (filter == Filter.PENDING) {
             q = q.whereEqualTo("status", "pending");
         } else {
-            q = q.whereIn("status", Arrays.asList("accepted","declined","cancelled"));
+            q = q.whereIn("status", Arrays.asList("accepted","declined","cancelled","completed"));
         }
 
         reg = q.addSnapshotListener((snap, e) -> {
-            progress.setVisibility(View.GONE);
-            if (!isAdded()) return; // fragment ayrıldıysa
+            setLoading(false);
+            if (!isAdded()) return;
             if (e != null || snap == null) {
                 Toast.makeText(requireContext(), e != null ? e.getMessage() : "Hata", Toast.LENGTH_LONG).show();
                 return;
@@ -127,30 +164,38 @@ public class HistoryFragment extends Fragment {
                 r.date       = String.valueOf(d.get("date"));
                 r.hour       = d.getLong("hour") != null ? d.getLong("hour").intValue() : 0;
 
-                // endAt (Timestamp -> Date)
                 Object ts = d.get("endAt");
                 if (ts instanceof com.google.firebase.Timestamp)
                     r.endAt = ((com.google.firebase.Timestamp) ts).toDate();
                 else if (ts instanceof java.util.Date)
                     r.endAt = (java.util.Date) ts;
 
-                r.hasReview = false;  // varsayılan
-                // Yorum var mı? (isteğe bağlı, varsa gösterimi engelle)
-                checkReviewExists(r); // aşağıda
-
                 r.teacherName = teacherNameOf(r.teacherId);
                 r.price       = priceOf(r.teacherId, r.subjectId);
-                teacherIdsSeen.add(r.teacherId);
 
+                r.hasReview = false;
+                r.hasTeacherNote = false;
+
+                checkReviewExists(r);       // teacherReviews/{bookingId}
+                checkTeacherNoteExists(r);  // teacherNotes/{bookingId}
+
+                teacherIdsSeen.add(r.teacherId);
                 items.add(r);
             }
 
-            items.sort(Comparator.comparing((Row r) -> r.date).thenComparingInt(r -> r.hour));
-            adapter.notifyDataSetChanged();
+            // Sıralama: önce tarihe göre; varsa endAt geçmiş için daha iyi bir sinyal
+            items.sort((a,b) -> {
+                // endAt varsa ona göre, yoksa date+hour
+                if (a.endAt != null && b.endAt != null) return a.endAt.compareTo(b.endAt);
+                if (a.endAt != null) return -1;
+                if (b.endAt != null) return 1;
+                int c = String.valueOf(a.date).compareTo(String.valueOf(b.date));
+                if (c != 0) return c;
+                return Integer.compare(a.hour, b.hour);
+            });
 
-            empty.setText(items.isEmpty()
-                    ? (filter == Filter.PENDING ? "Bekleyen talebin yok." : "Geçmiş kaydın yok.")
-                    : "");
+            adapter.notifyDataSetChanged();
+            updateEmptyState();
 
             for (String tid : teacherIdsSeen) ensureTeacherProfileLoaded(tid);
         });
@@ -164,6 +209,16 @@ public class HistoryFragment extends Fragment {
                 })
                 .addOnFailureListener(e -> { /* yok say */ });
     }
+
+    private void checkTeacherNoteExists(Row r) {
+        db.collection("teacherNotes").document(r.id).get()
+                .addOnSuccessListener(ds -> {
+                    r.hasTeacherNote = ds.exists();
+                    if (isAdded()) adapter.notifyDataSetChanged();
+                })
+                .addOnFailureListener(e -> { /* yok say */ });
+    }
+
     private void ensureTeacherProfileLoaded(String teacherId) {
         if (teacherNameCache.containsKey(teacherId) && teacherPricesCache.containsKey(teacherId)) return;
 
@@ -213,45 +268,132 @@ public class HistoryFragment extends Fragment {
     }
 
     private void onCancelClicked(Row r) {
-        if (!"pending".equals(r.status)) return; // rules da böyle
+        if (!"pending".equalsIgnoreCase(r.status)) return;
         bookingRepo.updateStatusById(r.id, "cancelled")
                 .addOnFailureListener(e ->
                         Toast.makeText(requireContext(), "İptal hatası: " + e.getMessage(), Toast.LENGTH_LONG).show());
     }
 
-    // --- Adapter ---
+    private void onReviewClicked(Row r) {
+        View view = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_teacher_review, null, false);
+        RatingBar ratingBar = view.findViewById(R.id.ratingBar);
+        EditText et = view.findViewById(R.id.etReview);
+
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Öğretmeni Değerlendir")
+                .setView(view)
+                .setNegativeButton("Vazgeç", null)
+                .setPositiveButton("Gönder", (d, w) -> {
+                    int rating = Math.max(1, Math.min(5, Math.round(ratingBar.getRating())));
+                    String review = et.getText().toString().trim();
+
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("bookingId", r.id);
+                    data.put("teacherId", r.teacherId);
+                    data.put("studentId", uid);
+                    data.put("rating", rating);
+                    data.put("comment", et.getText().toString().trim()); // <-- review değil, comment
+                    data.put("createdAt", FieldValue.serverTimestamp());
+
+                    db.collection("teacherReviews").document(r.id)
+                            .set(data, SetOptions.merge())
+                            .addOnSuccessListener(v -> {
+                                Toast.makeText(requireContext(), "Teşekkürler! Değerlendirmen kaydedildi.", Toast.LENGTH_SHORT).show();
+                                r.hasReview = true;
+                                if (isAdded()) adapter.notifyDataSetChanged();
+
+                                // İSTEĞE BAĞLI: Öğretmen profil istatistiklerini güncelle
+                                // updateTeacherRatingAgg(r.teacherId, rating);
+                            })
+                            .addOnFailureListener(e ->
+                                    Toast.makeText(requireContext(), e.getMessage(), Toast.LENGTH_LONG).show());
+                })
+                .show();
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    private void updateTeacherRatingAgg(String teacherId, int newRating){
+        DocumentReference ref = db.collection("teacherProfiles").document(teacherId);
+        db.runTransaction(tr -> {
+            DocumentSnapshot snap = tr.get(ref);
+            long count = 0L; double sum = 0.0;
+            if (snap.exists()) {
+                Number c = (Number) snap.get("ratingCount");
+                Number s = (Number) snap.get("ratingSum");
+                count = c != null ? c.longValue() : 0L;
+                sum   = s != null ? s.doubleValue() : 0.0;
+            }
+            count += 1;
+            sum   += newRating;
+            Map<String,Object> up = new HashMap<>();
+            up.put("ratingCount", count);
+            up.put("ratingSum", sum);
+            up.put("avgRating", sum / Math.max(1, count));
+            tr.set(ref, up, SetOptions.merge());
+            return null;
+        });
+    }
+
+    private void onNoteClicked(Row r) {
+        db.collection("teacherNotes").document(r.id).get()
+                .addOnSuccessListener(doc -> {
+                    if (doc == null || !doc.exists()) {
+                        Toast.makeText(requireContext(), "Öğretmen notu bulunamadı.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    String note = String.valueOf(doc.get("note"));
+
+                    new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                            .setTitle("Öğretmen Notu")
+                            .setMessage(note != null ? note : "")
+                            .setPositiveButton("Kapat", null)
+                            .show();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(requireContext(), e.getMessage(), Toast.LENGTH_LONG).show());
+    }
+
+
+    // ---------------- Adapter ----------------
     static class Adapter extends RecyclerView.Adapter<Adapter.VH> {
         interface OnCancel { void run(Row r); }
         interface NameProvider { String apply(String teacherId); }
         interface PriceProvider { Double apply(String teacherId, String subjectId); }
         interface OnReview { void run(Row r); }
+        interface OnNote { void run(Row r); }
 
         private final List<Row> items;
         private final OnCancel onCancel;
         private final NameProvider nameProvider;
         private final PriceProvider priceProvider;
         private final OnReview onReview;
+        private final OnNote onNote;
 
-        Adapter(List<Row> items, OnCancel onCancel, NameProvider nameProvider, PriceProvider priceProvider, OnReview onReview) {
+        Adapter(List<Row> items, OnCancel onCancel, NameProvider nameProvider,
+                PriceProvider priceProvider, OnReview onReview, OnNote onNote) {
             this.items = items;
             this.onCancel = onCancel;
             this.nameProvider = nameProvider;
             this.priceProvider = priceProvider;
             this.onReview = onReview;
+            this.onNote = onNote;
         }
 
         static class VH extends RecyclerView.ViewHolder {
-            TextView tv1, tv2; Button btnCancel,btnReview;
+            TextView tv1, tv2;
+            Button btnCancel, btnReview;
+            ImageView ivNote; // opsiyonel (layout'a eklersen görünür olur)
+
             VH(View v){
                 super(v);
                 tv1 = v.findViewById(R.id.tvLine1);
                 tv2 = v.findViewById(R.id.tvLine2);
                 btnCancel = v.findViewById(R.id.btnCancel);
                 btnReview = v.findViewById(R.id.btnReview);
+                ivNote = v.findViewById(R.id.ivNote); // item_student_booking'e eklersen bağlanır
             }
-
         }
-
 
         @NonNull @Override public VH onCreateViewHolder(@NonNull ViewGroup p, int vt) {
             View v = LayoutInflater.from(p.getContext()).inflate(R.layout.item_student_booking, p, false);
@@ -270,7 +412,7 @@ public class HistoryFragment extends Fragment {
             String priceStr = (price != null) ? String.format(Locale.getDefault(),"₺%.0f", price) : "";
             String dt = String.format(Locale.getDefault(), "%s %02d:00", r.date, r.hour);
 
-            // --- Status'u TR + renk ---
+            // Status metin/renk
             StatusUi ui = statusUi(h.itemView, r.status);
             String line = String.format(Locale.getDefault(), "%s  %s  • Durum= %s", dt, priceStr, ui.label);
 
@@ -286,20 +428,31 @@ public class HistoryFragment extends Fragment {
 
             boolean canReview = r.endAt != null
                     && new java.util.Date().after(r.endAt)
-                    && ("accepted".equals(r.status) || "completed".equals(r.status))
-                    && !r.hasReview; // Firestore'dan teacherReviews/{bookingId} yoksa false
-
+                    && ("accepted".equalsIgnoreCase(r.status) || "completed".equalsIgnoreCase(r.status))
+                    && !r.hasReview;
 
             boolean cancellable = "pending".equalsIgnoreCase(r.status);
             h.btnCancel.setVisibility(cancellable ? View.VISIBLE : View.GONE);
             h.btnCancel.setOnClickListener(v -> onCancel.run(r));
 
-            // >>> EKLE: Yorum Yaz butonu bağlama
             h.btnReview.setVisibility(canReview ? View.VISIBLE : View.GONE);
             h.btnReview.setOnClickListener(v -> {
                 h.btnReview.setEnabled(false); // çift tık önle
-                onReview.run(r);               // dışarıdaki callback'in
+                onReview.run(r);
+                h.btnReview.setEnabled(true);
             });
+
+            // Öğretmen notu: info ikonu ve satır tıklaması
+            boolean showNote = r.hasTeacherNote
+                    && r.endAt != null
+                    && new java.util.Date().after(r.endAt); // sadece geçmiş
+
+            if (h.ivNote != null) {
+                h.ivNote.setVisibility(showNote ? View.VISIBLE : View.GONE);
+                h.ivNote.setOnClickListener(v -> { if (showNote) onNote.run(r); });
+            }
+            // Tüm satır tıklaması da notu açsın (varsa)
+            h.itemView.setOnClickListener(v -> { if (showNote) onNote.run(r); });
         }
 
         private static class StatusUi {
@@ -312,25 +465,22 @@ public class HistoryFragment extends Fragment {
             android.content.Context c = v.getContext();
             if (s.equals("accepted")) {
                 return new StatusUi("Onaylandı",
-                        androidx.core.content.ContextCompat.getColor(c, R.color.status_accepted));
+                        ContextCompat.getColor(c, R.color.status_accepted));
             } else if (s.equals("declined")) {
                 return new StatusUi("Reddedildi",
-                        androidx.core.content.ContextCompat.getColor(c, R.color.status_declined));
-            } else if (s.equals("cancelled") || s.equals("canceled")) { // iki yazıma da dayanıklı
+                        ContextCompat.getColor(c, R.color.status_declined));
+            } else if (s.equals("cancelled") || s.equals("canceled")) {
                 return new StatusUi("İptal edildi",
-                        androidx.core.content.ContextCompat.getColor(c, R.color.status_cancelled));
-            } else { // pending (default)
+                        ContextCompat.getColor(c, R.color.status_cancelled));
+            } else if (s.equals("completed")) {
+                return new StatusUi("Tamamlandı",
+                        ContextCompat.getColor(c, R.color.status_completed));
+            } else {
                 return new StatusUi("Beklemede",
-                        androidx.core.content.ContextCompat.getColor(c, R.color.status_pending));
+                        ContextCompat.getColor(c, R.color.status_pending));
             }
         }
 
-
         @Override public int getItemCount(){ return items.size(); }
-    }
-    private void onReviewClicked(Row r) {
-        Toast.makeText(requireContext(),
-                "Yorum yaz: " + teacherNameOf(r.teacherId), Toast.LENGTH_SHORT).show();
-        // TODO: Review dialog/ekranını aç ve teacherReviews/{bookingId} yaz.
     }
 }

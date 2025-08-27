@@ -11,6 +11,7 @@
         android:textSize="20sp"
         android:paddingBottom="8dp"/>
 
+
     <ProgressBar
         android:id="@+id/progress"
         style="?android:attr/progressBarStyle"
