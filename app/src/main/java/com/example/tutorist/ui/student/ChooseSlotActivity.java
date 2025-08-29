@@ -36,6 +36,7 @@ public class ChooseSlotActivity extends AppCompatActivity {
     private String selDateIso = ""; // yyyy-MM-dd
     private Integer selHour = null;
 
+
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
         setContentView(R.layout.activity_choose_slot);

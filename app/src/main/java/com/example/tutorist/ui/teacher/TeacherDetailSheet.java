@@ -30,10 +30,17 @@ import java.util.Locale;
 
 public class TeacherDetailSheet extends com.google.android.material.bottomsheet.BottomSheetDialogFragment {
 
-    public static TeacherDetailSheet newInstance(String teacherId) {
-        Bundle b = new Bundle(); b.putString("tid", teacherId);
+
+    public static TeacherDetailSheet newInstance(String teacherId,
+                                                 @Nullable String subjectId,
+                                                 @Nullable String subjectName) {
+        Bundle b = new Bundle();
+        b.putString("tid", teacherId);
+        b.putString("sid", subjectId);
+        b.putString("sname", subjectName);
         TeacherDetailSheet f = new TeacherDetailSheet();
-        f.setArguments(b); return f;
+        f.setArguments(b);
+        return f;
     }
 
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -46,6 +53,9 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
     private ReviewAdapter reviewAdapter;
 
     private String teacherId;
+    private String subjectId;
+    private String subjectName;
+
 
     @Nullable
     @Override
@@ -61,16 +71,24 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
         reviewAdapter = new ReviewAdapter(new ArrayList<>());
         rv.setAdapter(reviewAdapter);
 
+        Bundle args = getArguments();
+        teacherId   = args != null ? args.getString("tid")   : null;
+        subjectId   = args != null ? args.getString("sid")   : null;
+        subjectName = args != null ? args.getString("sname") : null;
+
+
         v.findViewById(R.id.btnBook).setOnClickListener(btn -> {
-            // tarih-saat seçim ekranına geç
             Context ctx = getContext();
             if (ctx != null) {
                 Intent it = new Intent(ctx, ChooseSlotActivity.class);
                 it.putExtra("teacherId", teacherId);
+                if (subjectId != null)   it.putExtra("subjectId", subjectId);
+                if (subjectName != null) it.putExtra("subjectName", subjectName);
                 startActivity(it);
             }
             dismissAllowingStateLoss();
         });
+
 
         teacherId = getArguments() != null ? getArguments().getString("tid") : null;
         startListening();

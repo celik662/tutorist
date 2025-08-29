@@ -51,10 +51,10 @@ public class TeacherListActivity extends AppCompatActivity {
 
         rv.setLayoutManager(new LinearLayoutManager(this));
         adapter = new TeacherAdapter(teacherId -> {
-            // Öğretmen detayını bottom sheet’te aç
-            TeacherDetailSheet.newInstance(teacherId)
+            TeacherDetailSheet.newInstance(teacherId, subjectId, subjectName)
                     .show(getSupportFragmentManager(), "teacherDetail");
         });
+
         rv.setAdapter(adapter);
 
         loadTeachers();
