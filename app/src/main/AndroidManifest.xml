@@ -31,6 +31,11 @@
         <activity android:name=".ui.teacher.TeacherRequestsActivity" />
         <activity android:name=".ui.teacher.TeacherPastActivity" />
 
+        <activity
+            android:name=".ui.student.ChooseSlotActivity"
+            android:exported="false" />
+
+
         <service
             android:name=".push.AppMessagingService"
             android:exported="false">

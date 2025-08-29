@@ -75,7 +75,12 @@ public class TeacherProfileRepo {
         b.update(r, "updatedAt", FieldValue.serverTimestamp());
         return b.commit();
     }
-
+    public Task<Void> updateBio(String uid, String bio){
+        Map<String,Object> m = new HashMap<>();
+        m.put("bio", bio);
+        m.put("updatedAt", FieldValue.serverTimestamp());
+        return db.collection("teacherProfiles").document(uid).set(m, SetOptions.merge());
+    }
     public Task<Void> updateDisplayName(String uid, String displayName) {
         Map<String, Object> data = new HashMap<>();
         data.put("displayName", displayName);

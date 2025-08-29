@@ -64,5 +64,7 @@ public class SubjectAdapter extends RecyclerView.Adapter<SubjectAdapter.VH> {
         h.itemView.setOnClickListener(v -> { if (listener!=null) listener.onClick(s); });
     }
 
+
+
     @Override public int getItemCount() { return items.size(); }
 }

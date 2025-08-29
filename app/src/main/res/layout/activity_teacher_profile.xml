@@ -1,21 +1,89 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:padding="16dp"
-    android:layout_width="match_parent" android:layout_height="match_parent">
+<!-- res/layout/activity_teacher_profile.xml -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:fillViewport="true"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
-    <EditText android:id="@+id/etName" android:hint="Ad Soyad"
-        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
-    <EditText android:id="@+id/etPhone" android:hint="Telefon"
-        android:inputType="phone"
-        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <!-- Ad Soyad -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Ad Soyad">
 
-    <Button android:id="@+id/btnSave" android:text="Kaydet"
-        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPersonName" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-    <Button android:id="@+id/btnLogout" android:text="Çıkış Yap"
-        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <!-- Telefon -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_marginTop="12dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Telefon">
 
-    <TextView android:id="@+id/tvMsg"
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:paddingTop="8dp"/>
-</LinearLayout>
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etPhone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="phone" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Biyografi -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilBio"
+            android:layout_marginTop="12dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Biyografinizi buraya yazabilirsiniz."
+            app:counterEnabled="true"
+            app:counterMaxLength="500" >
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etBio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minLines="4"
+                android:maxLines="8"
+                android:gravity="top|start"
+                android:inputType="textMultiLine"
+                android:maxLength="500" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Kaydet -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSave"
+            android:layout_marginTop="20dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Kaydet" />
+
+        <!-- Durum mesajı -->
+        <TextView
+            android:id="@+id/tvMsg"
+            android:layout_marginTop="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Çıkış -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnLogout"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_marginTop="24dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Çıkış Yap"
+            android:textAllCaps="false"
+            android:textColor="#B00020" />
+        <!-- İstersen buradaki rengi tema'dan ?attr/colorError yapabilirsin -->
+    </LinearLayout>
+</ScrollView>

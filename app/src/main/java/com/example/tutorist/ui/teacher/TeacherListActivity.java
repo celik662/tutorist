@@ -1,8 +1,8 @@
 // app/src/main/java/com/example/tutorist/ui/teacher/TeacherListActivity.java
 package com.example.tutorist.ui.teacher;
 
-import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -13,18 +13,16 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.tutorist.R;
-import com.google.android.gms.tasks.Task;
-import com.google.android.gms.tasks.Tasks;
+import com.example.tutorist.ui.student.TeacherAdapter;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FieldPath;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.SetOptions;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class TeacherListActivity extends AppCompatActivity {
 
@@ -32,15 +30,9 @@ public class TeacherListActivity extends AppCompatActivity {
     private RecyclerView rv;
     private ProgressBar progress;
     private TextView tvTitle, tvEmpty, tvError;
-    private final FirebaseFirestore db = FirebaseFirestore.getInstance();
-    private Adapter adapter;
 
-    static class Row {
-        String teacherId;
-        String teacherName;
-        double price;
-        Row(String id, String name, double price){ this.teacherId=id; this.teacherName=name; this.price=price; }
-    }
+    private final FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private TeacherAdapter adapter; // <-- SADECE bu adapter'ı kullanıyoruz
 
     @Override protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,20 +41,19 @@ public class TeacherListActivity extends AppCompatActivity {
         subjectId   = getIntent().getStringExtra("subjectId");
         subjectName = getIntent().getStringExtra("subjectName");
 
-        tvTitle = findViewById(R.id.tvTitle);
-        tvEmpty = findViewById(R.id.tvEmpty);
-        tvError = findViewById(R.id.tvError);
-        rv      = findViewById(R.id.rvTeachers);
-        progress= findViewById(R.id.progress);
+        tvTitle  = findViewById(R.id.tvTitle);
+        tvEmpty  = findViewById(R.id.tvEmpty);
+        tvError  = findViewById(R.id.tvError);
+        rv       = findViewById(R.id.rvTeachers);
+        progress = findViewById(R.id.progress);
 
         tvTitle.setText(subjectName != null ? subjectName : "Öğretmenler");
+
         rv.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new Adapter(new ArrayList<>(), row -> {
-            Intent i = new Intent(this, TeacherDetailActivity.class);
-            i.putExtra("teacherId", row.teacherId);
-            i.putExtra("subjectId", subjectId);
-            i.putExtra("subjectName", subjectName);
-            startActivity(i);
+        adapter = new TeacherAdapter(teacherId -> {
+            // Öğretmen detayını bottom sheet’te aç
+            TeacherDetailSheet.newInstance(teacherId)
+                    .show(getSupportFragmentManager(), "teacherDetail");
         });
         rv.setAdapter(adapter);
 
@@ -71,49 +62,83 @@ public class TeacherListActivity extends AppCompatActivity {
 
     private void loadTeachers() {
         showLoading(true);
-        String nestedField = "subjectsMap." + subjectId;
 
-        // 1) Doğru şema: subjectsMap altında english alt alanı
+        // subjectsMap.{subjectId} > 0 olan öğretmenleri getir
+        String mapField = "subjectsMap." + subjectId;
+
         db.collection("teacherProfiles")
-                .whereGreaterThan(nestedField, 0)
+                .whereGreaterThan(mapField, 0)
                 .get()
-                .addOnSuccessListener(snap -> {
-                    if (snap.isEmpty()) {
-                        // 2) Fallback: alan adı "subjectsMap.english" (tek segment) olarak düz yazılmış
-                        db.collection("teacherProfiles")
-                                .whereGreaterThan(FieldPath.of(nestedField), 0) // DÜZ alan için
-                                .get()
-                                .addOnSuccessListener(this::processTeachers)
-                                .addOnFailureListener(e -> showError("Öğretmenler yüklenemedi: " + e.getMessage()));
-                        return;
-                    }
-                    processTeachers(snap);
-                })
+                .addOnSuccessListener(this::processTeachers)
                 .addOnFailureListener(e -> showError("Öğretmenler yüklenemedi: " + e.getMessage()));
     }
 
     private void processTeachers(QuerySnapshot snap) {
-        List<Row> rows = new ArrayList<>();
-        for (DocumentSnapshot d : snap) {
-            String nestedField = "subjectsMap." + subjectId;
-            Object v = d.get(nestedField);                          // doğru şema
-            if (!(v instanceof Number)) v = d.get(FieldPath.of(nestedField)); // düz alan fallback
-            if (!(v instanceof Number)) continue;
+        List<com.example.tutorist.ui.student.TeacherAdapter.TeacherRow> list = new ArrayList<>();
 
-            double price = ((Number) v).doubleValue();
-            String name = d.getString("displayName");
-            if (name == null || name.trim().isEmpty()) name = "Öğretmen";
-            rows.add(new Row(d.getId(), name, price));
+        for (DocumentSnapshot d : snap.getDocuments()) {
+            com.example.tutorist.ui.student.TeacherAdapter.TeacherRow row =
+                    new com.example.tutorist.ui.student.TeacherAdapter.TeacherRow();
+            row.id          = d.getId();
+            row.fullName    = d.getString("displayName"); // teacherProfiles içindeki alan
+            row.bio         = d.getString("bio");
+            row.ratingAvg   = d.getDouble("ratingAvg");   // yoksa null
+            row.ratingCount = d.getLong("ratingCount");   // yoksa null
+            list.add(row);
         }
-        Collections.sort(rows, Comparator.comparingDouble(r -> r.price));
-        adapter.replace(rows);
+
+        adapter.submit(list);
+
+        // Sunucu alanları boş ise, her bir öğretmen için yorumları okuyup ekranda güncelle
+        for (int i = 0; i < list.size(); i++) {
+            com.example.tutorist.ui.student.TeacherAdapter.TeacherRow row = list.get(i);
+            if (row.ratingCount == null || row.ratingCount == 0L) {
+                fetchRatingFallback(row, i); // ekranı günceller
+            }
+        }
+
         showLoading(false);
-        tvEmpty.setVisibility(rows.isEmpty() ? View.VISIBLE : View.GONE);
+        tvEmpty.setVisibility(list.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
+    /** Profil alanları boşsa: review'lardan ortalama/sayıyı hesapla ve kartı güncelle. */
+    private void fetchRatingFallback(
+            com.example.tutorist.ui.student.TeacherAdapter.TeacherRow row,
+            int position) {
 
+        db.collection("teacherReviews")
+                .whereEqualTo("teacherId", row.id)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    long cnt = 0;
+                    double sum = 0;
 
+                    for (DocumentSnapshot d : snap.getDocuments()) {
+                        Number n = (Number) d.get("rating"); // select yok; direkt alanı çekiyoruz
+                        if (n != null) {
+                            sum += n.doubleValue();
+                            cnt++;
+                        }
+                    }
 
+                    row.ratingCount = cnt;
+                    row.ratingAvg   = cnt > 0 ? (sum / cnt) : 0.0;
+
+                    // Kartı güncelle
+                    adapter.notifyItemChanged(position);
+
+                    // (opsiyonel) Profili de doldur ki bir dahaki listede direkt gelsin
+                    HashMap<String, Object> up = new HashMap<>();
+                    up.put("ratingAvg", row.ratingAvg);
+                    up.put("ratingCount", row.ratingCount);
+                    up.put("updatedAt", FieldValue.serverTimestamp());
+
+                    db.collection("teacherProfiles").document(row.id)
+                            .set(up, SetOptions.merge());
+                })
+                .addOnFailureListener(e ->
+                        Log.e("TeacherListActivity", "fallback rating failed", e));
+    }
 
 
     private void showLoading(boolean loading){
@@ -127,36 +152,5 @@ public class TeacherListActivity extends AppCompatActivity {
         showLoading(false);
         tvError.setText("Yüklenemedi: " + msg);
         tvError.setVisibility(View.VISIBLE);
-    }
-
-    // --- Adapter ---
-    static class Adapter extends RecyclerView.Adapter<Adapter.VH> {
-        interface OnRowClick { void onClick(Row r); }
-        private final List<Row> items;
-        private final OnRowClick onRowClick;
-        Adapter(List<Row> items, OnRowClick onRowClick){ this.items=items; this.onRowClick=onRowClick; }
-
-        static class VH extends RecyclerView.ViewHolder {
-            TextView tvName, tvPrice, tvRating;
-            VH(View v){ super(v);
-                tvName=v.findViewById(R.id.tvName);
-                tvPrice=v.findViewById(R.id.tvPrice);
-                tvRating=v.findViewById(R.id.tvRating);
-            }
-        }
-
-        @Override public VH onCreateViewHolder(android.view.ViewGroup p, int vt) {
-            View v = android.view.LayoutInflater.from(p.getContext()).inflate(R.layout.item_teacher_row, p, false);
-            return new VH(v);
-        }
-        @Override public void onBindViewHolder(VH h, int pos) {
-            Row r = items.get(pos);
-            h.tvName.setText(r.teacherName);
-            h.tvPrice.setText(String.format("₺%.0f", r.price));
-            h.tvRating.setText("★ 5.0"); // placeholder
-            h.itemView.setOnClickListener(v -> onRowClick.onClick(r));
-        }
-        @Override public int getItemCount(){ return items.size(); }
-        public void replace(List<Row> rows){ items.clear(); items.addAll(rows); notifyDataSetChanged(); }
     }
 }
