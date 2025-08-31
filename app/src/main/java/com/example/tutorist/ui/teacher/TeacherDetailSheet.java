@@ -31,9 +31,7 @@ import java.util.Locale;
 public class TeacherDetailSheet extends com.google.android.material.bottomsheet.BottomSheetDialogFragment {
 
 
-    public static TeacherDetailSheet newInstance(String teacherId,
-                                                 @Nullable String subjectId,
-                                                 @Nullable String subjectName) {
+    public static TeacherDetailSheet newInstance(String teacherId, String subjectId, String subjectName) {
         Bundle b = new Bundle();
         b.putString("tid", teacherId);
         b.putString("sid", subjectId);
@@ -42,6 +40,7 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
         f.setArguments(b);
         return f;
     }
+
 
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private ListenerRegistration profReg, revReg;
@@ -55,6 +54,8 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
     private String teacherId;
     private String subjectId;
     private String subjectName;
+    private String dateIso;   // yyyy-MM-dd biçiminde tutulacak
+    private int selHour = -1; // seçili saat (yoksa -1)
 
 
     @Nullable

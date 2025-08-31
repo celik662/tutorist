@@ -1,7 +1,6 @@
 package com.example.tutorist.ui.auth;
 
-import static android.content.Intent.getIntent;
-
+import android.widget.Toast;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -22,6 +21,8 @@ public class LoginActivity extends AppCompatActivity {
     private EditText etEmail, etPass;
     private TextView tvMsg, tvBanner;
     private Button btnForgot, btnResendVerify;
+
+    private Button btnLogin;
     private FirebaseAuth auth;
 
     @Override
@@ -35,6 +36,7 @@ public class LoginActivity extends AppCompatActivity {
         tvMsg   = findViewById(R.id.tvMsg);
         tvBanner= findViewById(R.id.tvBanner);
         btnForgot = findViewById(R.id.btnForgot);
+        btnLogin = findViewById(R.id.btnLogin);
         btnResendVerify = findViewById(R.id.btnResendVerify);
 
         // Kayıt veya splash'tan gelen bilgilendirme/basılı e-posta
@@ -51,7 +53,7 @@ public class LoginActivity extends AppCompatActivity {
         String banner = i.getStringExtra("banner");
         if (banner != null && !banner.isEmpty()) tvBanner.setText(banner);
 
-        findViewById(R.id.btnLogin).setOnClickListener(v -> doLogin());
+        btnLogin.setOnClickListener(v -> doLogin());
         btnForgot.setOnClickListener(v -> {
             String email = etEmail.getText().toString().trim();
             startActivity(new Intent(this, ForgotPasswordActivity.class).putExtra("email", email));
@@ -66,40 +68,92 @@ public class LoginActivity extends AppCompatActivity {
                 });
     }
 
+
     private void doLogin() {
         String email = etEmail.getText().toString().trim();
         String pass  = etPass.getText().toString();
+
         if (email.isEmpty() || pass.isEmpty()) {
             tvMsg.setText("E-posta ve şifre girin.");
             return;
         }
 
+        // (İsteğe bağlı) Ağ kontrolü
+        if (!com.example.tutorist.util.NetworkUtil.isOnline(this)) {
+            tvMsg.setText("İnternet bağlantısı yok. Lütfen ağınızı kontrol edin.");
+            return;
+        }
+
+        tvMsg.setText("Giriş yapılıyor…");
+        tvBanner.setText("");
+        btnResendVerify.setVisibility(View.GONE);
+        btnLogin.setEnabled(false);
+
         auth.signInWithEmailAndPassword(email, pass)
-                .addOnSuccessListener(res -> {
-                    FirebaseUser user = res.getUser();
-                    if (user == null) { tvMsg.setText("Kullanıcı bulunamadı."); return; }
+                .addOnSuccessListener(result -> {
+                    FirebaseUser user = auth.getCurrentUser();
+                    if (user == null) {
+                        tvMsg.setText("Kullanıcı bulunamadı.");
+                        btnLogin.setEnabled(true);
+                        return;
+                    }
 
-                    user.reload().addOnSuccessListener(r -> {
-                        if (!user.isEmailVerified()) {
-                            tvBanner.setText("E-postanız doğrulanmamış. Lütfen posta kutunuzu kontrol edin.");
-                            btnResendVerify.setVisibility(View.VISIBLE);
-                            FirebaseAuth.getInstance().signOut();
-                            return;
-                        }
+                    // E-posta doğrulama durumunu güncel görmek için
+                    user.reload()
+                            .addOnSuccessListener(v -> {
+                                if (!user.isEmailVerified()) {
+                                    tvMsg.setText("");
+                                    tvBanner.setText("E-postanız doğrulanmamış. Lütfen posta kutunuzu kontrol edin.");
+                                    btnResendVerify.setVisibility(View.VISIBLE);
+                                    btnResendVerify.setOnClickListener(xx ->
+                                            user.sendEmailVerification()
+                                                    .addOnSuccessListener(x -> Toast.makeText(this, "Doğrulama e-postası gönderildi.", Toast.LENGTH_SHORT).show())
+                                                    .addOnFailureListener(e -> Toast.makeText(this, "E-posta gönderilemedi: " + e.getMessage(), Toast.LENGTH_LONG).show())
+                                    );
+                                    auth.signOut();
+                                    btnLogin.setEnabled(true);
+                                    return;
+                                }
 
-                        // E-posta doğrulandı → rolü oku ve yönlendir
-                        FirebaseFirestore.getInstance()
-                                .collection("users").document(user.getUid())
-                                .get()
-                                .addOnSuccessListener(this::routeByRoleDoc)
-                                .addOnFailureListener(e -> {
-                                    tvBanner.setText("Rol bilgisi okunamadı: " + e.getMessage());
-                                    FirebaseAuth.getInstance().signOut();
-                                });
-                    });
+                                // E-posta doğrulandı → rol dokümanını oku ve yönlendir
+                                FirebaseFirestore.getInstance()
+                                        .collection("users").document(user.getUid())
+                                        .get()
+                                        .addOnSuccessListener(this::routeByRoleDoc) // mevcut metodunu kullanıyorsun
+                                        .addOnFailureListener(e -> {
+                                            tvBanner.setText("Rol bilgisi okunamadı: " + e.getMessage());
+                                            auth.signOut();
+                                            btnLogin.setEnabled(true);
+                                        });
+                            })
+                            .addOnFailureListener(e -> {
+                                tvMsg.setText("Hesap bilgisi yenilenemedi: " + e.getMessage());
+                                auth.signOut();
+                                btnLogin.setEnabled(true);
+                            });
                 })
-                .addOnFailureListener(e -> tvMsg.setText("Giriş başarısız! "));
+                .addOnFailureListener(e -> {
+                    tvMsg.setText(mapAuthError(e));
+                    btnLogin.setEnabled(true);
+                });
     }
+
+    private String mapAuthError(Exception e) {
+        if (e instanceof com.google.firebase.FirebaseNetworkException) {
+            return "Ağ hatası: İnternet bağlantınızı kontrol edin.";
+        }
+        if (e instanceof com.google.firebase.auth.FirebaseAuthInvalidCredentialsException) {
+            return "E-posta veya şifre hatalı.";
+        }
+        if (e instanceof com.google.firebase.auth.FirebaseAuthInvalidUserException) {
+            return "Böyle bir kullanıcı bulunamadı.";
+        }
+        if (e instanceof com.google.firebase.FirebaseTooManyRequestsException) {
+            return "Çok fazla deneme yapıldı. Lütfen biraz sonra tekrar deneyin.";
+        }
+        return "Giriş başarısız: " + e.getMessage();
+    }
+
 
     private void routeByRoleDoc(DocumentSnapshot doc) {
         String role = (doc.exists() && doc.getString("role") != null) ? doc.getString("role") : "";

@@ -12,11 +12,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.tutorist.R;
+import com.example.tutorist.payment.PaymentActivity;
 import com.example.tutorist.repo.BookingRepo;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.*;
+import com.google.firebase.functions.FirebaseFunctions;
+
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -33,8 +36,8 @@ public class ChooseSlotActivity extends AppCompatActivity {
     private final BookingRepo bookingRepo = new BookingRepo();
 
     private final Calendar cal = Calendar.getInstance();
-    private String selDateIso = ""; // yyyy-MM-dd
-    private Integer selHour = null;
+    private String selDateIso; // yyyy-MM-dd
+    private Integer selHour = -1;
 
 
     @Override protected void onCreate(Bundle b) {
@@ -224,5 +227,39 @@ public class ChooseSlotActivity extends AppCompatActivity {
 
         @Override public int getItemCount(){ return items.size(); }
     }
+
+
+    private void startPayment() {
+        // null kontrollerini düzelt
+        if (teacherId == null || subjectId == null || subjectName == null || selDateIso == null || selHour == null) {
+            Toast.makeText(this, "Eksik bilgi.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("teacherId", teacherId);
+        data.put("subjectId", subjectId);
+        data.put("subjectName", subjectName);
+        data.put("dateIso", selDateIso);   // <-- burası dateIso değil SEL_DATEISO olmalı
+        data.put("hour", selHour);
+
+        FirebaseFunctions.getInstance()
+                .getHttpsCallable("iyziInitCheckout")
+                .call(data)
+                .addOnSuccessListener(r -> {
+                    Map result = (Map) r.getData();
+                    String piId = (String) result.get("piId");
+                    String html = (String) result.get("checkoutFormContent");
+                    if (piId == null || html == null) {
+                        Toast.makeText(this, "Ödeme başlatılamadı.", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    PaymentActivity.start(this, piId, html);
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show());
+    }
+
+
 
 }

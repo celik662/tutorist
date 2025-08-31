@@ -181,5 +181,473 @@ exports.onTeacherReviewCreate = functions.firestore
   });
 
 
+// functions/index.js
+const functions = require("firebase-functions");
+const admin = require("firebase-admin");
+const Iyzipay = require("iyzipay");
+admin.initializeApp();
 
+const db = admin.firestore();
+
+// ---- IYZICO client (sandbox) ----
+const IYZI_API_KEY = process.env.IYZI_API_KEY || (functions.config().iyzi && functions.config().iyzi.apikey);
+const IYZI_SECRET  = process.env.IYZI_SECRET  || (functions.config().iyzi && functions.config().iyzi.secret);
+const IYZI_BASE    = process.env.IYZI_BASE    || (functions.config().iyzi && functions.config().iyzi.base) || "https://sandbox-api.iyzipay.com";
+
+const iyzipay = new Iyzipay({
+  apiKey: IYZI_API_KEY,
+  secretKey: IYZI_SECRET,
+  uri: IYZI_BASE,
+});
+
+// basit yardımcılar
+function slotId(teacherId, dateIso, hour) {
+  return `${teacherId}_${dateIso}_${hour}`;
+}
+function toTwo(n) { return (n < 10 ? "0" : "") + n; }
+
+// ------------------ 1) Checkout başlat ------------------
+exports.iyziInitCheckout = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "Giriş gerekli.");
+
+  const studentId  = context.auth.uid;
+  const {
+    teacherId, subjectId, subjectName, dateIso, hour
+  } = data || {};
+
+  if (!teacherId || !subjectId || !subjectName || !dateIso || typeof hour !== "number") {
+    throw new functions.https.HttpsError("invalid-argument", "Eksik parametre.");
+  }
+
+  // 0) slot hold ve fiyatı çek
+  const profRef = db.collection("teacherProfiles").doc(teacherId);
+  const userRef = db.collection("users").doc(studentId);
+
+  // atomik: fiyatı çek + slot hold
+  const { price, piId } = await db.runTransaction(async (tr) => {
+    const profSnap = await tr.get(profRef);
+    if (!profSnap.exists) throw new functions.https.HttpsError("not-found", "Öğretmen bulunamadı.");
+
+    const subjectsMap = profSnap.get("subjectsMap") || {};
+    const price = Number(subjectsMap[subjectId]);
+    if (!price || isNaN(price)) {
+      throw new functions.https.HttpsError("failed-precondition", "Bu ders için fiyat bulunamadı.");
+    }
+
+    const lockRef = db.collection("slotLocks").doc(slotId(teacherId, dateIso, hour));
+    const lockSnap = await tr.get(lockRef);
+    if (lockSnap.exists) {
+      const status = lockSnap.get("status");
+      if (status && status !== "cancelled") {
+        throw new functions.https.HttpsError("already-exists", "Bu saat dolu.");
+      }
+    }
+
+    // 15 dk hold
+    const holdMs = 15 * 60 * 1000;
+    tr.set(lockRef, {
+      teacherId, studentId, date: dateIso, hour,
+      status: "hold",
+      holdUntil: admin.firestore.Timestamp.fromMillis(Date.now() + holdMs),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // paymentIntent
+    const piRef = db.collection("paymentIntents").doc();
+    tr.set(piRef, {
+      status: "pending",
+      teacherId, studentId, subjectId, subjectName, dateIso, hour,
+      price,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return { price, piId: piRef.id };
   });
+
+  // 1) Buyer bilgisi (temel)
+  const userSnap = await userRef.get();
+  const fullName = (userSnap.exists && userSnap.get("fullName")) || "Öğrenci";
+  const phone    = (userSnap.exists && userSnap.get("phone")) || "0000000000";
+  const email    = (userSnap.exists && userSnap.get("email")) || "student@example.com";
+
+  // 2) Iyzico request
+  const request = {
+    locale: Iyzipay.LOCALE.TR,
+    price: price.toFixed(2),
+    paidPrice: price.toFixed(2),
+    currency: Iyzipay.CURRENCY.TRY,
+    basketId: piId, // callback'te bunu geri alırız
+    paymentGroup: Iyzipay.PAYMENT_GROUP.LISTING,
+    // Cloud Functions URL (aşağıdaki fonksiyon):
+    callbackUrl: `https://YOUR_REGION-${process.env.GCLOUD_PROJECT}.cloudfunctions.net/iyziCallback`,
+
+    buyer: {
+      id: studentId,
+      name: fullName.split(" ")[0] || "Ad",
+      surname: fullName.split(" ").slice(1).join(" ") || "Soyad",
+      gsmNumber: phone,
+      email,
+      identityNumber: "11111111110",   // sandbox için dummy
+      registrationAddress: "Adres",
+      ip: "85.34.78.112",
+      city: "Istanbul",
+      country: "Turkey",
+    },
+    shippingAddress: {
+      contactName: fullName,
+      city: "Istanbul",
+      country: "Turkey",
+      address: "Adres",
+    },
+    billingAddress: {
+      contactName: fullName,
+      city: "Istanbul",
+      country: "Turkey",
+      address: "Adres",
+    },
+    basketItems: [
+      {
+        id: subjectId,
+        name: `${subjectName} (${dateIso} ${toTwo(hour)}:00)`,
+        category1: "Özel Ders",
+        itemType: Iyzipay.BASKET_ITEM_TYPE.VIRTUAL,
+        price: price.toFixed(2),
+      },
+    ],
+  };
+
+  // 3) checkout formu başlat
+  const initResp = await new Promise((resolve, reject) => {
+    iyzipay.checkoutFormInitialize.create(request, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
+
+  if (!initResp || !initResp.token) {
+    throw new functions.https.HttpsError("internal", "Ödeme başlatılamadı.");
+  }
+
+  // 4) token'ı paymentIntent'a yaz
+  await db.collection("paymentIntents").doc(piId).update({
+    iyziToken: initResp.token,
+    iyziRaw: initResp,
+  });
+
+  // Client’a HTML (checkoutFormContent) ve paymentIntent id dön
+  return {
+    piId,
+    token: initResp.token,
+    checkoutFormContent: initResp.checkoutFormContent, // WebView'de gösterilecek HTML
+  };
+});
+
+// ------------------ 2) Iyzi callback (server-side) ------------------
+exports.iyziCallback = functions.https.onRequest(async (req, res) => {
+  try {
+    const token = req.body && (req.body.token || req.query.token);
+    if (!token) return res.status(400).send("missing token");
+
+    const retrieve = await new Promise((resolve, reject) => {
+      iyzipay.checkoutForm.retrieve({ locale: Iyzipay.LOCALE.TR, token }, (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      });
+    });
+
+    // basketId'yi alıp paymentIntent'ı bul
+    const basketId = retrieve && retrieve.basketId;
+    if (!basketId) return res.status(400).send("missing basketId");
+
+    const piRef = db.collection("paymentIntents").doc(basketId);
+    const piSnap = await piRef.get();
+    if (!piSnap.exists) return res.status(404).send("pi not found");
+
+    const pi = piSnap.data();
+    const lockRef = db.collection("slotLocks").doc(slotId(pi.teacherId, pi.dateIso, pi.hour));
+
+    if (retrieve.paymentStatus === "SUCCESS") {
+      // Booking + lock yaz
+      const bId = slotId(pi.teacherId, pi.dateIso, pi.hour);
+      const bRef = db.collection("bookings").doc(bId);
+
+      const startAt = new Date(`${pi.dateIso}T${toTwo(pi.hour)}:00:00`);
+      const endAt   = new Date(startAt.getTime() + 60 * 60 * 1000);
+
+      await db.runTransaction(async (tr) => {
+        // lock hala hold mu?
+        const lockSnap = await tr.get(lockRef);
+        if (!lockSnap.exists || lockSnap.get("status") !== "hold") {
+          throw new Error("slot not held anymore");
+        }
+
+        tr.set(bRef, {
+          teacherId: pi.teacherId,
+          studentId: pi.studentId,
+          subjectId: pi.subjectId,
+          subjectName: pi.subjectName,
+          date: pi.dateIso,
+          hour: pi.hour,
+          status: "pending", // isterseniz 'accepted' yapabilirsiniz
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          startAt,
+          endAt,
+          payment: {
+            piId: piRef.id,
+            amount: pi.price,
+            currency: "TRY",
+            provider: "iyzico",
+            status: "paid",
+            raw: retrieve,
+          },
+        });
+
+        tr.update(lockRef, {
+          status: "pending", // hold -> pending
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        tr.update(piRef, {
+          status: "succeeded",
+          iyziRetrieve: retrieve,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      });
+
+      // Bildirim tetikleyicileriniz (onBookingCreate vs) zaten çalışacak
+      return res.status(200).send("ok");
+    } else {
+      // failed
+      await db.runTransaction(async (tr) => {
+        tr.update(piRef, {
+          status: "failed",
+          iyziRetrieve: retrieve,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        tr.update(lockRef, {
+          status: "cancelled",
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      });
+      return res.status(200).send("failed");
+    }
+  } catch (e) {
+    console.error(e);
+    return res.status(500).send("error");
+  }
+});
+
+// functions/index.js (MEVCUT dosyanıza ek)
+const Iyzipay = require("iyzipay");
+const db = admin.firestore();
+
+const IYZI_API_KEY = process.env.IYZI_API_KEY || (functions.config().iyzi && functions.config().iyzi.apikey);
+const IYZI_SECRET  = process.env.IYZI_SECRET  || (functions.config().iyzi && functions.config().iyzi.secret);
+const IYZI_BASE    = process.env.IYZI_BASE    || (functions.config().iyzi && functions.config().iyzi.base) || "https://sandbox-api.iyzipay.com";
+
+const iyzipay = new Iyzipay({
+  apiKey: IYZI_API_KEY,
+  secretKey: IYZI_SECRET,
+  uri: IYZI_BASE,
+});
+
+function slotId(teacherId, dateIso, hour) {
+  return `${teacherId}_${dateIso}_${hour}`;
+}
+function toTwo(n){ return (n<10 ? "0":"") + n; }
+
+// ---------- 1) Checkout başlat (Callable) ----------
+exports.iyziInitCheckout = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "Giriş gerekli.");
+
+  const studentId  = context.auth.uid;
+  const { teacherId, subjectId, subjectName, dateIso, hour } = data || {};
+  if (!teacherId || !subjectId || !subjectName || !dateIso || typeof hour !== "number") {
+    throw new functions.https.HttpsError("invalid-argument", "Eksik parametre.");
+  }
+
+  // Fiyat + slot hold + paymentIntent oluştur (transaction)
+  const profRef = db.collection("teacherProfiles").doc(teacherId);
+  const userRef = db.collection("users").doc(studentId);
+
+  const { price, piId } = await db.runTransaction(async (tr) => {
+    const profSnap = await tr.get(profRef);
+    if (!profSnap.exists) throw new functions.https.HttpsError("not-found", "Öğretmen bulunamadı.");
+
+    const subjectsMap = profSnap.get("subjectsMap") || {};
+    const price = Number(subjectsMap[subjectId]);
+    if (!price || isNaN(price)) {
+      throw new functions.https.HttpsError("failed-precondition", "Bu ders için fiyat bulunamadı.");
+    }
+
+    const lockRef = db.collection("slotLocks").doc(slotId(teacherId, dateIso, hour));
+    const lockSnap = await tr.get(lockRef);
+    if (lockSnap.exists) {
+      const status = lockSnap.get("status");
+      if (status && status !== "cancelled") {
+        throw new functions.https.HttpsError("already-exists", "Bu saat dolu.");
+      }
+    }
+
+    // 15 dk hold
+    const holdMs = 15 * 60 * 1000;
+    tr.set(lockRef, {
+      teacherId, studentId, date: dateIso, hour,
+      status: "hold",
+      holdUntil: admin.firestore.Timestamp.fromMillis(Date.now() + holdMs),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    const piRef = db.collection("paymentIntents").doc();
+    tr.set(piRef, {
+      status: "pending",
+      teacherId, studentId, subjectId, subjectName, dateIso, hour,
+      price,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return { price, piId: piRef.id };
+  });
+
+  const userSnap = await userRef.get();
+  const fullName = (userSnap.exists && userSnap.get("fullName")) || "Öğrenci";
+  const phone    = (userSnap.exists && userSnap.get("phone")) || "0000000000";
+  const email    = (userSnap.exists && userSnap.get("email")) || "student@example.com";
+
+  const request = {
+    locale: Iyzipay.LOCALE.TR,
+    price: price.toFixed(2),
+    paidPrice: price.toFixed(2),
+    currency: Iyzipay.CURRENCY.TRY,
+    basketId: piId,
+    paymentGroup: Iyzipay.PAYMENT_GROUP.LISTING,
+    // >>> Deploy sonrası URL’niz: https://us-central1-<projectId>.cloudfunctions.net/iyziCallback
+    callbackUrl: `https://us-central1-${process.env.GCLOUD_PROJECT}.cloudfunctions.net/iyziCallback`,
+    buyer: {
+      id: studentId,
+      name: fullName.split(" ")[0] || "Ad",
+      surname: fullName.split(" ").slice(1).join(" ") || "Soyad",
+      gsmNumber: phone,
+      email,
+      identityNumber: "11111111110",
+      registrationAddress: "Adres",
+      ip: "85.34.78.112",
+      city: "Istanbul",
+      country: "Turkey",
+    },
+    shippingAddress: {
+      contactName: fullName, city: "Istanbul", country: "Turkey", address: "Adres",
+    },
+    billingAddress: {
+      contactName: fullName, city: "Istanbul", country: "Turkey", address: "Adres",
+    },
+    basketItems: [
+      {
+        id: subjectId,
+        name: `${subjectName} (${dateIso} ${toTwo(hour)}:00)`,
+        category1: "Özel Ders",
+        itemType: Iyzipay.BASKET_ITEM_TYPE.VIRTUAL,
+        price: price.toFixed(2),
+      },
+    ],
+  };
+
+  const initResp = await new Promise((resolve, reject) => {
+    iyzipay.checkoutFormInitialize.create(request, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
+  if (!initResp || !initResp.token) {
+    throw new functions.https.HttpsError("internal", "Ödeme başlatılamadı.");
+  }
+
+  await db.collection("paymentIntents").doc(piId).update({
+    iyziToken: initResp.token,
+    iyziRaw: initResp,
+  });
+
+  return {
+    piId,
+    token: initResp.token,
+    checkoutFormContent: initResp.checkoutFormContent,
+  };
+});
+
+// ---------- 2) Iyzi callback (HTTP) ----------
+exports.iyziCallback = functions.https.onRequest(async (req, res) => {
+  try {
+    const token = (req.body && (req.body.token || req.body.Token)) || req.query.token;
+    if (!token) return res.status(400).send("missing token");
+
+    const retrieve = await new Promise((resolve, reject) => {
+      iyzipay.checkoutForm.retrieve({ locale: Iyzipay.LOCALE.TR, token }, (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      });
+    });
+
+    const basketId = retrieve && retrieve.basketId;
+    if (!basketId) return res.status(400).send("missing basketId");
+
+    const piRef = db.collection("paymentIntents").doc(basketId);
+    const piSnap = await piRef.get();
+    if (!piSnap.exists) return res.status(404).send("pi not found");
+    const pi = piSnap.data();
+
+    const lockRef = db.collection("slotLocks").doc(slotId(pi.teacherId, pi.dateIso, pi.hour));
+
+    if (retrieve.paymentStatus === "SUCCESS") {
+      const bId = slotId(pi.teacherId, pi.dateIso, pi.hour);
+      const bRef = db.collection("bookings").doc(bId);
+
+      const startAt = new Date(`${pi.dateIso}T${toTwo(pi.hour)}:00:00`);
+      const endAt   = new Date(startAt.getTime() + 60 * 60 * 1000);
+
+      await db.runTransaction(async (tr) => {
+        const lockSnap = await tr.get(lockRef);
+        if (!lockSnap.exists || lockSnap.get("status") !== "hold") {
+          throw new Error("slot not held anymore");
+        }
+
+        tr.set(bRef, {
+          teacherId: pi.teacherId,
+          studentId: pi.studentId,
+          subjectId: pi.subjectId,
+          subjectName: pi.subjectName,
+          date: pi.dateIso,
+          hour: pi.hour,
+          status: "pending", // istersen "accepted"
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          startAt,
+          endAt,
+          payment: {
+            piId: piRef.id,
+            amount: pi.price,
+            currency: "TRY",
+            provider: "iyzico",
+            status: "paid",
+            raw: retrieve,
+          },
+        });
+
+        tr.update(lockRef, { status: "pending", updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        tr.update(piRef,   { status: "succeeded", iyziRetrieve: retrieve, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+      });
+
+      return res.status(200).send("ok");
+    } else {
+      await db.runTransaction(async (tr) => {
+        tr.update(piRef, { status: "failed", iyziRetrieve: retrieve, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        tr.update(lockRef, { status: "cancelled", updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+      });
+      return res.status(200).send("failed");
+    }
+  } catch (e) {
+    console.error(e);
+    return res.status(500).send("error");
+  }
+});
+
