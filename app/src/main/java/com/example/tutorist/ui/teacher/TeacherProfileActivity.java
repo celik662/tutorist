@@ -1,8 +1,10 @@
 // app/src/main/java/com/example/tutorist/ui/teacher/TeacherProfileActivity.java
 package com.example.tutorist.ui.teacher;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.*;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -13,6 +15,7 @@ import com.example.tutorist.repo.UserRepo;
 import com.example.tutorist.ui.auth.LoginActivity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.functions.FirebaseFunctions;
 
 public class TeacherProfileActivity extends AppCompatActivity {
 
@@ -47,6 +50,7 @@ public class TeacherProfileActivity extends AppCompatActivity {
             String bio   = etBio.getText().toString().trim();
             tvMsg.setText("Kaydediliyor...");
 
+
             // 1) users -> ad & telefon
             userRepo.updateUserBasic(uid, name, phone)
                     .addOnSuccessListener(s -> {
@@ -60,6 +64,10 @@ public class TeacherProfileActivity extends AppCompatActivity {
                     .addOnFailureListener(e ->
                             tvMsg.setText("Kullanıcı güncellenemedi: " + e.getMessage()));
         });
+
+        @SuppressLint({"MissingInflatedId", "LocalSuppress"}) Button btnPayout = findViewById(R.id.btnPayout);
+        btnPayout.setOnClickListener(v ->
+                startActivity(new Intent(this, TeacherPayoutActivity.class)));
 
         btnLogout.setOnClickListener(v -> {
             new AlertDialog.Builder(this)

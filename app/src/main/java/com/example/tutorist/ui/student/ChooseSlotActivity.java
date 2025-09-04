@@ -230,17 +230,15 @@ public class ChooseSlotActivity extends AppCompatActivity {
 
 
     private void startPayment() {
-        // null kontrollerini düzelt
         if (teacherId == null || subjectId == null || subjectName == null || selDateIso == null || selHour == null) {
             Toast.makeText(this, "Eksik bilgi.", Toast.LENGTH_SHORT).show();
             return;
         }
-
         Map<String, Object> data = new HashMap<>();
         data.put("teacherId", teacherId);
         data.put("subjectId", subjectId);
         data.put("subjectName", subjectName);
-        data.put("dateIso", selDateIso);   // <-- burası dateIso değil SEL_DATEISO olmalı
+        data.put("dateIso", selDateIso);
         data.put("hour", selHour);
 
         FirebaseFunctions.getInstance()
@@ -254,7 +252,7 @@ public class ChooseSlotActivity extends AppCompatActivity {
                         Toast.makeText(this, "Ödeme başlatılamadı.", Toast.LENGTH_LONG).show();
                         return;
                     }
-                    PaymentActivity.start(this, piId, html);
+                    com.example.tutorist.payment.PaymentActivity.start(this, piId, html);
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show());

@@ -17,12 +17,24 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     buildTypes {
+        debug {
+            buildConfigField "String", "FUNCTIONS_HOST", "\"10.0.2.2\""   // emulator
+            buildConfigField "int",    "FUNCTIONS_PORT", "5001"
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            buildConfigField "String", "FUNCTIONS_HOST", "\"\""  // boş = prod'a git
+            buildConfigField "int",    "FUNCTIONS_PORT", "0"
         }
     }
+
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11

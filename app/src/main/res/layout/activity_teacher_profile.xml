@@ -67,6 +67,13 @@
             android:layout_height="wrap_content"
             android:text="Kaydet" />
 
+
+        <Button
+            android:id="@+id/btnPayout"
+            android:text="Ödeme Bilgilerim"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
         <!-- Durum mesajı -->
         <TextView
             android:id="@+id/tvMsg"

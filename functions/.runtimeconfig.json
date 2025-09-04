@@ -1,0 +1,8 @@
+{
+  "iyzico": {
+    "api_key": "XXX",
+    "secret_key": "YYY",
+    "base_url": "https://sandbox-api.iyzipay.com",
+    "callback_url": "http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCallback"
+  }
+}

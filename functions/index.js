@@ -1,653 +1,155 @@
 // functions/index.js
-const functions = require("firebase-functions");
+
 const admin = require("firebase-admin");
 admin.initializeApp();
 
-async function tokensOf(uid) {
-  const snap = await admin.firestore()
-      .collection("users").doc(uid)
-      .collection("devices").get();
-  const arr = [];
-  snap.forEach(d => {
-    const t = d.get("token");
-    if (t) arr.push(t);
-  });
-  return arr;
-}
-
-// 1) Yeni talep: öğretmene bildir
-exports.onBookingCreate = functions.firestore
-  .document("bookings/{bookingId}")
-  .onCreate(async (snap, ctx) => {
-    const b = snap.data();
-    const teacherId = b.teacherId;
-    const title = "Yeni rezervasyon talebi";
-    const body  = `${b.studentName || "Öğrenci"} - ${b.date} ${String(b.hour).padStart(2,"0")}:00`;
-
-    const tokens = await tokensOf(teacherId);
-    if (!tokens.length) return null;
-
-    const msg = {
-      tokens,
-      notification: { title, body },
-      data: {
-        kind: "bookingCreated",
-        bookingId: ctx.params.bookingId || "",
-      }
-    };
-    return admin.messaging().sendMulticast(msg);
-  });
-
-// 2) Statü değişti: öğrenciye bildir
-exports.onBookingStatusChange = functions.firestore
-  .document("bookings/{bookingId}")
-  .onUpdate(async (chg, ctx) => {
-    const before = chg.before.data();
-    const after  = chg.after.data();
-    if (!before || !after) return null;
-    if (before.status === after.status) return null;
-
-    const studentId = after.studentId;
-    let title = "Rezervasyon güncellendi";
-    let body  = `${after.date} ${String(after.hour).padStart(2,"0")}:00 → ${after.status}`;
-
-    if (after.status === "accepted") {
-      title = "Dersin kabul edildi 🎉";
-      body  = `${after.date} ${String(after.hour).padStart(2,"0")}:00 • ${after.subjectName || after.subjectId}`;
-    } else if (after.status === "declined") {
-      title = "Ders talebi reddedildi";
-    } else if (after.status === "cancelled") {
-      title = "Talep iptal edildi";
-    }
-
-    const tokens = await tokensOf(studentId);
-    if (!tokens.length) return null;
-
-    const msg = {
-      tokens,
-      notification: { title, body },
-      data: {
-        kind: "bookingStatus",
-        bookingId: ctx.params.bookingId || "",
-        status: String(after.status || ""),
-      }
-    };
-    return admin.messaging().sendMulticast(msg);
-  });
-
-
-// --- YENİ: Bir öğrenci yeni yorum oluşturduğunda öğretmen puanlarını güncelle ---
-const db = admin.firestore();
-
-exports.onTeacherReviewCreated = functions.firestore
-  .document("teacherReviews/{rid}")
-  .onCreate(async (snap, ctx) => {
-    const review = snap.data();
-    const teacherId = String(review.teacherId || "");
-    const rating = Math.max(1, Math.min(5, Number(review.rating || 0)));
-    if (!teacherId || !rating) return null;
-
-    const profRef = db.collection("teacherProfiles").doc(teacherId);
-
-    // ratingSum, ratingCount ve ratingAvg alanlarını atomik olarak güncelle
-    await db.runTransaction(async (tr) => {
-      const profSnap = await tr.get(profRef);
-      const prof = profSnap.exists ? profSnap.data() : {};
-
-      const prevSum = Number(prof.ratingSum || 0);
-      const prevCount = Number(prof.ratingCount || 0);
-
-      const newSum = prevSum + rating;
-      const newCount = prevCount + 1;
-      const newAvg = Math.round((newSum / newCount) * 100) / 100; // 2 hane
-
-      tr.set(
-        profRef,
-        {
-          ratingSum: newSum,
-          ratingCount: newCount,
-          ratingAvg: newAvg,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
-    });
-
-    return null;
-  });
-
-// --- Öğrenci yeni yorum eklediğinde öğretmen puanlarını güncelle ---
-exports.onTeacherReviewCreated = functions.firestore
-  .document("teacherReviews/{rid}")
-  .onCreate(async (snap, ctx) => {
-    const r = snap.data();
-    const teacherId = r && r.teacherId;
-    const rating = Number(r && r.rating || 0);
-    if (!teacherId || rating <= 0) return null;
-
-    const db = admin.firestore();
-    const profRef = db.collection("teacherProfiles").doc(teacherId);
-
-    await db.runTransaction(async (tr) => {
-      const prof = await tr.get(profRef);
-      const prevSum   = Number(prof.get("ratingSum")   || 0);
-      const prevCount = Number(prof.get("ratingCount") || 0);
-
-      const sum   = prevSum + rating;
-      const count = prevCount + 1;
-      const avg   = count ? sum / count : 0;
-
-      tr.set(
-        profRef,
-        {
-          ratingSum: sum,
-          ratingCount: count,
-          ratingAvg: Math.round(avg * 10) / 10, // 1 ondalık
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
-    });
-    return null;
-  });
-
-// ---- 3) Yeni yorum eklendiğinde öğretmenin rating ortalamasını güncelle ----
-// Yeni yorum eklendiğinde öğretmen profilinde ratingAvg / ratingCount güncelle
-exports.onTeacherReviewCreate = functions.firestore
-  .document("teacherReviews/{rid}")
-  .onCreate(async (snap) => {
-    const r = snap.data();
-    const teacherId = r.teacherId;
-    const rating = Number(r.rating || 0);
-    if (!teacherId || !rating) return null;
-
-    const db = admin.firestore();
-    const profRef = db.collection("teacherProfiles").doc(teacherId);
-
-    return db.runTransaction(async (tr) => {
-      const prof = await tr.get(profRef);
-      const prevAvg = Number(prof.get("ratingAvg") || 0);
-      const prevCnt = Number(prof.get("ratingCount") || 0);
-
-      const newCnt = prevCnt + 1;
-      const newAvg = ((prevAvg * prevCnt) + rating) / newCnt;
-
-      tr.set(profRef, {
-        ratingAvg: newAvg,
-        ratingCount: newCnt,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
-    });
-  });
-
-
-// functions/index.js
-const functions = require("firebase-functions");
-const admin = require("firebase-admin");
+const functions = require("firebase-functions"); // sadece config() için
+const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
+const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const Iyzipay = require("iyzipay");
-admin.initializeApp();
 
 const db = admin.firestore();
 
-// ---- IYZICO client (sandbox) ----
-const IYZI_API_KEY = process.env.IYZI_API_KEY || (functions.config().iyzi && functions.config().iyzi.apikey);
-const IYZI_SECRET  = process.env.IYZI_SECRET  || (functions.config().iyzi && functions.config().iyzi.secret);
-const IYZI_BASE    = process.env.IYZI_BASE    || (functions.config().iyzi && functions.config().iyzi.base) || "https://sandbox-api.iyzipay.com";
-
-const iyzipay = new Iyzipay({
-  apiKey: IYZI_API_KEY,
-  secretKey: IYZI_SECRET,
-  uri: IYZI_BASE,
-});
-
-// basit yardımcılar
-function slotId(teacherId, dateIso, hour) {
-  return `${teacherId}_${dateIso}_${hour}`;
+/** ---------- Config / ENV okuma ---------- */
+const cfg = (functions.config && functions.config().iyzico) || {};
+function getIyziConfig() {
+  const apiKey = cfg.api_key || process.env.IYZI_API_KEY;
+  const secretKey = cfg.secret_key || process.env.IYZI_SECRET_KEY;
+  const uri = cfg.base_url || process.env.IYZI_BASE_URL || "https://sandbox-api.iyzipay.com";
+  return { apiKey, secretKey, uri };
 }
-function toTwo(n) { return (n < 10 ? "0" : "") + n; }
 
-// ------------------ 1) Checkout başlat ------------------
-exports.iyziInitCheckout = functions.https.onCall(async (data, context) => {
-  if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "Giriş gerekli.");
-
-  const studentId  = context.auth.uid;
-  const {
-    teacherId, subjectId, subjectName, dateIso, hour
-  } = data || {};
-
-  if (!teacherId || !subjectId || !subjectName || !dateIso || typeof hour !== "number") {
-    throw new functions.https.HttpsError("invalid-argument", "Eksik parametre.");
+function createIyziClientOrThrow() {
+  const { apiKey, secretKey, uri } = getIyziConfig();
+  if (!apiKey || !secretKey) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Iyzi API anahtarları tanımlı değil (IYZI_API_KEY / IYZI_SECRET_KEY)."
+    );
   }
+  return new Iyzipay({ apiKey, secretKey, uri });
+}
 
-  // 0) slot hold ve fiyatı çek
-  const profRef = db.collection("teacherProfiles").doc(teacherId);
-  const userRef = db.collection("users").doc(studentId);
-
-  // atomik: fiyatı çek + slot hold
-  const { price, piId } = await db.runTransaction(async (tr) => {
-    const profSnap = await tr.get(profRef);
-    if (!profSnap.exists) throw new functions.https.HttpsError("not-found", "Öğretmen bulunamadı.");
-
-    const subjectsMap = profSnap.get("subjectsMap") || {};
-    const price = Number(subjectsMap[subjectId]);
-    if (!price || isNaN(price)) {
-      throw new functions.https.HttpsError("failed-precondition", "Bu ders için fiyat bulunamadı.");
-    }
-
-    const lockRef = db.collection("slotLocks").doc(slotId(teacherId, dateIso, hour));
-    const lockSnap = await tr.get(lockRef);
-    if (lockSnap.exists) {
-      const status = lockSnap.get("status");
-      if (status && status !== "cancelled") {
-        throw new functions.https.HttpsError("already-exists", "Bu saat dolu.");
-      }
-    }
-
-    // 15 dk hold
-    const holdMs = 15 * 60 * 1000;
-    tr.set(lockRef, {
-      teacherId, studentId, date: dateIso, hour,
-      status: "hold",
-      holdUntil: admin.firestore.Timestamp.fromMillis(Date.now() + holdMs),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-
-    // paymentIntent
-    const piRef = db.collection("paymentIntents").doc();
-    tr.set(piRef, {
-      status: "pending",
-      teacherId, studentId, subjectId, subjectName, dateIso, hour,
-      price,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-
-    return { price, piId: piRef.id };
-  });
-
-  // 1) Buyer bilgisi (temel)
-  const userSnap = await userRef.get();
-  const fullName = (userSnap.exists && userSnap.get("fullName")) || "Öğrenci";
-  const phone    = (userSnap.exists && userSnap.get("phone")) || "0000000000";
-  const email    = (userSnap.exists && userSnap.get("email")) || "student@example.com";
-
-  // 2) Iyzico request
-  const request = {
-    locale: Iyzipay.LOCALE.TR,
-    price: price.toFixed(2),
-    paidPrice: price.toFixed(2),
-    currency: Iyzipay.CURRENCY.TRY,
-    basketId: piId, // callback'te bunu geri alırız
-    paymentGroup: Iyzipay.PAYMENT_GROUP.LISTING,
-    // Cloud Functions URL (aşağıdaki fonksiyon):
-    callbackUrl: `https://YOUR_REGION-${process.env.GCLOUD_PROJECT}.cloudfunctions.net/iyziCallback`,
-
-    buyer: {
-      id: studentId,
-      name: fullName.split(" ")[0] || "Ad",
-      surname: fullName.split(" ").slice(1).join(" ") || "Soyad",
-      gsmNumber: phone,
-      email,
-      identityNumber: "11111111110",   // sandbox için dummy
-      registrationAddress: "Adres",
-      ip: "85.34.78.112",
-      city: "Istanbul",
-      country: "Turkey",
-    },
-    shippingAddress: {
-      contactName: fullName,
-      city: "Istanbul",
-      country: "Turkey",
-      address: "Adres",
-    },
-    billingAddress: {
-      contactName: fullName,
-      city: "Istanbul",
-      country: "Turkey",
-      address: "Adres",
-    },
-    basketItems: [
-      {
-        id: subjectId,
-        name: `${subjectName} (${dateIso} ${toTwo(hour)}:00)`,
-        category1: "Özel Ders",
-        itemType: Iyzipay.BASKET_ITEM_TYPE.VIRTUAL,
-        price: price.toFixed(2),
-      },
-    ],
-  };
-
-  // 3) checkout formu başlat
-  const initResp = await new Promise((resolve, reject) => {
-    iyzipay.checkoutFormInitialize.create(request, (err, result) => {
+/** ---------- Iyzi callback→promise yardımcı ---------- */
+function asPromise(fn, payload) {
+  return new Promise((resolve, reject) => {
+    fn(payload, (err, res) => {
       if (err) return reject(err);
-      resolve(result);
+      if (!res || res.status !== "success") {
+        const e = new Error((res && (res.errorMessage || res.consumerErrorMessage)) || "Iyzi error");
+        e.details = res;
+        return reject(e);
+      }
+      resolve(res);
     });
   });
+}
 
-  if (!initResp || !initResp.token) {
-    throw new functions.https.HttpsError("internal", "Ödeme başlatılamadı.");
-  }
-
-  // 4) token'ı paymentIntent'a yaz
-  await db.collection("paymentIntents").doc(piId).update({
-    iyziToken: initResp.token,
-    iyziRaw: initResp,
-  });
-
-  // Client’a HTML (checkoutFormContent) ve paymentIntent id dön
-  return {
-    piId,
-    token: initResp.token,
-    checkoutFormContent: initResp.checkoutFormContent, // WebView'de gösterilecek HTML
-  };
+/** ---------- Basit ping (callable) ---------- */
+exports.ping = onCall({ region: "europe-west1" }, (req) => {
+  if (!req.auth) throw new HttpsError("unauthenticated", "Giriş gerekli");
+  return { ok: true };
 });
 
-// ------------------ 2) Iyzi callback (server-side) ------------------
-exports.iyziCallback = functions.https.onRequest(async (req, res) => {
+/** ---------- Firestore tetikleyicileri (örnek) ---------- */
+exports.onBookingCreate = onDocumentCreated(
+  { region: "europe-west1", document: "bookings/{bookingId}" },
+  async (event) => {
+    // ...
+    return;
+  }
+);
+
+exports.onBookingStatusChange = onDocumentUpdated(
+  { region: "europe-west1", document: "bookings/{bookingId}" },
+  async (event) => {
+    const before = event.data.before.data();
+    const after  = event.data.after.data();
+    if (!before || !after || before.status === after.status) return;
+    // ...
+    return;
+  }
+);
+
+/** ---------- Callable: sub-merchant ---------- */
+exports.iyziCreateSubmerchant = onCall({ region: "europe-west1" }, async (req) => {
   try {
-    const token = req.body && (req.body.token || req.query.token);
-    if (!token) return res.status(400).send("missing token");
+    if (!req.auth) throw new HttpsError("unauthenticated", "Giriş gerekli");
+    const uid = req.auth.uid;
+    const {
+      fullName, nationalId, iban, email, gsmNumber,
+      address, city, country, zipCode,
+    } = req.data || {};
 
-    const retrieve = await new Promise((resolve, reject) => {
-      iyzipay.checkoutForm.retrieve({ locale: Iyzipay.LOCALE.TR, token }, (err, result) => {
-        if (err) return reject(err);
-        resolve(result);
-      });
-    });
-
-    // basketId'yi alıp paymentIntent'ı bul
-    const basketId = retrieve && retrieve.basketId;
-    if (!basketId) return res.status(400).send("missing basketId");
-
-    const piRef = db.collection("paymentIntents").doc(basketId);
-    const piSnap = await piRef.get();
-    if (!piSnap.exists) return res.status(404).send("pi not found");
-
-    const pi = piSnap.data();
-    const lockRef = db.collection("slotLocks").doc(slotId(pi.teacherId, pi.dateIso, pi.hour));
-
-    if (retrieve.paymentStatus === "SUCCESS") {
-      // Booking + lock yaz
-      const bId = slotId(pi.teacherId, pi.dateIso, pi.hour);
-      const bRef = db.collection("bookings").doc(bId);
-
-      const startAt = new Date(`${pi.dateIso}T${toTwo(pi.hour)}:00:00`);
-      const endAt   = new Date(startAt.getTime() + 60 * 60 * 1000);
-
-      await db.runTransaction(async (tr) => {
-        // lock hala hold mu?
-        const lockSnap = await tr.get(lockRef);
-        if (!lockSnap.exists || lockSnap.get("status") !== "hold") {
-          throw new Error("slot not held anymore");
-        }
-
-        tr.set(bRef, {
-          teacherId: pi.teacherId,
-          studentId: pi.studentId,
-          subjectId: pi.subjectId,
-          subjectName: pi.subjectName,
-          date: pi.dateIso,
-          hour: pi.hour,
-          status: "pending", // isterseniz 'accepted' yapabilirsiniz
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          startAt,
-          endAt,
-          payment: {
-            piId: piRef.id,
-            amount: pi.price,
-            currency: "TRY",
-            provider: "iyzico",
-            status: "paid",
-            raw: retrieve,
-          },
-        });
-
-        tr.update(lockRef, {
-          status: "pending", // hold -> pending
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-
-        tr.update(piRef, {
-          status: "succeeded",
-          iyziRetrieve: retrieve,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-      });
-
-      // Bildirim tetikleyicileriniz (onBookingCreate vs) zaten çalışacak
-      return res.status(200).send("ok");
-    } else {
-      // failed
-      await db.runTransaction(async (tr) => {
-        tr.update(piRef, {
-          status: "failed",
-          iyziRetrieve: retrieve,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-        tr.update(lockRef, {
-          status: "cancelled",
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-      });
-      return res.status(200).send("failed");
+    if (!fullName || !nationalId || !iban || !email || !gsmNumber || !address || !city || !zipCode) {
+      throw new HttpsError("invalid-argument", "Eksik alan(lar) var.");
     }
+
+    // İsim/soyisim ayrıştır (Iyzi bazı durumlarda surname isteyebilir)
+    const parts = String(fullName).trim().split(/\s+/);
+    const contactName = parts.shift() || fullName;
+    const contactSurname = parts.length ? parts.join(" ") : contactName;
+
+    const iyzi = createIyziClientOrThrow();
+
+    const payload = {
+      locale: Iyzipay.LOCALE.TR,
+      subMerchantExternalId: uid,
+      subMerchantType: Iyzipay.SUB_MERCHANT_TYPE.PERSONAL,
+      contactName,
+      contactSurname,
+      legalCompanyTitle: fullName,
+      email,
+      gsmNumber,
+      address,
+      iban,
+      identityNumber: nationalId,
+      currency: Iyzipay.CURRENCY.TRY,
+      name: fullName,
+    };
+
+    console.log("iyziCreateSubmerchant payload for", uid);
+    const res = await asPromise(iyzi.subMerchant.create.bind(iyzi.subMerchant), payload);
+
+    const ibanMasked = iban.replace(/^(.{6}).+(.{4})$/, "$1**** **** ****$2");
+    await db.collection("teacherPayouts").doc(uid).set({
+      subMerchantKey: res.subMerchantKey,
+      status: "ACTIVE",
+      ibanMasked,
+      city,
+      zipCode,
+      country: country || "Turkey",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    return { subMerchantKey: res.subMerchantKey };
+  } catch (e) {
+    console.error("iyziCreateSubmerchant error:", e && e.message, e && e.details);
+    if (e instanceof HttpsError) throw e;
+    throw new HttpsError("internal", "Iyzico isteği başarısız.", {
+      message: String(e && e.message || e),
+      iyzi: e && e.details ? e.details : undefined,
+    });
+  }
+});
+
+/** ---------- Checkout init (iskelet) ---------- */
+exports.iyziInitCheckout = onCall({ region: "europe-west1" }, async (req) => {
+  if (!req.auth) throw new HttpsError("unauthenticated", "Giriş gerekli");
+  // ... burada sipariş token vs. oluşturma mantığını kuracağız ...
+  return {};
+});
+
+/** ---------- HTTP callback ---------- */
+exports.iyziCallback = onRequest({ region: "europe-west1" }, async (req, res) => {
+  try {
+    const token = (req.body && (req.body.token || req.body.paymentToken || req.body["token"])) || req.query.token;
+    if (!token) return res.status(400).send("token required");
+    // ... retrieve + Firestore ...
+    return res.status(200).send("OK");
   } catch (e) {
     console.error(e);
-    return res.status(500).send("error");
-  }
-});
-
-// functions/index.js (MEVCUT dosyanıza ek)
-const Iyzipay = require("iyzipay");
-const db = admin.firestore();
-
-const IYZI_API_KEY = process.env.IYZI_API_KEY || (functions.config().iyzi && functions.config().iyzi.apikey);
-const IYZI_SECRET  = process.env.IYZI_SECRET  || (functions.config().iyzi && functions.config().iyzi.secret);
-const IYZI_BASE    = process.env.IYZI_BASE    || (functions.config().iyzi && functions.config().iyzi.base) || "https://sandbox-api.iyzipay.com";
-
-const iyzipay = new Iyzipay({
-  apiKey: IYZI_API_KEY,
-  secretKey: IYZI_SECRET,
-  uri: IYZI_BASE,
-});
-
-function slotId(teacherId, dateIso, hour) {
-  return `${teacherId}_${dateIso}_${hour}`;
-}
-function toTwo(n){ return (n<10 ? "0":"") + n; }
-
-// ---------- 1) Checkout başlat (Callable) ----------
-exports.iyziInitCheckout = functions.https.onCall(async (data, context) => {
-  if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "Giriş gerekli.");
-
-  const studentId  = context.auth.uid;
-  const { teacherId, subjectId, subjectName, dateIso, hour } = data || {};
-  if (!teacherId || !subjectId || !subjectName || !dateIso || typeof hour !== "number") {
-    throw new functions.https.HttpsError("invalid-argument", "Eksik parametre.");
-  }
-
-  // Fiyat + slot hold + paymentIntent oluştur (transaction)
-  const profRef = db.collection("teacherProfiles").doc(teacherId);
-  const userRef = db.collection("users").doc(studentId);
-
-  const { price, piId } = await db.runTransaction(async (tr) => {
-    const profSnap = await tr.get(profRef);
-    if (!profSnap.exists) throw new functions.https.HttpsError("not-found", "Öğretmen bulunamadı.");
-
-    const subjectsMap = profSnap.get("subjectsMap") || {};
-    const price = Number(subjectsMap[subjectId]);
-    if (!price || isNaN(price)) {
-      throw new functions.https.HttpsError("failed-precondition", "Bu ders için fiyat bulunamadı.");
-    }
-
-    const lockRef = db.collection("slotLocks").doc(slotId(teacherId, dateIso, hour));
-    const lockSnap = await tr.get(lockRef);
-    if (lockSnap.exists) {
-      const status = lockSnap.get("status");
-      if (status && status !== "cancelled") {
-        throw new functions.https.HttpsError("already-exists", "Bu saat dolu.");
-      }
-    }
-
-    // 15 dk hold
-    const holdMs = 15 * 60 * 1000;
-    tr.set(lockRef, {
-      teacherId, studentId, date: dateIso, hour,
-      status: "hold",
-      holdUntil: admin.firestore.Timestamp.fromMillis(Date.now() + holdMs),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-
-    const piRef = db.collection("paymentIntents").doc();
-    tr.set(piRef, {
-      status: "pending",
-      teacherId, studentId, subjectId, subjectName, dateIso, hour,
-      price,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-
-    return { price, piId: piRef.id };
-  });
-
-  const userSnap = await userRef.get();
-  const fullName = (userSnap.exists && userSnap.get("fullName")) || "Öğrenci";
-  const phone    = (userSnap.exists && userSnap.get("phone")) || "0000000000";
-  const email    = (userSnap.exists && userSnap.get("email")) || "student@example.com";
-
-  const request = {
-    locale: Iyzipay.LOCALE.TR,
-    price: price.toFixed(2),
-    paidPrice: price.toFixed(2),
-    currency: Iyzipay.CURRENCY.TRY,
-    basketId: piId,
-    paymentGroup: Iyzipay.PAYMENT_GROUP.LISTING,
-    // >>> Deploy sonrası URL’niz: https://us-central1-<projectId>.cloudfunctions.net/iyziCallback
-    callbackUrl: `https://us-central1-${process.env.GCLOUD_PROJECT}.cloudfunctions.net/iyziCallback`,
-    buyer: {
-      id: studentId,
-      name: fullName.split(" ")[0] || "Ad",
-      surname: fullName.split(" ").slice(1).join(" ") || "Soyad",
-      gsmNumber: phone,
-      email,
-      identityNumber: "11111111110",
-      registrationAddress: "Adres",
-      ip: "85.34.78.112",
-      city: "Istanbul",
-      country: "Turkey",
-    },
-    shippingAddress: {
-      contactName: fullName, city: "Istanbul", country: "Turkey", address: "Adres",
-    },
-    billingAddress: {
-      contactName: fullName, city: "Istanbul", country: "Turkey", address: "Adres",
-    },
-    basketItems: [
-      {
-        id: subjectId,
-        name: `${subjectName} (${dateIso} ${toTwo(hour)}:00)`,
-        category1: "Özel Ders",
-        itemType: Iyzipay.BASKET_ITEM_TYPE.VIRTUAL,
-        price: price.toFixed(2),
-      },
-    ],
-  };
-
-  const initResp = await new Promise((resolve, reject) => {
-    iyzipay.checkoutFormInitialize.create(request, (err, result) => {
-      if (err) return reject(err);
-      resolve(result);
-    });
-  });
-  if (!initResp || !initResp.token) {
-    throw new functions.https.HttpsError("internal", "Ödeme başlatılamadı.");
-  }
-
-  await db.collection("paymentIntents").doc(piId).update({
-    iyziToken: initResp.token,
-    iyziRaw: initResp,
-  });
-
-  return {
-    piId,
-    token: initResp.token,
-    checkoutFormContent: initResp.checkoutFormContent,
-  };
-});
-
-// ---------- 2) Iyzi callback (HTTP) ----------
-exports.iyziCallback = functions.https.onRequest(async (req, res) => {
-  try {
-    const token = (req.body && (req.body.token || req.body.Token)) || req.query.token;
-    if (!token) return res.status(400).send("missing token");
-
-    const retrieve = await new Promise((resolve, reject) => {
-      iyzipay.checkoutForm.retrieve({ locale: Iyzipay.LOCALE.TR, token }, (err, result) => {
-        if (err) return reject(err);
-        resolve(result);
-      });
-    });
-
-    const basketId = retrieve && retrieve.basketId;
-    if (!basketId) return res.status(400).send("missing basketId");
-
-    const piRef = db.collection("paymentIntents").doc(basketId);
-    const piSnap = await piRef.get();
-    if (!piSnap.exists) return res.status(404).send("pi not found");
-    const pi = piSnap.data();
-
-    const lockRef = db.collection("slotLocks").doc(slotId(pi.teacherId, pi.dateIso, pi.hour));
-
-    if (retrieve.paymentStatus === "SUCCESS") {
-      const bId = slotId(pi.teacherId, pi.dateIso, pi.hour);
-      const bRef = db.collection("bookings").doc(bId);
-
-      const startAt = new Date(`${pi.dateIso}T${toTwo(pi.hour)}:00:00`);
-      const endAt   = new Date(startAt.getTime() + 60 * 60 * 1000);
-
-      await db.runTransaction(async (tr) => {
-        const lockSnap = await tr.get(lockRef);
-        if (!lockSnap.exists || lockSnap.get("status") !== "hold") {
-          throw new Error("slot not held anymore");
-        }
-
-        tr.set(bRef, {
-          teacherId: pi.teacherId,
-          studentId: pi.studentId,
-          subjectId: pi.subjectId,
-          subjectName: pi.subjectName,
-          date: pi.dateIso,
-          hour: pi.hour,
-          status: "pending", // istersen "accepted"
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          startAt,
-          endAt,
-          payment: {
-            piId: piRef.id,
-            amount: pi.price,
-            currency: "TRY",
-            provider: "iyzico",
-            status: "paid",
-            raw: retrieve,
-          },
-        });
-
-        tr.update(lockRef, { status: "pending", updatedAt: admin.firestore.FieldValue.serverTimestamp() });
-        tr.update(piRef,   { status: "succeeded", iyziRetrieve: retrieve, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
-      });
-
-      return res.status(200).send("ok");
-    } else {
-      await db.runTransaction(async (tr) => {
-        tr.update(piRef, { status: "failed", iyziRetrieve: retrieve, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
-        tr.update(lockRef, { status: "cancelled", updatedAt: admin.firestore.FieldValue.serverTimestamp() });
-      });
-      return res.status(200).send("failed");
-    }
-  } catch (e) {
-    console.error(e);
-    return res.status(500).send("error");
+    return res.status(500).send("ERR");
   }
 });
 

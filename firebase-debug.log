@@ -1,0 +1,494 @@
+[debug] [2025-09-04T19:24:38.538Z] ----------------------------------------------------------------------
+[debug] [2025-09-04T19:24:38.542Z] Command:       /usr/local/Cellar/node/23.2.0_1/bin/node /usr/local/bin/firebase emulators:start --only functions --debug
+[debug] [2025-09-04T19:24:38.543Z] CLI Version:   14.14.0
+[debug] [2025-09-04T19:24:38.544Z] Platform:      darwin
+[debug] [2025-09-04T19:24:38.544Z] Node Version:  v23.2.0
+[debug] [2025-09-04T19:24:38.545Z] Time:          Thu Sep 04 2025 21:24:38 GMT+0200 (Central European Summer Time)
+[debug] [2025-09-04T19:24:38.547Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-09-04T19:24:38.860Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-09-04T19:24:38.861Z] > authorizing via signed-in user (celik662@gmail.com)
+[info] i  emulators: Starting emulators: functions {"metadata":{"emulator":{"name":"hub"},"message":"Starting emulators: functions"}}
+[debug] [2025-09-04T19:24:39.845Z] [logging] Logging Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-04T19:24:39.846Z] assigned listening specs for emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}]},"metadata":{"message":"assigned listening specs for emulators"}}
+[debug] [2025-09-04T19:24:39.852Z] [hub] writing locator at /var/folders/nh/mz932t5n48q7zf5xr0d9k6vr0000gn/T/hub-tutorist-f2a46.json
+[debug] [2025-09-04T19:24:40.680Z] [eventarc] Eventarc Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-04T19:24:40.681Z] [tasks] Cloud Tasks Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-04T19:24:40.681Z] late-assigned ports for functions and eventarc emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}],"functions":[{"address":"0.0.0.0","family":"IPv4","port":5001}],"eventarc":[{"address":"127.0.0.1","family":"IPv4","port":9299}],"tasks":[{"address":"127.0.0.1","family":"IPv4","port":9499}]},"metadata":{"message":"late-assigned ports for functions and eventarc emulators"}}
+[warn] ⚠  functions: The following emulators are not running, calls to these services from the Functions emulator will affect production: apphosting, auth, firestore, database, hosting, pubsub, storage, dataconnect {"metadata":{"emulator":{"name":"functions"},"message":"The following emulators are not running, calls to these services from the Functions emulator will affect production: \u001b[1mapphosting, auth, firestore, database, hosting, pubsub, storage, dataconnect\u001b[22m"}}
+[debug] [2025-09-04T19:24:40.718Z] defaultcredentials: writing to file /Users/onurcelik/.config/firebase/celik662_gmail_com_application_default_credentials.json
+[debug] [2025-09-04T19:24:40.721Z] Setting GAC to /Users/onurcelik/.config/firebase/celik662_gmail_com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to /Users/onurcelik/.config/firebase/celik662_gmail_com_application_default_credentials.json"}}
+[debug] [2025-09-04T19:24:40.722Z] Checked if tokens are valid: true, expires at: 1757016481063
+[debug] [2025-09-04T19:24:40.722Z] Checked if tokens are valid: true, expires at: 1757016481063
+[debug] [2025-09-04T19:24:40.723Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/tutorist-f2a46/adminSdkConfig [none]
+[debug] [2025-09-04T19:24:41.128Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/tutorist-f2a46/adminSdkConfig 200
+[debug] [2025-09-04T19:24:41.129Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/tutorist-f2a46/adminSdkConfig {"projectId":"tutorist-f2a46","storageBucket":"tutorist-f2a46.firebasestorage.app"}
+[info] i  functions: Watching "/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions" for Cloud Functions... {"metadata":{"emulator":{"name":"functions"},"message":"Watching \"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions\" for Cloud Functions..."}}
+[debug] [2025-09-04T19:24:41.170Z] Validating nodejs source
+[debug] [2025-09-04T19:24:42.178Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "lint": "eslint .",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.4.0",
+    "iyzipay": "^2.0.64"
+  },
+  "devDependencies": {
+    "eslint": "^8.15.0",
+    "eslint-config-google": "^0.14.0",
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-09-04T19:24:42.178Z] Building nodejs source
+[debug] [2025-09-04T19:24:42.179Z] Failed to find version of module node: reached end of search path /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "18" doesn't match your global version "23". Using node@23 from host. 
+[info] i  functions: Loaded environment variables from .env. 
+[debug] [2025-09-04T19:24:42.186Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-09-04T19:24:42.212Z] Found firebase-functions binary at '/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8514
+
+[debug] [2025-09-04T19:24:42.973Z] Got response from /__/functions.yaml {"endpoints":{"ping":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"ping"},"onBookingCreate":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.created","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"bookings/{bookingId}"},"retry":false},"entryPoint":"onBookingCreate"},"onBookingStatusChange":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"bookings/{bookingId}"},"retry":false},"entryPoint":"onBookingStatusChange"},"iyziCreateSubmerchant":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"iyziCreateSubmerchant"},"iyziInitCheckout":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"iyziInitCheckout"},"iyziCallback":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"httpsTrigger":{},"entryPoint":"iyziCallback"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[info] ✔  functions: Loaded functions definitions from source: ping, onBookingCreate, onBookingStatusChange, iyziCreateSubmerchant, iyziInitCheckout, iyziCallback. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: ping, onBookingCreate, onBookingStatusChange, iyziCreateSubmerchant, iyziInitCheckout, iyziCallback."}}
+[info] ✔  functions[europe-west1-ping]: http function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/ping). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/ping)."}}
+[info] i  functions[europe-west1-onBookingCreate]: function ignored because the firestore emulator does not exist or is not running. {"metadata":{"emulator":{"name":"functions"},"message":"function ignored because the firestore emulator does not exist or is not running."}}
+[info] i  functions[europe-west1-onBookingStatusChange]: function ignored because the firestore emulator does not exist or is not running. {"metadata":{"emulator":{"name":"functions"},"message":"function ignored because the firestore emulator does not exist or is not running."}}
+[info] ✔  functions[europe-west1-iyziCreateSubmerchant]: http function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCreateSubmerchant). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCreateSubmerchant)."}}
+[info] ✔  functions[europe-west1-iyziInitCheckout]: http function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziInitCheckout). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziInitCheckout)."}}
+[info] ✔  functions[europe-west1-iyziCallback]: http function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCallback). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCallback)."}}
+[debug] [2025-09-04T19:24:47.064Z] Could not find VSCode notification endpoint: FetchError: request to http://localhost:40001/vscode/notify failed, reason: . If you are not running the Firebase Data Connect VSCode extension, this is expected and not an issue.
+[info] 
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+│ i  View Emulator UI at http://127.0.0.1:4000/               │
+└─────────────────────────────────────────────────────────────┘
+
+┌───────────┬──────────────┬─────────────────────────────────┐
+│ Emulator  │ Host:Port    │ View in Emulator UI             │
+├───────────┼──────────────┼─────────────────────────────────┤
+│ Functions │ 0.0.0.0:5001 │ http://127.0.0.1:4000/functions │
+└───────────┴──────────────┴─────────────────────────────────┘
+  Emulator Hub host: 127.0.0.1 port: 4400
+  Other reserved ports: 4500
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 
+[debug] [2025-09-04T19:24:53.951Z] Received signal SIGINT (Ctrl-C) 1
+[info]  
+[info] i  emulators: Received SIGINT (Ctrl-C) for the first time. Starting a clean shutdown. 
+[info] i  emulators: Please wait for a clean shutdown or send the SIGINT (Ctrl-C) signal again to stop right now. 
+[info] i  emulators: Shutting down emulators. {"metadata":{"emulator":{"name":"hub"},"message":"Shutting down emulators."}}
+[info] i  ui: Stopping Emulator UI {"metadata":{"emulator":{"name":"ui"},"message":"Stopping Emulator UI"}}
+[info] i  functions: Stopping Functions Emulator {"metadata":{"emulator":{"name":"functions"},"message":"Stopping Functions Emulator"}}
+[info] i  eventarc: Stopping Eventarc Emulator {"metadata":{"emulator":{"name":"eventarc"},"message":"Stopping Eventarc Emulator"}}
+[info] i  tasks: Stopping Cloud Tasks Emulator {"metadata":{"emulator":{"name":"tasks"},"message":"Stopping Cloud Tasks Emulator"}}
+[info] i  hub: Stopping emulator hub {"metadata":{"emulator":{"name":"hub"},"message":"Stopping emulator hub"}}
+[info] i  logging: Stopping Logging Emulator {"metadata":{"emulator":{"name":"logging"},"message":"Stopping Logging Emulator"}}
+[debug] [2025-09-04T19:24:54.015Z] Could not find VSCode notification endpoint: FetchError: request to http://localhost:40001/vscode/notify failed, reason: . If you are not running the Firebase Data Connect VSCode extension, this is expected and not an issue.
+[debug] [2025-09-04T19:26:18.225Z] ----------------------------------------------------------------------
+[debug] [2025-09-04T19:26:18.230Z] Command:       /usr/local/Cellar/node/23.2.0_1/bin/node /usr/local/bin/firebase emulators:start --only functions --debug
+[debug] [2025-09-04T19:26:18.231Z] CLI Version:   14.14.0
+[debug] [2025-09-04T19:26:18.231Z] Platform:      darwin
+[debug] [2025-09-04T19:26:18.231Z] Node Version:  v23.2.0
+[debug] [2025-09-04T19:26:18.233Z] Time:          Thu Sep 04 2025 21:26:18 GMT+0200 (Central European Summer Time)
+[debug] [2025-09-04T19:26:18.235Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-09-04T19:26:18.541Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-09-04T19:26:18.544Z] > authorizing via signed-in user (celik662@gmail.com)
+[info] i  emulators: Starting emulators: functions {"metadata":{"emulator":{"name":"hub"},"message":"Starting emulators: functions"}}
+[debug] [2025-09-04T19:26:19.530Z] [logging] Logging Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-04T19:26:19.531Z] assigned listening specs for emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}]},"metadata":{"message":"assigned listening specs for emulators"}}
+[debug] [2025-09-04T19:26:19.538Z] [hub] writing locator at /var/folders/nh/mz932t5n48q7zf5xr0d9k6vr0000gn/T/hub-tutorist-f2a46.json
+[debug] [2025-09-04T19:26:20.381Z] [eventarc] Eventarc Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-04T19:26:20.381Z] [tasks] Cloud Tasks Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-04T19:26:20.381Z] late-assigned ports for functions and eventarc emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}],"functions":[{"address":"0.0.0.0","family":"IPv4","port":5001}],"eventarc":[{"address":"127.0.0.1","family":"IPv4","port":9299}],"tasks":[{"address":"127.0.0.1","family":"IPv4","port":9499}]},"metadata":{"message":"late-assigned ports for functions and eventarc emulators"}}
+[warn] ⚠  functions: The following emulators are not running, calls to these services from the Functions emulator will affect production: apphosting, auth, firestore, database, hosting, pubsub, storage, dataconnect {"metadata":{"emulator":{"name":"functions"},"message":"The following emulators are not running, calls to these services from the Functions emulator will affect production: \u001b[1mapphosting, auth, firestore, database, hosting, pubsub, storage, dataconnect\u001b[22m"}}
+[debug] [2025-09-04T19:26:20.417Z] defaultcredentials: writing to file /Users/onurcelik/.config/firebase/celik662_gmail_com_application_default_credentials.json
+[debug] [2025-09-04T19:26:20.419Z] Setting GAC to /Users/onurcelik/.config/firebase/celik662_gmail_com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to /Users/onurcelik/.config/firebase/celik662_gmail_com_application_default_credentials.json"}}
+[debug] [2025-09-04T19:26:20.421Z] Checked if tokens are valid: true, expires at: 1757016481063
+[debug] [2025-09-04T19:26:20.421Z] Checked if tokens are valid: true, expires at: 1757016481063
+[debug] [2025-09-04T19:26:20.422Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/tutorist-f2a46/adminSdkConfig [none]
+[debug] [2025-09-04T19:26:20.861Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/tutorist-f2a46/adminSdkConfig 200
+[debug] [2025-09-04T19:26:20.861Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/tutorist-f2a46/adminSdkConfig {"projectId":"tutorist-f2a46","storageBucket":"tutorist-f2a46.firebasestorage.app"}
+[info] i  functions: Watching "/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions" for Cloud Functions... {"metadata":{"emulator":{"name":"functions"},"message":"Watching \"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions\" for Cloud Functions..."}}
+[debug] [2025-09-04T19:26:20.911Z] Validating nodejs source
+[debug] [2025-09-04T19:26:21.930Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "lint": "eslint .",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.4.0",
+    "iyzipay": "^2.0.64"
+  },
+  "devDependencies": {
+    "eslint": "^8.15.0",
+    "eslint-config-google": "^0.14.0",
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-09-04T19:26:21.930Z] Building nodejs source
+[debug] [2025-09-04T19:26:21.931Z] Failed to find version of module node: reached end of search path /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "18" doesn't match your global version "23". Using node@23 from host. 
+[info] i  functions: Loaded environment variables from .env. 
+[debug] [2025-09-04T19:26:21.937Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-09-04T19:26:21.964Z] Found firebase-functions binary at '/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8525
+
+[debug] [2025-09-04T19:26:23.225Z] Got response from /__/functions.yaml {"endpoints":{"ping":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"ping"},"onBookingCreate":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.created","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"bookings/{bookingId}"},"retry":false},"entryPoint":"onBookingCreate"},"onBookingStatusChange":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"bookings/{bookingId}"},"retry":false},"entryPoint":"onBookingStatusChange"},"iyziCreateSubmerchant":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"iyziCreateSubmerchant"},"iyziInitCheckout":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"iyziInitCheckout"},"iyziCallback":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"httpsTrigger":{},"entryPoint":"iyziCallback"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[info] ✔  functions: Loaded functions definitions from source: ping, onBookingCreate, onBookingStatusChange, iyziCreateSubmerchant, iyziInitCheckout, iyziCallback. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: ping, onBookingCreate, onBookingStatusChange, iyziCreateSubmerchant, iyziInitCheckout, iyziCallback."}}
+[info] ✔  functions[europe-west1-ping]: http function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/ping). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/ping)."}}
+[info] i  functions[europe-west1-onBookingCreate]: function ignored because the firestore emulator does not exist or is not running. {"metadata":{"emulator":{"name":"functions"},"message":"function ignored because the firestore emulator does not exist or is not running."}}
+[info] i  functions[europe-west1-onBookingStatusChange]: function ignored because the firestore emulator does not exist or is not running. {"metadata":{"emulator":{"name":"functions"},"message":"function ignored because the firestore emulator does not exist or is not running."}}
+[info] ✔  functions[europe-west1-iyziCreateSubmerchant]: http function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCreateSubmerchant). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCreateSubmerchant)."}}
+[info] ✔  functions[europe-west1-iyziInitCheckout]: http function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziInitCheckout). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziInitCheckout)."}}
+[info] ✔  functions[europe-west1-iyziCallback]: http function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCallback). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCallback)."}}
+[debug] [2025-09-04T19:26:27.305Z] Could not find VSCode notification endpoint: FetchError: request to http://localhost:40001/vscode/notify failed, reason: . If you are not running the Firebase Data Connect VSCode extension, this is expected and not an issue.
+[info] 
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+│ i  View Emulator UI at http://127.0.0.1:4000/               │
+└─────────────────────────────────────────────────────────────┘
+
+┌───────────┬──────────────┬─────────────────────────────────┐
+│ Emulator  │ Host:Port    │ View in Emulator UI             │
+├───────────┼──────────────┼─────────────────────────────────┤
+│ Functions │ 0.0.0.0:5001 │ http://127.0.0.1:4000/functions │
+└───────────┴──────────────┴─────────────────────────────────┘
+  Emulator Hub host: 127.0.0.1 port: 4400
+  Other reserved ports: 4500
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 
+[debug] [2025-09-04T19:28:36.678Z] Received signal SIGINT (Ctrl-C) 1
+[info]  
+[info] i  emulators: Received SIGINT (Ctrl-C) for the first time. Starting a clean shutdown. 
+[info] i  emulators: Please wait for a clean shutdown or send the SIGINT (Ctrl-C) signal again to stop right now. 
+[info] i  emulators: Shutting down emulators. {"metadata":{"emulator":{"name":"hub"},"message":"Shutting down emulators."}}
+[info] i  ui: Stopping Emulator UI {"metadata":{"emulator":{"name":"ui"},"message":"Stopping Emulator UI"}}
+[info] i  functions: Stopping Functions Emulator {"metadata":{"emulator":{"name":"functions"},"message":"Stopping Functions Emulator"}}
+[info] i  eventarc: Stopping Eventarc Emulator {"metadata":{"emulator":{"name":"eventarc"},"message":"Stopping Eventarc Emulator"}}
+[info] i  tasks: Stopping Cloud Tasks Emulator {"metadata":{"emulator":{"name":"tasks"},"message":"Stopping Cloud Tasks Emulator"}}
+[info] i  hub: Stopping emulator hub {"metadata":{"emulator":{"name":"hub"},"message":"Stopping emulator hub"}}
+[info] i  logging: Stopping Logging Emulator {"metadata":{"emulator":{"name":"logging"},"message":"Stopping Logging Emulator"}}
+[debug] [2025-09-04T19:28:36.747Z] Could not find VSCode notification endpoint: FetchError: request to http://localhost:40001/vscode/notify failed, reason: . If you are not running the Firebase Data Connect VSCode extension, this is expected and not an issue.
+[debug] [2025-09-04T19:32:47.529Z] ----------------------------------------------------------------------
+[debug] [2025-09-04T19:32:47.533Z] Command:       /usr/local/Cellar/node/23.2.0_1/bin/node /usr/local/bin/firebase emulators:start --only functions --project tutorist-f2a46 --debug
+[debug] [2025-09-04T19:32:47.534Z] CLI Version:   14.14.0
+[debug] [2025-09-04T19:32:47.534Z] Platform:      darwin
+[debug] [2025-09-04T19:32:47.534Z] Node Version:  v23.2.0
+[debug] [2025-09-04T19:32:47.536Z] Time:          Thu Sep 04 2025 21:32:47 GMT+0200 (Central European Summer Time)
+[debug] [2025-09-04T19:32:47.537Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-09-04T19:32:47.855Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-09-04T19:32:47.857Z] > authorizing via signed-in user (celik662@gmail.com)
+[info] i  emulators: Starting emulators: functions {"metadata":{"emulator":{"name":"hub"},"message":"Starting emulators: functions"}}
+[debug] [2025-09-04T19:32:48.840Z] [logging] Logging Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-04T19:32:48.841Z] assigned listening specs for emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}]},"metadata":{"message":"assigned listening specs for emulators"}}
+[debug] [2025-09-04T19:32:48.848Z] [hub] writing locator at /var/folders/nh/mz932t5n48q7zf5xr0d9k6vr0000gn/T/hub-tutorist-f2a46.json
+[debug] [2025-09-04T19:32:49.679Z] [eventarc] Eventarc Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-04T19:32:49.680Z] [tasks] Cloud Tasks Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-04T19:32:49.680Z] late-assigned ports for functions and eventarc emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}],"functions":[{"address":"0.0.0.0","family":"IPv4","port":5001}],"eventarc":[{"address":"127.0.0.1","family":"IPv4","port":9299}],"tasks":[{"address":"127.0.0.1","family":"IPv4","port":9499}]},"metadata":{"message":"late-assigned ports for functions and eventarc emulators"}}
+[warn] ⚠  functions: The following emulators are not running, calls to these services from the Functions emulator will affect production: apphosting, auth, firestore, database, hosting, pubsub, storage, dataconnect {"metadata":{"emulator":{"name":"functions"},"message":"The following emulators are not running, calls to these services from the Functions emulator will affect production: \u001b[1mapphosting, auth, firestore, database, hosting, pubsub, storage, dataconnect\u001b[22m"}}
+[debug] [2025-09-04T19:32:49.716Z] defaultcredentials: writing to file /Users/onurcelik/.config/firebase/celik662_gmail_com_application_default_credentials.json
+[debug] [2025-09-04T19:32:49.719Z] Setting GAC to /Users/onurcelik/.config/firebase/celik662_gmail_com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to /Users/onurcelik/.config/firebase/celik662_gmail_com_application_default_credentials.json"}}
+[debug] [2025-09-04T19:32:49.721Z] Checked if tokens are valid: true, expires at: 1757016481063
+[debug] [2025-09-04T19:32:49.721Z] Checked if tokens are valid: true, expires at: 1757016481063
+[debug] [2025-09-04T19:32:49.722Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/tutorist-f2a46/adminSdkConfig [none]
+[debug] [2025-09-04T19:32:50.123Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/tutorist-f2a46/adminSdkConfig 200
+[debug] [2025-09-04T19:32:50.124Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/tutorist-f2a46/adminSdkConfig {"projectId":"tutorist-f2a46","storageBucket":"tutorist-f2a46.firebasestorage.app"}
+[info] i  functions: Watching "/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions" for Cloud Functions... {"metadata":{"emulator":{"name":"functions"},"message":"Watching \"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions\" for Cloud Functions..."}}
+[debug] [2025-09-04T19:32:50.159Z] Validating nodejs source
+[debug] [2025-09-04T19:32:51.198Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "lint": "eslint .",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.4.0",
+    "iyzipay": "^2.0.64"
+  },
+  "devDependencies": {
+    "eslint": "^8.15.0",
+    "eslint-config-google": "^0.14.0",
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-09-04T19:32:51.198Z] Building nodejs source
+[debug] [2025-09-04T19:32:51.199Z] Failed to find version of module node: reached end of search path /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "18" doesn't match your global version "23". Using node@23 from host. 
+[info] i  functions: Loaded environment variables from .env. 
+[debug] [2025-09-04T19:32:51.204Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-09-04T19:32:51.225Z] Found firebase-functions binary at '/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8348
+
+[debug] [2025-09-04T19:32:51.990Z] Got response from /__/functions.yaml {"endpoints":{"ping":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"ping"},"onBookingCreate":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.created","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"bookings/{bookingId}"},"retry":false},"entryPoint":"onBookingCreate"},"onBookingStatusChange":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"bookings/{bookingId}"},"retry":false},"entryPoint":"onBookingStatusChange"},"iyziCreateSubmerchant":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"iyziCreateSubmerchant"},"iyziInitCheckout":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"iyziInitCheckout"},"iyziCallback":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"httpsTrigger":{},"entryPoint":"iyziCallback"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[info] ✔  functions: Loaded functions definitions from source: ping, onBookingCreate, onBookingStatusChange, iyziCreateSubmerchant, iyziInitCheckout, iyziCallback. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: ping, onBookingCreate, onBookingStatusChange, iyziCreateSubmerchant, iyziInitCheckout, iyziCallback."}}
+[info] ✔  functions[europe-west1-ping]: http function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/ping). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/ping)."}}
+[info] i  functions[europe-west1-onBookingCreate]: function ignored because the firestore emulator does not exist or is not running. {"metadata":{"emulator":{"name":"functions"},"message":"function ignored because the firestore emulator does not exist or is not running."}}
+[info] i  functions[europe-west1-onBookingStatusChange]: function ignored because the firestore emulator does not exist or is not running. {"metadata":{"emulator":{"name":"functions"},"message":"function ignored because the firestore emulator does not exist or is not running."}}
+[info] ✔  functions[europe-west1-iyziCreateSubmerchant]: http function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCreateSubmerchant). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCreateSubmerchant)."}}
+[info] ✔  functions[europe-west1-iyziInitCheckout]: http function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziInitCheckout). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziInitCheckout)."}}
+[info] ✔  functions[europe-west1-iyziCallback]: http function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCallback). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCallback)."}}
+[debug] [2025-09-04T19:32:56.081Z] Could not find VSCode notification endpoint: FetchError: request to http://localhost:40001/vscode/notify failed, reason: . If you are not running the Firebase Data Connect VSCode extension, this is expected and not an issue.
+[info] 
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+│ i  View Emulator UI at http://127.0.0.1:4000/               │
+└─────────────────────────────────────────────────────────────┘
+
+┌───────────┬──────────────┬─────────────────────────────────┐
+│ Emulator  │ Host:Port    │ View in Emulator UI             │
+├───────────┼──────────────┼─────────────────────────────────┤
+│ Functions │ 0.0.0.0:5001 │ http://127.0.0.1:4000/functions │
+└───────────┴──────────────┴─────────────────────────────────┘
+  Emulator Hub host: 127.0.0.1 port: 4400
+  Other reserved ports: 4500
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 
+[debug] [2025-09-04T19:35:18.894Z] [work-queue] {"queuedWork":["/tutorist-f2a46/europe-west1/ping-2025-09-04T19:35:18.893Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-04T19:35:18.905Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/tutorist-f2a46/europe-west1/ping-2025-09-04T19:35:18.893Z"],"workRunningCount":1}
+[debug] [2025-09-04T19:35:18.906Z] Accepted request POST /tutorist-f2a46/europe-west1/ping --> europe-west1-ping
+[debug] [2025-09-04T19:35:18.910Z] [functions] Runtime ready! Sending request! {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Runtime ready! Sending request!"}}
+[debug] [2025-09-04T19:35:18.913Z] [functions] Got req.url=/tutorist-f2a46/europe-west1/ping, mapping to path=/ {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Got req.url=/tutorist-f2a46/europe-west1/ping, mapping to path=/"}}
+[info] i  functions: Loaded environment variables from .env. 
+[debug] [2025-09-04T19:35:18.942Z] [worker-pool] addWorker(europe-west1-ping) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] addWorker(europe-west1-ping)"}}
+[debug] [2025-09-04T19:35:18.943Z] [worker-pool] Adding worker with key europe-west1-ping, total=1 {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] Adding worker with key europe-west1-ping, total=1"}}
+[info] >  (node:43566) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead. {"user":"(node:43566) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"\u001b[90m> \u001b[39m (node:43566) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead."}}
+[info] >  (Use `node --trace-deprecation ...` to show where the warning was created) {"user":"(Use `node --trace-deprecation ...` to show where the warning was created)","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"\u001b[90m> \u001b[39m (Use `node --trace-deprecation ...` to show where the warning was created)"}}
+[debug] [2025-09-04T19:35:20.896Z] [runtime-status] [43566] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"[runtime-status] [43566] Resolved module firebase-admin {\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js\"}"}}
+[debug] [2025-09-04T19:35:20.896Z] [runtime-status] [43566] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"[runtime-status] [43566] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}"}}
+[debug] [2025-09-04T19:35:20.897Z] [runtime-status] [43566] Found local functions config: /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/.runtimeconfig.json {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"[runtime-status] [43566] Found local functions config: /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/.runtimeconfig.json"}}
+[debug] [2025-09-04T19:35:20.898Z] [runtime-status] [43566] Outgoing network have been stubbed. [{"name":"http","status":"mocked"},{"name":"http","status":"mocked"},{"name":"https","status":"mocked"},{"name":"https","status":"mocked"},{"name":"net","status":"mocked"}] {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"[runtime-status] [43566] Outgoing network have been stubbed. [{\"name\":\"http\",\"status\":\"mocked\"},{\"name\":\"http\",\"status\":\"mocked\"},{\"name\":\"https\",\"status\":\"mocked\"},{\"name\":\"https\",\"status\":\"mocked\"},{\"name\":\"net\",\"status\":\"mocked\"}]"}}
+[debug] [2025-09-04T19:35:20.899Z] [runtime-status] [43566] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"[runtime-status] [43566] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}"}}
+[debug] [2025-09-04T19:35:21.310Z] [runtime-status] [43566] Checked functions.config() {"config":{"iyzico":{"api_key":"XXX","secret_key":"YYY","base_url":"https://sandbox-api.iyzipay.com","callback_url":"http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCallback"}}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"[runtime-status] [43566] Checked functions.config() {\"config\":{\"iyzico\":{\"api_key\":\"XXX\",\"secret_key\":\"YYY\",\"base_url\":\"https://sandbox-api.iyzipay.com\",\"callback_url\":\"http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCallback\"}}}"}}
+[debug] [2025-09-04T19:35:21.311Z] [runtime-status] [43566] firebase-functions has been stubbed. {"functionsResolution":{"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"[runtime-status] [43566] firebase-functions has been stubbed. {\"functionsResolution\":{\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}}"}}
+[debug] [2025-09-04T19:35:21.313Z] [runtime-status] [43566] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"[runtime-status] [43566] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}"}}
+[debug] [2025-09-04T19:35:21.315Z] [runtime-status] [43566] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"[runtime-status] [43566] Resolved module firebase-admin {\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js\"}"}}
+[debug] [2025-09-04T19:35:21.319Z] [runtime-status] [43566] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"[runtime-status] [43566] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}"}}
+[debug] [2025-09-04T19:35:21.319Z] [runtime-status] [43566] firebase-admin has been stubbed. {"adminResolution":{"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js"}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"[runtime-status] [43566] firebase-admin has been stubbed. {\"adminResolution\":{\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js\"}}"}}
+[debug] [2025-09-04T19:35:21.321Z] [runtime-status] [43566] initializeApp(DEFAULT) {"storageBucket":"tutorist-f2a46.firebasestorage.app","projectId":"tutorist-f2a46"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"[runtime-status] [43566] initializeApp(DEFAULT) {\"storageBucket\":\"tutorist-f2a46.firebasestorage.app\",\"projectId\":\"tutorist-f2a46\"}"}}
+[warn] ⚠  functions: The Cloud Firestore emulator is not running, so calls to Firestore will affect production. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"The Cloud Firestore emulator is not running, so calls to Firestore will affect production."}}
+[debug] [2025-09-04T19:35:21.337Z] [runtime-status] [43566] Functions runtime initialized. {"cwd":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions","node_version":"23.2.0"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"[runtime-status] [43566] Functions runtime initialized. {\"cwd\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions\",\"node_version\":\"23.2.0\"}"}}
+[debug] [2025-09-04T19:35:21.339Z] [runtime-status] [43566] Listening to port: /var/folders/nh/mz932t5n48q7zf5xr0d9k6vr0000gn/T/fire_emu_9e5567c84b7ee3a8.sock {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"[runtime-status] [43566] Listening to port: /var/folders/nh/mz932t5n48q7zf5xr0d9k6vr0000gn/T/fire_emu_9e5567c84b7ee3a8.sock"}}
+[debug] [2025-09-04T19:35:21.412Z] [worker-europe-west1-ping-aeb0845b-1eba-4d74-b46a-3f59400f2481]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"[worker-europe-west1-ping-aeb0845b-1eba-4d74-b46a-3f59400f2481]: IDLE"}}
+[debug] [2025-09-04T19:35:21.413Z] [worker-pool] submitRequest(triggerId=europe-west1-ping) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] submitRequest(triggerId=europe-west1-ping)"}}
+[info] i  functions: Beginning execution of "europe-west1-ping" {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"Beginning execution of \"europe-west1-ping\""}}
+[debug] [2025-09-04T19:35:21.413Z] [worker-europe-west1-ping-aeb0845b-1eba-4d74-b46a-3f59400f2481]: BUSY {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"[worker-europe-west1-ping-aeb0845b-1eba-4d74-b46a-3f59400f2481]: BUSY"}}
+[info] >  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"} {"user":{"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"},"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"\u001b[90m> \u001b[39m {\"verifications\":{\"app\":\"MISSING\",\"auth\":\"VALID\"},\"logging.googleapis.com/labels\":{\"firebase-log-type\":\"callable-request-verification\"},\"severity\":\"DEBUG\",\"message\":\"Callable request verification passed\"}"}}
+[debug] [2025-09-04T19:35:21.437Z] Finishing up request with event=pause {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"Finishing up request with event=pause"}}
+[info] i  functions: Finished "europe-west1-ping" in 23.556958ms {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"Finished \"europe-west1-ping\" in 23.556958ms"}}
+[debug] [2025-09-04T19:35:21.437Z] [worker-europe-west1-ping-aeb0845b-1eba-4d74-b46a-3f59400f2481]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"[worker-europe-west1-ping-aeb0845b-1eba-4d74-b46a-3f59400f2481]: IDLE"}}
+[debug] [2025-09-04T19:35:21.437Z] Finishing up request with event=finish {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"Finishing up request with event=finish"}}
+[debug] [2025-09-04T19:35:21.437Z] Finishing up request with event=close {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"Finishing up request with event=close"}}
+[debug] [2025-09-04T19:35:21.437Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-04T19:36:05.436Z] [work-queue] {"queuedWork":["/tutorist-f2a46/europe-west1/iyziCreateSubmerchant-2025-09-04T19:36:05.435Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-04T19:36:05.436Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/tutorist-f2a46/europe-west1/iyziCreateSubmerchant-2025-09-04T19:36:05.435Z"],"workRunningCount":1}
+[debug] [2025-09-04T19:36:05.436Z] Accepted request POST /tutorist-f2a46/europe-west1/iyziCreateSubmerchant --> europe-west1-iyziCreateSubmerchant
+[debug] [2025-09-04T19:36:05.437Z] [functions] Runtime ready! Sending request! {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Runtime ready! Sending request!"}}
+[debug] [2025-09-04T19:36:05.437Z] [functions] Got req.url=/tutorist-f2a46/europe-west1/iyziCreateSubmerchant, mapping to path=/ {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Got req.url=/tutorist-f2a46/europe-west1/iyziCreateSubmerchant, mapping to path=/"}}
+[info] i  functions: Loaded environment variables from .env. 
+[debug] [2025-09-04T19:36:05.445Z] [worker-pool] addWorker(europe-west1-iyziCreateSubmerchant) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] addWorker(europe-west1-iyziCreateSubmerchant)"}}
+[debug] [2025-09-04T19:36:05.446Z] [worker-pool] Adding worker with key europe-west1-iyziCreateSubmerchant, total=1 {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] Adding worker with key europe-west1-iyziCreateSubmerchant, total=1"}}
+[info] >  (node:43572) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead. {"user":"(node:43572) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"\u001b[90m> \u001b[39m (node:43572) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead."}}
+[info] >  (Use `node --trace-deprecation ...` to show where the warning was created) {"user":"(Use `node --trace-deprecation ...` to show where the warning was created)","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"\u001b[90m> \u001b[39m (Use `node --trace-deprecation ...` to show where the warning was created)"}}
+[debug] [2025-09-04T19:36:07.098Z] [runtime-status] [43572] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"[runtime-status] [43572] Resolved module firebase-admin {\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js\"}"}}
+[debug] [2025-09-04T19:36:07.100Z] [runtime-status] [43572] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"[runtime-status] [43572] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}"}}
+[debug] [2025-09-04T19:36:07.102Z] [runtime-status] [43572] Found local functions config: /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/.runtimeconfig.json {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"[runtime-status] [43572] Found local functions config: /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/.runtimeconfig.json"}}
+[debug] [2025-09-04T19:36:07.103Z] [runtime-status] [43572] Outgoing network have been stubbed. [{"name":"http","status":"mocked"},{"name":"http","status":"mocked"},{"name":"https","status":"mocked"},{"name":"https","status":"mocked"},{"name":"net","status":"mocked"}] {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"[runtime-status] [43572] Outgoing network have been stubbed. [{\"name\":\"http\",\"status\":\"mocked\"},{\"name\":\"http\",\"status\":\"mocked\"},{\"name\":\"https\",\"status\":\"mocked\"},{\"name\":\"https\",\"status\":\"mocked\"},{\"name\":\"net\",\"status\":\"mocked\"}]"}}
+[debug] [2025-09-04T19:36:07.104Z] [runtime-status] [43572] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"[runtime-status] [43572] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}"}}
+[debug] [2025-09-04T19:36:07.443Z] [runtime-status] [43572] Checked functions.config() {"config":{"iyzico":{"api_key":"XXX","secret_key":"YYY","base_url":"https://sandbox-api.iyzipay.com","callback_url":"http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCallback"}}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"[runtime-status] [43572] Checked functions.config() {\"config\":{\"iyzico\":{\"api_key\":\"XXX\",\"secret_key\":\"YYY\",\"base_url\":\"https://sandbox-api.iyzipay.com\",\"callback_url\":\"http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCallback\"}}}"}}
+[debug] [2025-09-04T19:36:07.443Z] [runtime-status] [43572] firebase-functions has been stubbed. {"functionsResolution":{"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"[runtime-status] [43572] firebase-functions has been stubbed. {\"functionsResolution\":{\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}}"}}
+[debug] [2025-09-04T19:36:07.444Z] [runtime-status] [43572] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"[runtime-status] [43572] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}"}}
+[debug] [2025-09-04T19:36:07.448Z] [runtime-status] [43572] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"[runtime-status] [43572] Resolved module firebase-admin {\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js\"}"}}
+[debug] [2025-09-04T19:36:07.451Z] [runtime-status] [43572] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"[runtime-status] [43572] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}"}}
+[debug] [2025-09-04T19:36:07.452Z] [runtime-status] [43572] firebase-admin has been stubbed. {"adminResolution":{"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js"}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"[runtime-status] [43572] firebase-admin has been stubbed. {\"adminResolution\":{\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js\"}}"}}
+[debug] [2025-09-04T19:36:07.456Z] [runtime-status] [43572] initializeApp(DEFAULT) {"storageBucket":"tutorist-f2a46.firebasestorage.app","projectId":"tutorist-f2a46"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"[runtime-status] [43572] initializeApp(DEFAULT) {\"storageBucket\":\"tutorist-f2a46.firebasestorage.app\",\"projectId\":\"tutorist-f2a46\"}"}}
+[debug] [2025-09-04T19:36:07.473Z] [runtime-status] [43572] Functions runtime initialized. {"cwd":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions","node_version":"23.2.0"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"[runtime-status] [43572] Functions runtime initialized. {\"cwd\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions\",\"node_version\":\"23.2.0\"}"}}
+[debug] [2025-09-04T19:36:07.474Z] [runtime-status] [43572] Listening to port: /var/folders/nh/mz932t5n48q7zf5xr0d9k6vr0000gn/T/fire_emu_5083c3b62b5b6fe0.sock {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"[runtime-status] [43572] Listening to port: /var/folders/nh/mz932t5n48q7zf5xr0d9k6vr0000gn/T/fire_emu_5083c3b62b5b6fe0.sock"}}
+[debug] [2025-09-04T19:36:07.504Z] [worker-europe-west1-iyziCreateSubmerchant-84598557-66c4-465b-9a26-a31c18d28efd]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"[worker-europe-west1-iyziCreateSubmerchant-84598557-66c4-465b-9a26-a31c18d28efd]: IDLE"}}
+[debug] [2025-09-04T19:36:07.505Z] [worker-pool] submitRequest(triggerId=europe-west1-iyziCreateSubmerchant) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] submitRequest(triggerId=europe-west1-iyziCreateSubmerchant)"}}
+[info] i  functions: Beginning execution of "europe-west1-iyziCreateSubmerchant" {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"Beginning execution of \"europe-west1-iyziCreateSubmerchant\""}}
+[debug] [2025-09-04T19:36:07.506Z] [worker-europe-west1-iyziCreateSubmerchant-84598557-66c4-465b-9a26-a31c18d28efd]: BUSY {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"[worker-europe-west1-iyziCreateSubmerchant-84598557-66c4-465b-9a26-a31c18d28efd]: BUSY"}}
+[info] >  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"} {"user":{"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"},"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"\u001b[90m> \u001b[39m {\"verifications\":{\"app\":\"MISSING\",\"auth\":\"VALID\"},\"logging.googleapis.com/labels\":{\"firebase-log-type\":\"callable-request-verification\"},\"severity\":\"DEBUG\",\"message\":\"Callable request verification passed\"}"}}
+[info] >  iyziCreateSubmerchant payload for rAstC39QmzfgRlMYowAMGo030vn1 {"user":"iyziCreateSubmerchant payload for rAstC39QmzfgRlMYowAMGo030vn1","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"\u001b[90m> \u001b[39m iyziCreateSubmerchant payload for rAstC39QmzfgRlMYowAMGo030vn1"}}
+[warn] ⚠  External network resource requested!
+   - URL: "https://sandbox-api.iyzipay.com/onboarding/submerchant"
+ - Be careful, this may be a production service. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"External network resource requested!\n   - URL: \"https://sandbox-api.iyzipay.com/onboarding/submerchant\"\n - Be careful, this may be a production service."}}
+[info] >  iyziCreateSubmerchant error: Üye işyeri bulunamadı { {"user":"iyziCreateSubmerchant error: Üye işyeri bulunamadı {","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"\u001b[90m> \u001b[39m iyziCreateSubmerchant error: Üye işyeri bulunamadı {"}}
+[info] >    status: 'failure', {"user":"  status: 'failure',","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"\u001b[90m> \u001b[39m   status: 'failure',"}}
+[info] >    errorCode: '1002', {"user":"  errorCode: '1002',","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"\u001b[90m> \u001b[39m   errorCode: '1002',"}}
+[info] >    errorMessage: 'Üye işyeri bulunamadı', {"user":"  errorMessage: 'Üye işyeri bulunamadı',","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"\u001b[90m> \u001b[39m   errorMessage: 'Üye işyeri bulunamadı',"}}
+[info] >    locale: 'tr', {"user":"  locale: 'tr',","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"\u001b[90m> \u001b[39m   locale: 'tr',"}}
+[info] >    systemTime: 1757014568467 {"user":"  systemTime: 1757014568467","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"\u001b[90m> \u001b[39m   systemTime: 1757014568467"}}
+[info] >  } {"user":"}","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"\u001b[90m> \u001b[39m }"}}
+[debug] [2025-09-04T19:36:08.531Z] Finishing up request with event=pause {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"Finishing up request with event=pause"}}
+[info] i  functions: Finished "europe-west1-iyziCreateSubmerchant" in 1025.917042ms {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"Finished \"europe-west1-iyziCreateSubmerchant\" in 1025.917042ms"}}
+[debug] [2025-09-04T19:36:08.532Z] [worker-europe-west1-iyziCreateSubmerchant-84598557-66c4-465b-9a26-a31c18d28efd]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"[worker-europe-west1-iyziCreateSubmerchant-84598557-66c4-465b-9a26-a31c18d28efd]: IDLE"}}
+[debug] [2025-09-04T19:36:08.532Z] Finishing up request with event=finish {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"Finishing up request with event=finish"}}
+[debug] [2025-09-04T19:36:08.533Z] Finishing up request with event=close {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"Finishing up request with event=close"}}
+[debug] [2025-09-04T19:36:08.533Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-04T21:56:30.287Z] File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers"}}
+[debug] [2025-09-04T21:56:31.296Z] Validating nodejs source
+[debug] [2025-09-04T21:56:32.181Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "lint": "eslint .",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.4.0",
+    "iyzipay": "^2.0.64"
+  },
+  "devDependencies": {
+    "eslint": "^8.15.0",
+    "eslint-config-google": "^0.14.0",
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-09-04T21:56:32.182Z] Building nodejs source
+[debug] [2025-09-04T21:56:32.182Z] Failed to find version of module node: reached end of search path /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "18" doesn't match your global version "23". Using node@23 from host. 
+[info] i  functions: Loaded environment variables from .env. 
+[debug] [2025-09-04T21:56:32.185Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-09-04T21:56:32.190Z] Found firebase-functions binary at '/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8056
+
+[debug] [2025-09-04T21:56:32.754Z] Got response from /__/functions.yaml {"endpoints":{"ping":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"ping"},"onBookingCreate":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.created","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"bookings/{bookingId}"},"retry":false},"entryPoint":"onBookingCreate"},"onBookingStatusChange":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"bookings/{bookingId}"},"retry":false},"entryPoint":"onBookingStatusChange"},"iyziCreateSubmerchant":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"iyziCreateSubmerchant"},"iyziInitCheckout":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"iyziInitCheckout"},"iyziCallback":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"httpsTrigger":{},"entryPoint":"iyziCallback"},"iyziRefreshSubmerchant":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"iyziRefreshSubmerchant"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[info] ✔  functions: Loaded functions definitions from source: ping, onBookingCreate, onBookingStatusChange, iyziCreateSubmerchant, iyziInitCheckout, iyziCallback, iyziRefreshSubmerchant. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: ping, onBookingCreate, onBookingStatusChange, iyziCreateSubmerchant, iyziInitCheckout, iyziCallback, iyziRefreshSubmerchant."}}
+[debug] [2025-09-04T21:56:36.819Z] [worker-pool] Shutting down IDLE worker (europe-west1-ping) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] Shutting down IDLE worker (europe-west1-ping)"}}
+[debug] [2025-09-04T21:56:36.819Z] [worker-europe-west1-ping-aeb0845b-1eba-4d74-b46a-3f59400f2481]: FINISHING {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"[worker-europe-west1-ping-aeb0845b-1eba-4d74-b46a-3f59400f2481]: FINISHING"}}
+[debug] [2025-09-04T21:56:36.819Z] [worker-pool] Shutting down IDLE worker (europe-west1-iyziCreateSubmerchant) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] Shutting down IDLE worker (europe-west1-iyziCreateSubmerchant)"}}
+[debug] [2025-09-04T21:56:36.819Z] [worker-europe-west1-iyziCreateSubmerchant-84598557-66c4-465b-9a26-a31c18d28efd]: FINISHING {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"[worker-europe-west1-iyziCreateSubmerchant-84598557-66c4-465b-9a26-a31c18d28efd]: FINISHING"}}
+[info] ✔  functions[europe-west1-iyziRefreshSubmerchant]: http function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziRefreshSubmerchant). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziRefreshSubmerchant)."}}
+[debug] [2025-09-04T21:56:36.841Z] [worker-europe-west1-ping-aeb0845b-1eba-4d74-b46a-3f59400f2481]: exited {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"[worker-europe-west1-ping-aeb0845b-1eba-4d74-b46a-3f59400f2481]: exited"}}
+[debug] [2025-09-04T21:56:36.841Z] [worker-europe-west1-ping-aeb0845b-1eba-4d74-b46a-3f59400f2481]: FINISHED {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-ping"},"extension":{},"message":"[worker-europe-west1-ping-aeb0845b-1eba-4d74-b46a-3f59400f2481]: FINISHED"}}
+[debug] [2025-09-04T21:56:36.841Z] [worker-europe-west1-iyziCreateSubmerchant-84598557-66c4-465b-9a26-a31c18d28efd]: exited {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"[worker-europe-west1-iyziCreateSubmerchant-84598557-66c4-465b-9a26-a31c18d28efd]: exited"}}
+[debug] [2025-09-04T21:56:36.841Z] [worker-europe-west1-iyziCreateSubmerchant-84598557-66c4-465b-9a26-a31c18d28efd]: FINISHED {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-iyziCreateSubmerchant"},"extension":{},"message":"[worker-europe-west1-iyziCreateSubmerchant-84598557-66c4-465b-9a26-a31c18d28efd]: FINISHED"}}
+[debug] [2025-09-04T22:11:50.739Z] File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers"}}
+[debug] [2025-09-04T22:11:51.747Z] Validating nodejs source
+[debug] [2025-09-04T22:11:52.512Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "lint": "eslint .",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.4.0",
+    "iyzipay": "^2.0.64"
+  },
+  "devDependencies": {
+    "eslint": "^8.15.0",
+    "eslint-config-google": "^0.14.0",
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-09-04T22:11:52.512Z] Building nodejs source
+[debug] [2025-09-04T22:11:52.513Z] Failed to find version of module node: reached end of search path /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "18" doesn't match your global version "23". Using node@23 from host. 
+[info] i  functions: Loaded environment variables from .env. 
+[debug] [2025-09-04T22:11:52.518Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-09-04T22:11:52.520Z] Found firebase-functions binary at '/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8106
+
+[debug] [2025-09-04T22:11:53.068Z] Got response from /__/functions.yaml {"endpoints":{"ping":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"ping"},"onBookingCreate":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.created","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"bookings/{bookingId}"},"retry":false},"entryPoint":"onBookingCreate"},"onBookingStatusChange":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"bookings/{bookingId}"},"retry":false},"entryPoint":"onBookingStatusChange"},"iyziCreateSubmerchant":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"iyziCreateSubmerchant"},"iyziInitCheckout":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"iyziInitCheckout"},"iyziCallback":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"httpsTrigger":{},"entryPoint":"iyziCallback"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[info] ✔  functions: Loaded functions definitions from source: ping, onBookingCreate, onBookingStatusChange, iyziCreateSubmerchant, iyziInitCheckout, iyziCallback. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: ping, onBookingCreate, onBookingStatusChange, iyziCreateSubmerchant, iyziInitCheckout, iyziCallback."}}
+[debug] [2025-09-04T22:12:08.804Z] File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers"}}
+[debug] [2025-09-04T22:12:09.816Z] Validating nodejs source
+[debug] [2025-09-04T22:12:10.608Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "lint": "eslint .",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.4.0",
+    "iyzipay": "^2.0.64"
+  },
+  "devDependencies": {
+    "eslint": "^8.15.0",
+    "eslint-config-google": "^0.14.0",
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-09-04T22:12:10.608Z] Building nodejs source
+[debug] [2025-09-04T22:12:10.609Z] Failed to find version of module node: reached end of search path /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "18" doesn't match your global version "23". Using node@23 from host. 
+[info] i  functions: Loaded environment variables from .env. 
+[debug] [2025-09-04T22:12:10.613Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-09-04T22:12:10.616Z] Found firebase-functions binary at '/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8834
+
+[debug] [2025-09-04T22:12:11.110Z] Got response from /__/functions.yaml {"endpoints":{"ping":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"ping"},"onBookingCreate":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.created","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"bookings/{bookingId}"},"retry":false},"entryPoint":"onBookingCreate"},"onBookingStatusChange":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"bookings/{bookingId}"},"retry":false},"entryPoint":"onBookingStatusChange"},"iyziCreateSubmerchant":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"iyziCreateSubmerchant"},"iyziInitCheckout":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"iyziInitCheckout"},"iyziCallback":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"httpsTrigger":{},"entryPoint":"iyziCallback"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[info] ✔  functions: Loaded functions definitions from source: ping, onBookingCreate, onBookingStatusChange, iyziCreateSubmerchant, iyziInitCheckout, iyziCallback. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: ping, onBookingCreate, onBookingStatusChange, iyziCreateSubmerchant, iyziInitCheckout, iyziCallback."}}
+[debug] [2025-09-04T22:16:14.538Z] File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers"}}
