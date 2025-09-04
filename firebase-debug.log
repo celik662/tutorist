@@ -492,3 +492,40 @@ Issues? Report them at https://github.com/firebase/firebase-tools/issues and att
 [debug] [2025-09-04T22:12:11.110Z] Got response from /__/functions.yaml {"endpoints":{"ping":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"ping"},"onBookingCreate":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.created","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"bookings/{bookingId}"},"retry":false},"entryPoint":"onBookingCreate"},"onBookingStatusChange":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"bookings/{bookingId}"},"retry":false},"entryPoint":"onBookingStatusChange"},"iyziCreateSubmerchant":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"iyziCreateSubmerchant"},"iyziInitCheckout":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"iyziInitCheckout"},"iyziCallback":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"httpsTrigger":{},"entryPoint":"iyziCallback"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
 [info] ✔  functions: Loaded functions definitions from source: ping, onBookingCreate, onBookingStatusChange, iyziCreateSubmerchant, iyziInitCheckout, iyziCallback. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: ping, onBookingCreate, onBookingStatusChange, iyziCreateSubmerchant, iyziInitCheckout, iyziCallback."}}
 [debug] [2025-09-04T22:16:14.538Z] File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers"}}
+[debug] [2025-09-04T22:16:15.541Z] Validating nodejs source
+[debug] [2025-09-04T22:16:17.023Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "lint": "eslint .",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.4.0",
+    "iyzipay": "^2.0.64"
+  },
+  "devDependencies": {
+    "eslint": "^8.15.0",
+    "eslint-config-google": "^0.14.0",
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-09-04T22:16:17.023Z] Building nodejs source
+[debug] [2025-09-04T22:16:17.023Z] Failed to find version of module node: reached end of search path /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "18" doesn't match your global version "23". Using node@23 from host. 
+[info] i  functions: Loaded environment variables from .env. 
+[debug] [2025-09-04T22:16:17.025Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-09-04T22:16:17.028Z] Found firebase-functions binary at '/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8338
+
+[debug] [2025-09-04T22:16:17.828Z] Got response from /__/functions.yaml {"endpoints":{"ping":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"ping"},"onBookingCreate":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.created","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"bookings/{bookingId}"},"retry":false},"entryPoint":"onBookingCreate"},"onBookingStatusChange":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"bookings/{bookingId}"},"retry":false},"entryPoint":"onBookingStatusChange"},"iyziCreateSubmerchant":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"iyziCreateSubmerchant"},"iyziInitCheckout":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"iyziInitCheckout"},"iyziCallback":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"httpsTrigger":{},"entryPoint":"iyziCallback"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
