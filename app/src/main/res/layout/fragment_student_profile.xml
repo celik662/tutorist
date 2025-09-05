@@ -5,20 +5,48 @@
         android:orientation="vertical" android:padding="16dp"
         android:layout_width="match_parent" android:layout_height="wrap_content">
 
-        <EditText android:id="@+id/etName" android:hint="Ad Soyad"
+        <EditText
+            android:id="@+id/etName"
+            android:hint="Ad Soyad"
             android:layout_width="match_parent" android:layout_height="wrap_content"/>
 
-        <EditText android:id="@+id/etPhone" android:hint="Telefon" android:inputType="phone"
+        <EditText
+            android:id="@+id/etPhone"
+            android:hint="Telefon"
+            android:inputType="phone"
             android:layout_width="match_parent" android:layout_height="wrap_content"/>
 
-        <Button android:id="@+id/btnSave" android:text="Kaydet"
+        <Button
+            android:id="@+id/btnSave"
+            android:text="Kaydet"
             android:layout_width="match_parent" android:layout_height="wrap_content"/>
 
-        <Button android:id="@+id/btnLogout" android:text="Çıkış Yap"
+        <Button
+            android:id="@+id/btnLogout"
+            android:text="Çıkış Yap"
             android:layout_width="match_parent" android:layout_height="wrap_content"/>
 
-        <TextView android:id="@+id/tvMsg"
+        <TextView
+            android:id="@+id/tvMsg"
             android:layout_width="match_parent" android:layout_height="wrap_content"
             android:paddingTop="8dp"/>
+
+        <!-- Ödeme kartları bölümü -->
+        <TextView
+            android:text="Ödeme bilgileri"
+            android:textStyle="bold"
+            android:paddingTop="16dp"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+
+        <LinearLayout
+            android:id="@+id/llCards"
+            android:orientation="vertical"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:paddingTop="8dp"/>
+
+        <Button
+            android:id="@+id/btnAddCard"
+            android:text="Kart ekle"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
     </LinearLayout>
 </ScrollView>
