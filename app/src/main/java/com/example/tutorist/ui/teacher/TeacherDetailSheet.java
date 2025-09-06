@@ -27,9 +27,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class TeacherDetailSheet extends com.google.android.material.bottomsheet.BottomSheetDialogFragment {
-
 
     public static TeacherDetailSheet newInstance(String teacherId, String subjectId, String subjectName) {
         Bundle b = new Bundle();
@@ -41,12 +41,11 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
         return f;
     }
 
-
-    private FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private ListenerRegistration profReg, revReg;
 
     private ImageView img;
-    private TextView tvName, tvBio, tvCount;
+    private TextView tvName, tvBio, tvCount, tvPrice; // tvPrice eklendi
     private RatingBar ratingBar;
     private RecyclerView rv;
     private ReviewAdapter reviewAdapter;
@@ -54,19 +53,24 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
     private String teacherId;
     private String subjectId;
     private String subjectName;
-    private String dateIso;   // yyyy-MM-dd biçiminde tutulacak
-    private int selHour = -1; // seçili saat (yoksa -1)
 
+    private Integer currentPrice = null; // seçili dersin fiyatı (TRY)
+
+    // ChooseSlotActivity’ye geçirirken aynı key’leri kullanalım
+    private static final String EX_TEACHER_NAME  = "ex_teacher_name";
+    private static final String EX_SUBJECT_PRICE = "ex_subject_price";
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inf, @Nullable ViewGroup c, @Nullable Bundle s) {
         View v = inf.inflate(R.layout.sheet_teacher_detail, c, false);
-        img = v.findViewById(R.id.img);
-        tvName = v.findViewById(R.id.tvName);
-        tvBio = v.findViewById(R.id.tvBio);
-        tvCount = v.findViewById(R.id.tvCount);
+        img       = v.findViewById(R.id.img);
+        tvName    = v.findViewById(R.id.tvName);
+        tvBio     = v.findViewById(R.id.tvBio);
+        tvCount   = v.findViewById(R.id.tvCount);
+        tvPrice   = v.findViewById(R.id.tvPrice);  // layout’ta bu id olmalı
         ratingBar = v.findViewById(R.id.ratingBar);
+
         rv = v.findViewById(R.id.rvReviews);
         rv.setLayoutManager(new LinearLayoutManager(getContext()));
         reviewAdapter = new ReviewAdapter(new ArrayList<>());
@@ -77,7 +81,7 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
         subjectId   = args != null ? args.getString("sid")   : null;
         subjectName = args != null ? args.getString("sname") : null;
 
-
+        // Rezervasyon butonu
         v.findViewById(R.id.btnBook).setOnClickListener(btn -> {
             Context ctx = getContext();
             if (ctx != null) {
@@ -85,49 +89,146 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
                 it.putExtra("teacherId", teacherId);
                 if (subjectId != null)   it.putExtra("subjectId", subjectId);
                 if (subjectName != null) it.putExtra("subjectName", subjectName);
+                // ÖZETTE DOĞRU GÖRÜNMEK İÇİN extras:
+                if (tvName != null)      it.putExtra(EX_TEACHER_NAME, tvName.getText().toString());
+                if (currentPrice != null && currentPrice > 0) {
+                    it.putExtra(EX_SUBJECT_PRICE, currentPrice);
+                }
                 startActivity(it);
             }
             dismissAllowingStateLoss();
         });
 
+        startListening();       // profil + yorumları dinle
+        loadPriceForDetail();   // fiyatı getir (profilden dene, olmazsa fallback)
 
-        teacherId = getArguments() != null ? getArguments().getString("tid") : null;
-        startListening();
         return v;
     }
+
+    /* ---------- Yardımcılar ---------- */
+
+    @Nullable
+    private Integer toIntOrNull(Object o){
+        if (o == null) return null;
+        if (o instanceof Number) return ((Number)o).intValue();
+        try { return Integer.parseInt(String.valueOf(o)); } catch (Exception ignore){ return null; }
+    }
+
+    /** teacherProfiles dokümanından subject fiyatını çıkarır. */
+    @Nullable
+    private Integer extractPriceFromProfile(DocumentSnapshot d, String subjectId){
+        if (d == null || subjectId == null) return null;
+
+        // 1) prices.{subjectId}
+        Integer n = toIntOrNull(d.get("prices." + subjectId));
+        if (n != null && n > 0) return n;
+
+        // 2) subjectsMap.{subjectId}.price  (nested obje)
+        Object sm = d.get("subjectsMap." + subjectId);
+        if (sm instanceof Map) {
+            Integer n2 = toIntOrNull(((Map<?,?>) sm).get("price"));
+            if (n2 != null && n2 > 0) return n2;
+        }
+
+        // 3) subjectsMap.{subjectId} doğrudan sayı (senin ekran görüntündeki senaryo)
+        Integer n3 = toIntOrNull(sm);
+        if (n3 != null && n3 > 0) return n3;
+
+        return null;
+    }
+
+    private void setPriceText(@Nullable Integer price){
+        if (tvPrice == null) return;
+        if (price != null && price > 0) {
+            tvPrice.setText("₺" + price);
+        } else {
+            tvPrice.setText("—");
+        }
+    }
+
+    /* ---------- Fiyat: profil → teacherSubjects → subjects fallback ---------- */
+
+    private void loadPriceForDetail() {
+        if (subjectId == null || teacherId == null) { setPriceText(null); return; }
+
+        // Önce profilden tek sefer oku (dinleyicide de tekrar deniyoruz)
+        db.collection("teacherProfiles").document(teacherId).get()
+                .addOnSuccessListener(prof -> {
+                    Integer fromProf = extractPriceFromProfile(prof, subjectId);
+                    if (fromProf != null && fromProf > 0) {
+                        currentPrice = fromProf;
+                        setPriceText(currentPrice);
+                    } else {
+                        // A) teacherSubjects/{teacherId_subjectId}
+                        final String tsId = teacherId + "_" + subjectId;
+                        db.collection("teacherSubjects").document(tsId).get()
+                                .addOnSuccessListener(d -> {
+                                    Integer p = toIntOrNull(d.get("price"));
+                                    if (p != null && p > 0) {
+                                        currentPrice = p; setPriceText(currentPrice);
+                                    } else {
+                                        // B) teacherSubjects/{teacherId}/subjects/{subjectId}
+                                        db.collection("teacherSubjects").document(teacherId)
+                                                .collection("subjects").document(subjectId).get()
+                                                .addOnSuccessListener(sd -> {
+                                                    Integer p2 = toIntOrNull(sd.get("price"));
+                                                    if (p2 != null && p2 > 0) {
+                                                        currentPrice = p2; setPriceText(currentPrice);
+                                                    } else {
+                                                        // C) subjects/{subjectId}.price (genel)
+                                                        db.collection("subjects").document(subjectId).get()
+                                                                .addOnSuccessListener(s -> {
+                                                                    Integer p3 = toIntOrNull(s.get("price"));
+                                                                    currentPrice = p3;
+                                                                    setPriceText(currentPrice);
+                                                                })
+                                                                .addOnFailureListener(e -> setPriceText(null));
+                                                    }
+                                                })
+                                                .addOnFailureListener(e -> setPriceText(null));
+                                    }
+                                })
+                                .addOnFailureListener(e -> setPriceText(null));
+                    }
+                })
+                .addOnFailureListener(e -> setPriceText(null));
+    }
+
+    /* ---------- Profil + Yorum dinleme ---------- */
 
     private void startListening() {
         if (teacherId == null) return;
 
-        // 1) Profil
-// 1) Profil
+        // Profil
         profReg = db.collection("teacherProfiles").document(teacherId)
                 .addSnapshotListener((snap, e) -> {
                     if (e != null || snap == null || !snap.exists()) {
-                        // profil yoksa da yorumlardan hesaplamayı dene
                         fetchRatingFallbackFromReviews();
                         return;
                     }
-
                     String name  = snap.getString("displayName");
                     String bio   = snap.getString("bio");
                     Double avg   = snap.getDouble("ratingAvg");
                     Long   count = snap.getLong("ratingCount");
 
-                    tvName.setText(name != null ? name : "Öğretmen");
-                    tvBio.setText(bio != null ? bio : "—");
+                    if (tvName != null) tvName.setText(name != null ? name : "Öğretmen");
+                    if (tvBio  != null) tvBio.setText(bio != null ? bio : "—");
+
+                    // Fiyatı profilden tekrar dene (profil güncellenmiş olabilir)
+                    Integer p = extractPriceFromProfile(snap, subjectId);
+                    if (p != null && p > 0) {
+                        currentPrice = p;
+                        setPriceText(currentPrice);
+                    }
 
                     if (avg == null || count == null) {
-                        // profilde yok → yorumlardan hesapla
                         fetchRatingFallbackFromReviews();
                     } else {
                         bindRating(avg, count);
                     }
                 });
 
-
-        // 2) Yorumlar (son 20)
-        // NOT: teacherId eşit + createdAt orderBy için composite index isteyebilir.
+        // Yorumlar (son 20)
         revReg = db.collection("teacherReviews")
                 .whereEqualTo("teacherId", teacherId)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
@@ -137,20 +238,20 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
                     List<Review> list = new ArrayList<>();
                     for (DocumentSnapshot d : snap.getDocuments()) {
                         Review r = new Review();
-                        r.rating = d.getLong("rating") != null ? d.getLong("rating").intValue() : 0;
-                        r.comment = String.valueOf(d.get("comment"));
+                        r.rating    = d.getLong("rating") != null ? d.getLong("rating").intValue() : 0;
+                        r.comment   = String.valueOf(d.get("comment"));
                         r.createdAt = d.getTimestamp("createdAt");
                         list.add(r);
                     }
                     reviewAdapter.submit(list);
                 });
     }
+
     private void bindRating(Double ratingAvg, Long ratingCount) {
         double avg  = ratingAvg  == null ? 0.0 : ratingAvg;
         long   cnt  = ratingCount == null ? 0L  : ratingCount;
-        float  disp = (float)(cnt > 0 ? avg : 5.0);   // hiç yorum yoksa 5.0 göster
+        float  disp = (float)(cnt > 0 ? avg : 5.0);
         ratingBar.setRating(disp);
-        // yıldızın yanına "4.6 (12)" yaz
         tvCount.setText(String.format(Locale.getDefault(), "%.1f (%d)", disp, cnt));
     }
 
@@ -167,7 +268,6 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
                     double avg = cnt > 0 ? (sum / cnt) : 0.0;
                     bindRating(avg, cnt);
 
-                    // (isteğe bağlı) Profili doldur ki bir dahaki açılışta direkt gelsin
                     if (cnt > 0) {
                         HashMap<String,Object> up = new HashMap<>();
                         up.put("ratingAvg", avg);
@@ -180,11 +280,11 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
 
     @Override public void onDestroyView() {
         if (profReg != null) profReg.remove();
-        if (revReg != null) revReg.remove();
+        if (revReg != null)  revReg.remove();
         super.onDestroyView();
     }
 
-    // --- dto + adapter ---
+    /* --- dto + adapter (aynı) --- */
     static class Review { int rating; String comment; com.google.firebase.Timestamp createdAt; }
     static class ReviewVH extends RecyclerView.ViewHolder {
         RatingBar rb; TextView tvWhen, tvComment;

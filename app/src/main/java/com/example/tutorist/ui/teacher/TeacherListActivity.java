@@ -23,6 +23,7 @@ import com.google.firebase.firestore.SetOptions;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class TeacherListActivity extends AppCompatActivity {
 
@@ -33,6 +34,9 @@ public class TeacherListActivity extends AppCompatActivity {
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private TeacherAdapter adapter; // <-- SADECE bu adapter'ı kullanıyoruz
+
+    private static final String TAG = "TeacherListActivity";
+
 
     @Override protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,6 +64,122 @@ public class TeacherListActivity extends AppCompatActivity {
         loadTeachers();
     }
 
+    @Nullable
+    private Integer toIntOrNull(Object o){
+        if (o == null) return null;
+        if (o instanceof Number) return ((Number)o).intValue();
+        try { return Integer.parseInt(String.valueOf(o)); } catch (Exception ignore){ return null; }
+    }
+
+    @Nullable
+    private Integer extractPriceFromProfile(DocumentSnapshot d, String subjectId){
+        if (d == null || subjectId == null) return null;
+
+        // 1) teacherProfiles.prices.{subjectId} (varsa)
+        Integer n = toIntOrNull(d.get("prices." + subjectId));
+        if (n != null && n > 0) return n;
+
+        // 2) teacherProfiles.subjectsMap.{subjectId}.price (nested obje ise)
+        Object sm = d.get("subjectsMap." + subjectId);
+        if (sm instanceof Map) {
+            Integer n2 = toIntOrNull(((Map<?,?>) sm).get("price"));
+            if (n2 != null && n2 > 0) return n2;
+        }
+
+        // 3) teacherProfiles.subjectsMap.{subjectId} doğrudan sayı ise (senin ekran görüntündeki gibi)
+        Integer n3 = toIntOrNull(sm);
+        if (n3 != null && n3 > 0) return n3;
+
+        return null;
+    }
+
+    private void processTeachers(QuerySnapshot snap) {
+        List<com.example.tutorist.ui.student.TeacherAdapter.TeacherRow> list = new ArrayList<>();
+
+        for (DocumentSnapshot d : snap.getDocuments()) {
+            com.example.tutorist.ui.student.TeacherAdapter.TeacherRow row =
+                    new com.example.tutorist.ui.student.TeacherAdapter.TeacherRow();
+            row.id          = d.getId();
+            row.fullName    = d.getString("displayName");
+            row.bio         = d.getString("bio");
+            row.ratingAvg   = d.getDouble("ratingAvg");
+            row.ratingCount = d.getLong("ratingCount");
+
+            // <— YENİ: önce profilden fiyatı dene
+            row.price = extractPriceFromProfile(d, subjectId);
+
+            list.add(row);
+        }
+
+        adapter.submit(list);
+
+        Log.d(TAG, "processTeachers subjectId=" + subjectId + " teacherCount=" + list.size());
+
+        // <— PROFİLDEN GELMEYENLER İÇİN eskisi gibi A/B/C fallback’i çalıştır
+        for (com.example.tutorist.ui.student.TeacherAdapter.TeacherRow row : list) {
+            if (row.price == null || row.price <= 0) {
+                loadPriceForRow(row.id, subjectId);  // imzayı sadeleştirdim → row param’sız
+            }
+        }
+
+        for (int i = 0; i < list.size(); i++) {
+            var row = list.get(i);
+            if (row.ratingCount == null || row.ratingCount == 0L) {
+                fetchRatingFallback(row, i);
+            }
+        }
+
+        showLoading(false);
+        tvEmpty.setVisibility(list.isEmpty() ? View.VISIBLE : View.GONE);
+    }
+
+    // <— İMZAYI Sadeleştirdim (row kullanılmıyordu)
+    private void loadPriceForRow(String teacherId, String subjectId){
+        if (teacherId == null || subjectId == null) {
+            Log.w(TAG, "loadPriceForRow: teacherId/subjectId null");
+            return;
+        }
+        final String tsId = teacherId + "_" + subjectId;
+        Log.d(TAG, "price: try A teacherSubjects/" + tsId);
+
+        db.collection("teacherSubjects").document(tsId).get()
+                .addOnSuccessListener(d -> {
+                    Log.d(TAG, "A exists=" + d.exists() + " data=" + (d.exists()? d.getData() : null));
+                    Integer price = toIntOrNull(d.get("price"));
+                    if (price != null && price > 0) {
+                        adapter.updatePriceById(teacherId, price);
+                    } else {
+                        Log.d(TAG, "price: try B teacherSubjects/" + teacherId + "/subjects/" + subjectId);
+                        db.collection("teacherSubjects").document(teacherId)
+                                .collection("subjects").document(subjectId).get()
+                                .addOnSuccessListener(sd -> {
+                                    Log.d(TAG, "B exists=" + sd.exists() + " data=" + (sd.exists()? sd.getData() : null));
+                                    Integer p2 = toIntOrNull(sd.get("price"));
+                                    if (p2 != null && p2 > 0) {
+                                        adapter.updatePriceById(teacherId, p2);
+                                    } else {
+                                        Log.d(TAG, "price: try C subjects/" + subjectId);
+                                        db.collection("subjects").document(subjectId).get()
+                                                .addOnSuccessListener(ss -> {
+                                                    Log.d(TAG, "C exists=" + ss.exists() + " data=" + (ss.exists()? ss.getData() : null));
+                                                    Integer p3 = toIntOrNull(ss.get("price"));
+                                                    if (p3 != null && p3 > 0) {
+                                                        adapter.updatePriceById(teacherId, p3);
+                                                    } else {
+                                                        Log.w(TAG, "price not found for teacher=" + teacherId + " subject=" + subjectId);
+                                                    }
+                                                })
+                                                .addOnFailureListener(e -> Log.e(TAG, "C subjects fetch failed", e));
+                                    }
+                                })
+                                .addOnFailureListener(e -> Log.e(TAG, "B subcollection fetch failed", e));
+                    }
+                })
+                .addOnFailureListener(e -> Log.e(TAG, "A teacherSubjects fetch failed", e));
+    }
+
+
+
     private void loadTeachers() {
         showLoading(true);
 
@@ -71,34 +191,6 @@ public class TeacherListActivity extends AppCompatActivity {
                 .get()
                 .addOnSuccessListener(this::processTeachers)
                 .addOnFailureListener(e -> showError("Öğretmenler yüklenemedi: " + e.getMessage()));
-    }
-
-    private void processTeachers(QuerySnapshot snap) {
-        List<com.example.tutorist.ui.student.TeacherAdapter.TeacherRow> list = new ArrayList<>();
-
-        for (DocumentSnapshot d : snap.getDocuments()) {
-            com.example.tutorist.ui.student.TeacherAdapter.TeacherRow row =
-                    new com.example.tutorist.ui.student.TeacherAdapter.TeacherRow();
-            row.id          = d.getId();
-            row.fullName    = d.getString("displayName"); // teacherProfiles içindeki alan
-            row.bio         = d.getString("bio");
-            row.ratingAvg   = d.getDouble("ratingAvg");   // yoksa null
-            row.ratingCount = d.getLong("ratingCount");   // yoksa null
-            list.add(row);
-        }
-
-        adapter.submit(list);
-
-        // Sunucu alanları boş ise, her bir öğretmen için yorumları okuyup ekranda güncelle
-        for (int i = 0; i < list.size(); i++) {
-            com.example.tutorist.ui.student.TeacherAdapter.TeacherRow row = list.get(i);
-            if (row.ratingCount == null || row.ratingCount == 0L) {
-                fetchRatingFallback(row, i); // ekranı günceller
-            }
-        }
-
-        showLoading(false);
-        tvEmpty.setVisibility(list.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
     /** Profil alanları boşsa: review'lardan ortalama/sayıyı hesapla ve kartı güncelle. */
