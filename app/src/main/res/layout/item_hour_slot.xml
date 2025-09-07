@@ -1,11 +1,20 @@
+<!-- res/layout/item_hour_slot.xml -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:foreground="?attr/selectableItemBackground"
-    android:layout_width="match_parent" android:layout_height="56dp"
-    android:layout_margin="6dp" android:background="@drawable/bg_hour_slot">
+    android:clickable="true"
+    android:focusable="true"
+    android:layout_width="match_parent"
+    android:layout_height="56dp"
+    android:layout_margin="6dp"
+    android:background="@drawable/bg_hour_slot">
 
     <TextView
         android:id="@+id/tvHour"
-        android:text="09:00" android:textSize="16sp"
+        android:text="09:00"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@drawable/selector_hour_text"
         android:layout_gravity="center"
-        android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
 </FrameLayout>

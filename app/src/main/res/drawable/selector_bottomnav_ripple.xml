@@ -1,0 +1,4 @@
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Ripple için hafif vuruş -->
+    <item android:color="@color/tutorist_primaryContainer"/>
+</selector>

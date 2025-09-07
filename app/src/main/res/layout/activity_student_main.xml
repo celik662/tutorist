@@ -1,15 +1,33 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
-    android:layout_width="match_parent" android:layout_height="match_parent">
+    android:background="@color/tutorist_surface"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
     <FrameLayout
         android:id="@+id/fragment_container"
-        android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
         android:layout_weight="1"/>
+
+    <!-- İnce bir ayraç, içerik ile nav arasında nefes -->
+    <com.google.android.material.divider.MaterialDivider
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        app:dividerColor="@color/tutorist_surfaceVariant"/>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNav"
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        app:menu="@menu/menu_student_bottom"/>
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/white"
+        android:elevation="6dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
+        app:menu="@menu/menu_student_bottom"
+        app:labelVisibilityMode="labeled"
+        app:itemIconTint="@drawable/selector_bottomnav_tint"
+        app:itemTextColor="@drawable/selector_bottomnav_tint"
+        app:itemRippleColor="@drawable/selector_bottomnav_ripple"/>
 </LinearLayout>

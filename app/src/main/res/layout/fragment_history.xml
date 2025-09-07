@@ -1,41 +1,63 @@
+<!-- res/layout/fragment_requests.xml (mevcudun yerine) -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:padding="16dp"
-    android:layout_width="match_parent" android:layout_height="match_parent">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@color/tutorist_surface"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
-    <RadioGroup
-        android:id="@+id/rgFilter"
-        android:orientation="horizontal"
+    <!-- Filtre bloğunu minik bir karta alıyoruz -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-        <RadioButton
-            android:id="@+id/rbPending"
-            android:checked="true"
-            android:text="Bekleyen"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
-        <RadioButton
-            android:id="@+id/rbHistory"
-            android:text="Geçmiş"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"/>
-    </RadioGroup>
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="16dp"
+        app:strokeColor="@color/tutorist_surfaceVariant"
+        app:cardBackgroundColor="@android:color/white"
+        android:layout_marginBottom="8dp">
+
+        <RadioGroup
+            android:id="@+id/rgFilter"
+            android:orientation="horizontal"
+            android:padding="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <com.google.android.material.radiobutton.MaterialRadioButton
+                android:id="@+id/rbPending"
+                android:checked="true"
+                android:text="Bekleyen"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <Space android:layout_width="16dp" android:layout_height="0dp"/>
+
+            <com.google.android.material.radiobutton.MaterialRadioButton
+                android:id="@+id/rbHistory"
+                android:text="Geçmiş"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </RadioGroup>
+    </com.google.android.material.card.MaterialCardView>
 
     <TextView
         android:id="@+id/empty"
+        style="?attr/textAppearanceBodyMedium"
+        android:textColor="@color/tutorist_onSurfaceVariant"
+        android:paddingTop="4dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text=""
-        android:textColor="#555"
-        android:paddingTop="8dp"/>
+        android:text="" />
 
+    <!-- ProgressBar id’si KORUNDU -->
     <ProgressBar
         android:id="@+id/progress"
         style="?android:attr/progressBarStyle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:visibility="gone"/>
+        android:visibility="gone"
+        android:layout_marginTop="8dp"/>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv"

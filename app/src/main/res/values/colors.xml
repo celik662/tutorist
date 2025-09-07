@@ -2,12 +2,14 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="status_pending">#FF000000</color>   <!-- Siyah -->
-    <color name="status_accepted">#2E7D32</color>  <!-- Yeşil -->
-    <color name="status_declined">#C62828</color>  <!-- Kırmızı -->
-    <color name="status_cancelled">#FF8F00</color> <!-- Turuncu -->
-    <color name="push_notification">#fc0320</color> <!-- Bildirim kırmızısı -->
-    <color name="status_completed">#2196F3</color>  <!-- Mavi -->
+    <!-- Status palette (tutorist renkleriyle eşleşiyor) -->
+    <color name="status_pending">@color/tutorist_info</color>
+    <color name="status_accepted">@color/tutorist_success</color>
+    <color name="status_completed">@color/tutorist_success</color>
+    <color name="status_declined">@color/tutorist_error</color>
+    <color name="status_cancelled">@color/tutorist_error</color>
+    <color name="status_expired">@color/tutorist_warning</color>
+    <color name="status_no_show">@color/tutorist_warning</color>
     <color name="tutorist_blue">#1388FF</color>
 
 
@@ -30,4 +32,11 @@
     <color name="tutorist_warning">#F59E0B</color>
     <color name="tutorist_error">#EF4444</color>
     <color name="tutorist_info">#3B82F6</color>
+
+    <color name="tutorist_onSurfaceVariant">#5B6B7F</color>
+
+    <color name="push_notification">#143A66</color>         <!-- koyu mavi balon -->
+    <color name="on_push_notification">#E6F1FF</color>      <!-- açık mavi metin/ikon -->
+
+
 </resources>

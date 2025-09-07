@@ -1,7 +1,12 @@
 package com.example.tutorist.ui.student;
 
 import android.annotation.SuppressLint;
+import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -137,9 +142,11 @@ public class HistoryFragment extends Fragment {
 
         Query q = db.collection("bookings").whereEqualTo("studentId", uid);
         if (filter == Filter.PENDING) {
+            // pending’i olduğu gibi getir (normalize bind aşamasında)
             q = q.whereEqualTo("status", "pending");
         } else {
-            q = q.whereIn("status", Arrays.asList("accepted","declined","cancelled","completed"));
+            // History: pending dışındaki tüm anlamlı durumlar
+            q = q.whereIn("status", Adapter.HISTORY_STATUSES_WHEREIN);
         }
 
         reg = q.addSnapshotListener((snap, e) -> {
@@ -160,7 +167,7 @@ public class HistoryFragment extends Fragment {
                 r.subjectId  = String.valueOf(d.get("subjectId"));
                 Object sn    = d.get("subjectName");
                 r.subjectName = (sn != null) ? String.valueOf(sn) : r.subjectId;
-                r.status     = String.valueOf(d.get("status"));
+                r.status = Adapter.normalizeStatus(String.valueOf(d.get("status")));
                 r.date       = String.valueOf(d.get("date"));
                 r.hour       = d.getLong("hour") != null ? d.getLong("hour").intValue() : 0;
 
@@ -169,6 +176,11 @@ public class HistoryFragment extends Fragment {
                     r.endAt = ((com.google.firebase.Timestamp) ts).toDate();
                 else if (ts instanceof java.util.Date)
                     r.endAt = (java.util.Date) ts;
+
+                if ("pending".equals(r.status) && r.endAt != null && new java.util.Date().after(r.endAt)) {
+                    // DB’de saklamasan bile, UI tarafında expired gibi renklendir
+                    r.status = "expired";
+                }
 
                 r.teacherName = teacherNameOf(r.teacherId);
                 r.price       = priceOf(r.teacherId, r.subjectId);
@@ -201,6 +213,7 @@ public class HistoryFragment extends Fragment {
         });
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private void checkReviewExists(Row r) {
         db.collection("teacherReviews").document(r.id).get()
                 .addOnSuccessListener(ds -> {
@@ -210,6 +223,7 @@ public class HistoryFragment extends Fragment {
                 .addOnFailureListener(e -> { /* yok say */ });
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private void checkTeacherNoteExists(Row r) {
         db.collection("teacherNotes").document(r.id).get()
                 .addOnSuccessListener(ds -> {
@@ -381,7 +395,7 @@ public class HistoryFragment extends Fragment {
         }
 
         static class VH extends RecyclerView.ViewHolder {
-            TextView tv1, tv2;
+            TextView tv1, tv2, tvStatus;
             Button btnCancel, btnReview;
             ImageView ivNote; // opsiyonel (layout'a eklersen görünür olur)
 
@@ -389,6 +403,7 @@ public class HistoryFragment extends Fragment {
                 super(v);
                 tv1 = v.findViewById(R.id.tvLine1);
                 tv2 = v.findViewById(R.id.tvLine2);
+                tvStatus = v.findViewById(R.id.tvStatus);
                 btnCancel = v.findViewById(R.id.btnCancel);
                 btnReview = v.findViewById(R.id.btnReview);
                 ivNote = v.findViewById(R.id.ivNote); // item_student_booking'e eklersen bağlanır
@@ -414,21 +429,25 @@ public class HistoryFragment extends Fragment {
 
             // Status metin/renk
             StatusUi ui = statusUi(h.itemView, r.status);
-            String line = String.format(Locale.getDefault(), "%s  %s  • Durum= %s", dt, priceStr, ui.label);
-
-            android.text.SpannableString ss = new android.text.SpannableString(line);
+            String line = String.format(Locale.getDefault(), "%s  %s", dt, priceStr);
+            SpannableString ss = new SpannableString(line);
             int idx = line.lastIndexOf(ui.label);
             if (idx >= 0) {
-                ss.setSpan(new android.text.style.ForegroundColorSpan(ui.color),
-                        idx, idx + ui.label.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                ss.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD),
-                        idx, idx + ui.label.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                ss.setSpan(new ForegroundColorSpan(ui.inlineColor), idx, idx + ui.label.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                ss.setSpan(new StyleSpan(Typeface.BOLD), idx, idx + ui.label.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
             h.tv2.setText(ss);
 
+            if (h.tvStatus != null) {
+                h.tvStatus.setText(ui.label);
+                h.tvStatus.setBackgroundResource(ui.chipBgRes);
+                h.tvStatus.setTextColor(ContextCompat.getColor(h.itemView.getContext(), ui.chipTextColor));
+            }
+
             boolean canReview = r.endAt != null
                     && new java.util.Date().after(r.endAt)
-                    && ("accepted".equalsIgnoreCase(r.status) || "completed".equalsIgnoreCase(r.status))
+                    && ( "accepted".equalsIgnoreCase(r.status)
+                    || "completed".equalsIgnoreCase(r.status) )
                     && !r.hasReview;
 
             boolean cancellable = "pending".equalsIgnoreCase(r.status);
@@ -456,30 +475,118 @@ public class HistoryFragment extends Fragment {
         }
 
         private static class StatusUi {
-            final String label; final int color;
-            StatusUi(String l, int c){ label=l; color=c; }
-        }
-
-        private StatusUi statusUi(View v, String statusRaw) {
-            String s = statusRaw == null ? "" : statusRaw.toLowerCase(Locale.ROOT);
-            android.content.Context c = v.getContext();
-            if (s.equals("accepted")) {
-                return new StatusUi("Onaylandı",
-                        ContextCompat.getColor(c, R.color.status_accepted));
-            } else if (s.equals("declined")) {
-                return new StatusUi("Reddedildi",
-                        ContextCompat.getColor(c, R.color.status_declined));
-            } else if (s.equals("cancelled") || s.equals("canceled")) {
-                return new StatusUi("İptal edildi",
-                        ContextCompat.getColor(c, R.color.status_cancelled));
-            } else if (s.equals("completed")) {
-                return new StatusUi("Tamamlandı",
-                        ContextCompat.getColor(c, R.color.status_completed));
-            } else {
-                return new StatusUi("Beklemede",
-                        ContextCompat.getColor(c, R.color.status_pending));
+            final String label;
+            final int inlineColor;     // tv2 içindeki renk
+            final int chipBgRes;       // tvStatus arka plan drawable
+            final int chipTextColor;   // tvStatus yazı rengi
+            StatusUi(String l, int inline, int bgRes, int chipText){
+                label = l; inlineColor = inline; chipBgRes = bgRes; chipTextColor = chipText;
             }
         }
+
+
+        /** Firestore’dan gelebilecek muhtemel haller → kanonik isim */
+        private static String normalizeStatus(String raw) {
+            if (raw == null) return "pending";
+            String s = raw.trim().toLowerCase(Locale.ROOT);
+
+            // eşanlamlılar
+            if (s.equals("canceled")) s = "cancelled";
+            if (s.equals("rejected") || s.equals("denied")) s = "declined";
+            if (s.equals("teacher_rejected") || s.equals("declined_by_teacher")) s = "teacher_declined";
+            if (s.equals("teacher_canceled") || s.equals("teacher_cancelled")) s = "teacher_cancelled";
+            if (s.equals("student_canceled") || s.equals("student_cancelled")) s = "student_cancelled";
+            if (s.equals("done") || s.equals("finished")) s = "completed";
+
+            // kanonik set
+            switch (s) {
+                case "pending":
+                case "accepted":
+                case "declined":
+                case "teacher_declined":
+                case "cancelled":
+                case "student_cancelled":
+                case "teacher_cancelled":
+                case "completed":
+                case "expired":
+                case "no_show":
+                    return s;
+                default:
+                    return "pending";
+            }
+        }
+
+        /** History sekmesinde göstermek istediğimiz (pending harici) ham status değerleri.
+         *  whereIn max 10 öğe → tam 10 olacak şekilde seçtik. */
+        private static final List<String> HISTORY_STATUSES_WHEREIN = Arrays.asList(
+                "accepted","completed","declined","teacher_declined",
+                "cancelled","canceled","student_cancelled","teacher_cancelled",
+                "expired","no_show"
+        );
+
+        private StatusUi statusUi(View v, String statusRaw) {
+            String s = normalizeStatus(statusRaw);
+            android.content.Context c = v.getContext();
+            switch (s) {
+                case "accepted":
+                    return new StatusUi("Onaylandı",
+                            ContextCompat.getColor(c, R.color.status_accepted),
+                            R.drawable.bg_status_completed,
+                            R.color.status_accepted);
+
+                case "completed":
+                    return new StatusUi("Tamamlandı",
+                            ContextCompat.getColor(c, R.color.status_completed),
+                            R.drawable.bg_status_completed,
+                            R.color.status_completed);
+
+                case "declined":
+                    return new StatusUi("Reddedildi",
+                            ContextCompat.getColor(c, R.color.status_declined),
+                            R.drawable.bg_status_canceled,
+                            R.color.status_declined);
+
+                case "teacher_declined":
+                    return new StatusUi("Öğretmen reddetti",
+                            ContextCompat.getColor(c, R.color.status_declined),
+                            R.drawable.bg_status_canceled,
+                            R.color.status_declined);
+
+                case "cancelled":
+                case "student_cancelled":
+                    return new StatusUi("Öğrenci iptal etti",
+                            ContextCompat.getColor(c, R.color.status_cancelled),
+                            R.drawable.bg_status_canceled,
+                            R.color.status_cancelled);
+
+                case "teacher_cancelled":
+                    return new StatusUi("Öğretmen iptal etti",
+                            ContextCompat.getColor(c, R.color.status_cancelled),
+                            R.drawable.bg_status_canceled,
+                            R.color.status_cancelled);
+
+                case "expired":
+                    return new StatusUi("Süresi doldu",
+                            ContextCompat.getColor(c, R.color.status_expired),
+                            R.drawable.bg_status_warning,
+                            R.color.status_expired);
+
+                case "no_show":
+                    return new StatusUi("Katılım yok",
+                            ContextCompat.getColor(c, R.color.status_no_show),
+                            R.drawable.bg_status_warning,
+                            R.color.status_no_show);
+
+                case "pending":
+                default:
+                    return new StatusUi("Beklemede",
+                            ContextCompat.getColor(c, R.color.status_pending),
+                            R.drawable.bg_status_pending,
+                            R.color.tutorist_onPrimaryContainer);
+            }
+        }
+
+
 
         @Override public int getItemCount(){ return items.size(); }
     }

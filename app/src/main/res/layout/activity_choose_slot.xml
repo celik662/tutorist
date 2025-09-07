@@ -1,35 +1,86 @@
+<!-- res/layout/activity_pick_hour.xml (senin dosyanın yerine) -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:padding="16dp"
-    android:layout_width="match_parent" android:layout_height="match_parent">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@color/tutorist_surface"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
-    <TextView android:id="@+id/tvTitle"
-        android:textStyle="bold" android:textSize="18sp"
-        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+    <!-- Başlık: daha belirgin, aşağıya biraz nefes -->
+    <TextView
+        android:id="@+id/tvTitle"
+        style="?attr/textAppearanceTitleLarge"
+        android:textColor="@color/tutorist_onSurface"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="6dp" />
 
-    <LinearLayout
-        android:orientation="horizontal" android:paddingTop="8dp"
-        android:layout_width="match_parent" android:layout_height="wrap_content">
-        <TextView android:id="@+id/tvDate"
-            android:text="—" android:textSize="16sp"
-            android:layout_weight="1"
-            android:layout_width="0dp" android:layout_height="wrap_content"/>
-        <Button android:id="@+id/btnPickDate"
-            android:text="Tarih Seç"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-    </LinearLayout>
+    <!-- Yardımcı satır: gri, sıkışıklığı dağıtır -->
+    <TextView
+        android:id="@+id/tvInfo"
+        style="?attr/textAppearanceBodyMedium"
+        android:text="Bir tarih ve saat seçin."
+        android:textColor="@color/tutorist_onSurfaceVariant"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp" />
 
-    <TextView android:id="@+id/tvInfo"
-        android:text="Bir saat seçin."
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:paddingTop="8dp"/>
+    <!-- Tarih seçimi için küçük kart: solda seçili tarih, sağda "Tarih Seç" -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
+        app:cardCornerRadius="16dp"
+        app:strokeColor="@color/tutorist_surfaceVariant"
+        app:cardBackgroundColor="@android:color/white"
+        android:layout_marginBottom="8dp">
 
+        <LinearLayout
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="12dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/tvDate"
+                style="?attr/textAppearanceBodyLarge"
+                android:text="—"
+                android:textColor="@color/tutorist_onSurface"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPickDate"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:text="Tarih Seç"
+                app:cornerRadius="12dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Saat slotları -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvHours"
-        android:layout_width="match_parent" android:layout_height="0dp"
-        android:layout_weight="1" android:paddingTop="8dp"/>
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingTop="4dp" />
 
-    <Button android:id="@+id/btnRequest"
+    <!-- Talep butonu -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnRequest"
+        style="@style/Widget.Material3.Button"
         android:text="Ders talep et"
         android:enabled="false"
-        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        app:cornerRadius="14dp"
+        app:backgroundTint="@color/tutorist_primary"
+        android:textColor="@color/tutorist_onPrimary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 </LinearLayout>

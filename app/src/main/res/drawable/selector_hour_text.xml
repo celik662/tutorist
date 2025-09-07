@@ -1,0 +1,9 @@
+<!-- res/color/selector_hour_text.xml -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- seçili -->
+    <item android:state_selected="true" android:color="@color/tutorist_onPrimary"/>
+    <!-- geçmiş/disabled -->
+    <item android:state_enabled="false" android:color="@color/tutorist_onSurfaceVariant"/>
+    <!-- varsayılan -->
+    <item android:color="@color/tutorist_onPrimaryContainer"/>
+</selector>
