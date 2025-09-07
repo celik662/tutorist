@@ -1,34 +1,57 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:padding="12dp"
-    android:layout_width="match_parent" android:layout_height="wrap_content">
-
-    <TextView
-        android:id="@+id/tvLine1"
-        android:textStyle="bold"
-        android:textSize="16sp"
-        android:layout_width="match_parent" android:layout_height="wrap_content"/>
-
-    <TextView
-        android:id="@+id/tvLine2"
-        android:textSize="14sp"
-        android:textColor="#555"
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"/>
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/card"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardUseCompatPadding="true"
+    app:cardElevation="2dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/tutorist_surfaceVariant">
 
     <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:layout_marginTop="6dp">
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
-        <Button
-            android:id="@+id/btnSummary"
-            android:text="Özet / Puan Ver"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+        <!-- Üst satır: Öğrenci adı • Ders adı -->
+        <TextView
+            android:id="@+id/tvLine1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:textSize="16sp"/>
 
-        <Button
-            android:id="@+id/btnView"
-            android:text="Özeti Gör"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"/>
+        <!-- Alt satır: Tarih Saat • Fiyat • Durum (renkli) -->
+        <TextView
+            android:id="@+id/tvLine2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:layout_marginTop="4dp"
+            android:textColor="@color/tutorist_onSurface"/>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+
+            <Button
+                android:id="@+id/btnSummary"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Özet / Puan Ver"/>
+
+            <Button
+                android:id="@+id/btnView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Özeti Gör"
+                android:layout_marginStart="8dp"/>
+        </LinearLayout>
     </LinearLayout>
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>

@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">Tutorist</string>
     <string name="retmen_notu">Öğretmen notu</string>
+
+    <string name="kvkk_url">https://tutorist.web.app/kvkk/v1.html</string>
+
 </resources>

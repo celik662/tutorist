@@ -1,11 +1,89 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:padding="24dp"
-    android:gravity="center" android:layout_width="match_parent" android:layout_height="match_parent">
+<!-- res/layout/activity_welcome.xml (mevcut dosyanın yerine) -->
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@drawable/bg_welcome_gradient">
 
-    <Button android:id="@+id/btnLogin" android:text="Giriş Yap"
-        android:layout_width="match_parent" android:layout_height="wrap_content" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:gravity="center_horizontal">
 
-    <Button android:id="@+id/btnRegister" android:text="Kayıt Ol"
-        android:layout_marginTop="12dp"
-        android:layout_width="match_parent" android:layout_height="wrap_content" />
-</LinearLayout>
+        <!-- Logo -->
+        <ImageView
+            android:id="@+id/imgLogo"
+            android:layout_width="88dp"
+            android:layout_height="88dp"
+            android:src="@mipmap/ic_launcher"
+        android:contentDescription="@string/app_name"
+        android:layout_marginTop="12dp"/>
+
+        <!-- Başlık -->
+        <TextView
+            android:id="@+id/tvTitle"
+            style="?attr/textAppearanceTitleLarge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tutorist’e hoş geldin 👋"
+            android:textColor="@color/tutorist_onSurface"
+            android:layout_marginTop="12dp"/>
+
+        <!-- Alt başlık -->
+        <TextView
+            android:id="@+id/tvSubtitle"
+            style="?attr/textAppearanceBodyMedium"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Öğretmenini bul, uygun saate hemen ders ayır."
+            android:alpha="0.8"
+            android:textAlignment="center"
+            android:layout_marginTop="4dp"/>
+
+        <!-- Mini avantajlar (opsiyonel) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="16dp">
+
+
+        </LinearLayout>
+
+        <!-- Butonlar -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnLogin"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Giriş Yap"
+            app:cornerRadius="14dp"
+            app:backgroundTint="@color/tutorist_primary"
+            android:textColor="@color/tutorist_onPrimary"
+            android:layout_marginTop="24dp"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnRegister"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Kayıt Ol"
+            app:cornerRadius="14dp"
+            android:layout_marginTop="12dp"/>
+
+        <!-- Alt not (opsiyonel) -->
+        <TextView
+            android:id="@+id/tvNote"
+            style="?attr/textAppearanceBodySmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Devam ederek KVKK ve Koşullar’ı kabul etmiş olursun."
+            android:alpha="0.7"
+            android:layout_marginTop="12dp"/>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

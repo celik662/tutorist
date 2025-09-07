@@ -1,0 +1,5 @@
+<!-- res/drawable/bg_chip_tonal.xml -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/tutorist_primaryContainer"/>
+    <corners android:radius="999dp"/>
+</shape>

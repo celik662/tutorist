@@ -1,40 +1,167 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:padding="16dp"
-    android:layout_width="match_parent" android:layout_height="match_parent">
+<!-- res/layout/activity_login.xml -->
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@color/tutorist_surface"
+    android:importantForAutofill="yes">
 
-    <EditText android:id="@+id/etEmail"
-        android:hint="E-posta"
-        android:inputType="textEmailAddress"
+    <LinearLayout
         android:layout_width="match_parent"
-    android:layout_height="wrap_content"/>
+        android:layout_height="match_parent"
+        android:padding="20dp"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
 
-    <EditText android:id="@+id/etPass" android:hint="Şifre" android:inputType="textPassword"
-        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <!-- Logo + kısa mesaj -->
+        <ImageView
+            android:id="@+id/imgLogo"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:layout_marginTop="12dp"
+            android:contentDescription="@string/app_name"
+            android:src="@mipmap/ic_launcher"/>
 
-    <Button android:id="@+id/btnLogin" android:text="Giriş Yap"
-        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <TextView
+            android:id="@+id/tvTitle"
+            style="?attr/textAppearanceTitleLarge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/app_name"
+            android:textColor="@color/tutorist_onSurface"/>
 
-    <TextView android:id="@+id/tvMsg" android:paddingTop="8dp"
-        android:layout_width="match_parent" android:layout_height="wrap_content"/>
-    <TextView
-        android:id="@+id/tvBanner"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text=""
-        android:padding="8dp"
-        android:textStyle="bold" />
+        <TextView
+            android:id="@+id/tvSubtitle"
+            style="?attr/textAppearanceBodyMedium"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Hesabına giriş yap"
+            android:alpha="0.8"/>
 
-    <Button
-        android:id="@+id/btnForgot"
-        android:text="Şifremi unuttum"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        <!-- Form kartı -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="16dp"
+            app:strokeColor="@color/tutorist_surfaceVariant"
+            app:cardBackgroundColor="@android:color/white">
 
-    <Button
-        android:id="@+id/btnResendVerify"
-        android:text="Doğrulama e-postasını yeniden gönder"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:visibility="gone"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-</LinearLayout>
+                <!-- E-posta -->
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="E-posta"
+                    app:startIconDrawable="@android:drawable/ic_dialog_email"
+                    app:startIconTint="@color/tutorist_onSurface"
+                    app:boxStrokeColor="@color/tutorist_outline"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusBottomEnd="12dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etEmail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textEmailAddress"
+                        android:autofillHints="emailAddress"
+                        android:imeOptions="actionNext"/>
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Şifre -->
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="Şifre"
+                    app:startIconDrawable="@android:drawable/ic_lock_lock"
+                    app:startIconTint="@color/tutorist_onSurface"
+                    app:endIconMode="password_toggle"
+                    app:boxStrokeColor="@color/tutorist_outline"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusBottomEnd="12dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etPass"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPassword"
+                        android:autofillHints="password"
+                        android:imeOptions="actionDone"/>
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Giriş -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLogin"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="Giriş Yap"
+                    app:cornerRadius="14dp"
+                    app:backgroundTint="@color/tutorist_primary"
+                    android:textColor="@color/tutorist_onPrimary"/>
+
+                <!-- Hata/Bilgi mesajı -->
+                <TextView
+                    android:id="@+id/tvMsg"
+                    style="?attr/textAppearanceBodySmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/tutorist_error"/>
+
+                <!-- Banner (ör: e-posta doğrula uyarısı) -->
+                <TextView
+                    android:id="@+id/tvBanner"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:padding="10dp"
+                    android:text=""
+                    android:textStyle="bold"
+                    android:textColor="@color/on_push_notification"
+                    android:background="@drawable/bg_banner_info"
+                    android:visibility="gone"/>
+
+                <!-- Aksiyonlar -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnForgot"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Şifremi unuttum"
+                    app:cornerRadius="14dp"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnResendVerify"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Doğrulama e-postasını yeniden gönder"
+                    android:visibility="gone"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Alt boşluk -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="12dp"/>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

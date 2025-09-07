@@ -1,49 +1,134 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:padding="16dp"
-    android:layout_width="match_parent" android:layout_height="match_parent">
+<!-- res/layout/activity_teacher_home.xml -->
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@color/tutorist_surface">
 
-    <Button
-        android:id="@+id/btnSubjects"
-        android:text="Ders ve Ücret"
-        android:layout_width="match_parent" android:layout_height="wrap_content"/>
-
-    <Button
-        android:id="@+id/btnAvailability"
-        android:text="Müsaitlik"
-        android:layout_width="match_parent" android:layout_height="wrap_content"/>
-
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
-        <Button
-            android:id="@+id/btnRequests"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Bekleyen Ders Talepleri"/>
-
-        <TextView
-            android:id="@+id/badgeRequests"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_gravity="end|top"
-            android:translationX="-8dp"
-            android:translationY="8dp"
-            android:gravity="center"
-            android:textColor="@android:color/white"
-            android:textSize="12sp"
-            android:background="@drawable/bg_badge_circle"
-            android:visibility="gone"/>
-    </FrameLayout>
-
-    <Button
-        android:id="@+id/btnTeacherPast"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Geçmiş Dersler"/>
+        android:orientation="vertical"
+        android:padding="16dp">
 
-    <Button
-        android:id="@+id/btnProfile"
-        android:text="Profil"
-        android:layout_width="match_parent" android:layout_height="wrap_content"/>
-</LinearLayout>
+        <!-- Başlık kartı -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardBackgroundColor="@color/tutorist_primaryContainer"
+            app:strokeColor="@color/tutorist_surfaceVariant">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/tvGreeting"
+                    style="?attr/textAppearanceTitleMedium"
+                    android:text="Merhaba 👋"
+                    android:textColor="@color/tutorist_onPrimaryContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:id="@+id/tvHint"
+                    style="?attr/textAppearanceBodyMedium"
+                    android:text="Hızlı aksiyonlar aşağıda."
+                    android:alpha="0.8"
+                    android:textColor="@color/tutorist_onPrimaryContainer"
+                    android:layout_marginTop="2dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Hızlı aksiyonlar -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Kısayollar"
+            style="?attr/textAppearanceTitleSmall"
+            android:textColor="@color/tutorist_onSurface"
+            android:layout_marginTop="14dp"
+            android:layout_marginBottom="8dp"/>
+
+        <GridLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="2"
+            android:useDefaultMargins="true">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSubjects"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:text="Ders ve Ücret"
+                app:cornerRadius="16dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAvailability"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:text="Müsaitlik"
+                app:cornerRadius="16dp"/>
+
+            <!-- Bekleyen talepler + rozet -->
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRequests"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Bekleyen Talepler"
+                    app:cornerRadius="16dp"
+                    app:backgroundTint="@color/tutorist_primary"
+                    android:textColor="@color/tutorist_onPrimary"/>
+
+                <TextView
+                    android:id="@+id/badgeRequests"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="end|top"
+                    android:translationX="-8dp"
+                    android:translationY="8dp"
+                    android:gravity="center"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    android:background="@drawable/bg_badge_circle"
+                    android:visibility="gone"/>
+            </FrameLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTeacherPast"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:text="Geçmiş Dersler"
+                app:cornerRadius="16dp"/>
+        </GridLayout>
+
+        <!-- Profil -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnProfile"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Profil"
+            app:cornerRadius="16dp"
+            android:layout_marginTop="12dp"/>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

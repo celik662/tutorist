@@ -1,3 +1,4 @@
+// app/src/main/java/com/example/tutorist/repo/AvailabilityRepo.java
 package com.example.tutorist.repo;
 
 import com.example.tutorist.model.AvailabilityBlock;
@@ -17,11 +18,11 @@ public class AvailabilityRepo {
                 .whereEqualTo("dayOfWeek", dayOfWeek).get()
                 .continueWith(t -> {
                     List<AvailabilityBlock> out = new ArrayList<>();
-                    if (t.isSuccessful() && t.getResult()!=null) {
+                    if (t.isSuccessful() && t.getResult() != null) {
                         for (DocumentSnapshot d : t.getResult()) {
-                            Integer dow = d.getLong("dayOfWeek")!=null ? d.getLong("dayOfWeek").intValue() : 0;
-                            Integer sh  = d.getLong("startHour")!=null ? d.getLong("startHour").intValue() : 0;
-                            Integer eh  = d.getLong("endHour")!=null ? d.getLong("endHour").intValue() : 0;
+                            Integer dow = d.getLong("dayOfWeek") != null ? d.getLong("dayOfWeek").intValue() : 0;
+                            Integer sh  = d.getLong("startHour") != null ? d.getLong("startHour").intValue() : 0;
+                            Integer eh  = d.getLong("endHour")   != null ? d.getLong("endHour").intValue()   : 0;
                             out.add(new AvailabilityBlock(d.getId(), dow, sh, eh));
                         }
                     }
@@ -52,4 +53,19 @@ public class AvailabilityRepo {
         return db.collection("availabilities").document(uid)
                 .collection("weekly").document(docId).update(m);
     }
+
+    /** Öğretmenin toplam müsaitlik bloğu sayısı (weekly altındaki tüm dokümanlar) */
+    public Task<Integer> countAllBlocksFor(String uid) {
+        return db.collection("availabilities").document(uid)
+                .collection("weekly")
+                .get()
+                .continueWith(t -> (t.isSuccessful() && t.getResult() != null) ? t.getResult().size() : 0);
+    }
+
+    // İstersen ileride Aggregate COUNT kullanabilirsin:
+    // public Task<Integer> countAllBlocksFor(String uid) {
+    //     Query q = db.collection("availabilities").document(uid).collection("weekly");
+    //     return q.count().get(AggregateSource.SERVER)
+    //              .continueWith(t -> (int) t.getResult().getCount());
+    // }
 }

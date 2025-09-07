@@ -127,6 +127,7 @@ public class TeacherPastActivity extends AppCompatActivity {
 
     // Index hazır olana kadar kullanılacak basit sorgu:
     // Sadece teacherId ile çek -> client-side filtrele & sırala
+    @SuppressLint("NotifyDataSetChanged")
     private void listenPastFallback() {
         if (reg != null) { reg.remove(); reg = null; }
         setLoading(true);
@@ -180,6 +181,7 @@ public class TeacherPastActivity extends AppCompatActivity {
     }
 
     // Ortak bağlama – asıl (indexed) sorgu başarılıysa burası çalışır
+    @SuppressLint("NotifyDataSetChanged")
     private void bindItemsFromSnapshot(QuerySnapshot snap) {
         items.clear();
         for (DocumentSnapshot d : snap.getDocuments()) {
@@ -285,22 +287,100 @@ public class TeacherPastActivity extends AppCompatActivity {
                 btnView=v.findViewById(R.id.btnView);
             }
         }
+
         @NonNull @Override public VH onCreateViewHolder(@NonNull ViewGroup p, int vt){
             return new VH(LayoutInflater.from(p.getContext()).inflate(R.layout.item_teacher_past, p, false));
         }
+
         @SuppressLint("SetTextI18n")
         @Override public void onBindViewHolder(@NonNull VH h, int pos){
             Row r = items.get(pos);
-            h.tv1.setText(r.studentName + " • " + r.subjectName);
-            h.tv2.setText(String.format(Locale.getDefault(), "%s %02d:00  • Durum: %s", r.date, r.hour,
-                    "Tamamlandı"));
 
+            // Üst satır
+            h.tv1.setText((r.studentName!=null? r.studentName : r.studentId) + " • " + r.subjectName);
+
+            // Durumu normalize et + UI rengini seç
+            String status = normalizeStatus(r.status);
+            StatusUi ui = statusUi(h.itemView, status);
+
+            String dt = String.format(Locale.getDefault(), "%s %02d:00", r.date, r.hour);
+            String line = String.format(Locale.getDefault(), "%s  • Durum= %s", dt, ui.label);
+
+            android.text.SpannableString ss = new android.text.SpannableString(line);
+            int idx = line.lastIndexOf(ui.label);
+            if (idx >= 0) {
+                ss.setSpan(new android.text.style.ForegroundColorSpan(ui.color),
+                        idx, idx + ui.label.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                ss.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD),
+                        idx, idx + ui.label.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            h.tv2.setText(ss);
+
+            // Not/Özet butonları
             h.btnSummary.setVisibility(r.hasNote ? View.GONE : View.VISIBLE);
             h.btnView.setVisibility(r.hasNote ? View.VISIBLE : View.GONE);
 
             h.btnSummary.setOnClickListener(v -> onAdd.run(r));
             h.btnView.setOnClickListener(v -> onView.run(r));
         }
+
         @Override public int getItemCount(){ return items.size(); }
+
+        /* --- Durum eşlemesi + renkler --- */
+
+        private static String normalizeStatus(String raw) {
+            if (raw == null) return "pending";
+            String s = raw.trim().toLowerCase(Locale.ROOT);
+            if (s.equals("canceled")) s = "cancelled";
+            if (s.equals("rejected") || s.equals("denied")) s = "declined";
+            if (s.equals("teacher_rejected") || s.equals("declined_by_teacher")) s = "teacher_declined";
+            if (s.equals("teacher_canceled") || s.equals("teacher_cancelled")) s = "teacher_cancelled";
+            if (s.equals("student_canceled") || s.equals("student_cancelled")) s = "student_cancelled";
+            if (s.equals("done") || s.equals("finished")) s = "completed";
+            switch (s) {
+                case "pending": case "accepted": case "completed": case "declined":
+                case "teacher_declined": case "cancelled": case "student_cancelled":
+                case "teacher_cancelled": case "expired": case "no_show":
+                    return s;
+                default: return "pending";
+            }
+        }
+
+        private static class StatusUi { final String label; final int color;
+            StatusUi(String l, int c){ label=l; color=c; } }
+
+        private StatusUi statusUi(View v, String s) {
+            android.content.Context c = v.getContext();
+            switch (s) {
+                case "accepted":
+                    return new StatusUi("Onaylandı",
+                            androidx.core.content.ContextCompat.getColor(c, R.color.status_accepted));
+                case "completed":
+                    return new StatusUi("Tamamlandı",
+                            androidx.core.content.ContextCompat.getColor(c, R.color.status_completed));
+                case "declined":
+                case "teacher_declined":
+                    return new StatusUi("Reddedildi",
+                            androidx.core.content.ContextCompat.getColor(c, R.color.status_declined));
+                case "cancelled":
+                case "student_cancelled":
+                    return new StatusUi("Öğrenci iptal etti",
+                            androidx.core.content.ContextCompat.getColor(c, R.color.status_cancelled));
+                case "teacher_cancelled":
+                    return new StatusUi("Öğretmen iptal etti",
+                            androidx.core.content.ContextCompat.getColor(c, R.color.status_cancelled));
+                case "expired":
+                    return new StatusUi("Süresi doldu",
+                            androidx.core.content.ContextCompat.getColor(c, R.color.status_expired));
+                case "no_show":
+                    return new StatusUi("Katılım yok",
+                            androidx.core.content.ContextCompat.getColor(c, R.color.status_no_show));
+                case "pending":
+                default:
+                    return new StatusUi("Beklemede",
+                            androidx.core.content.ContextCompat.getColor(c, R.color.status_pending));
+            }
+        }
     }
+
 }

@@ -2,7 +2,10 @@ package com.example.tutorist.ui.teacher;
 
 import android.os.Bundle;
 import android.view.View;
-import android.widget.*;
+import android.widget.AdapterView;
+import android.widget.TextView;
+import android.widget.Button;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -11,6 +14,7 @@ import com.example.tutorist.R;
 import com.example.tutorist.model.AvailabilityBlock;
 import com.example.tutorist.repo.AvailabilityRepo;
 import com.example.tutorist.util.ValidationUtil;
+import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
@@ -21,22 +25,35 @@ import java.util.Locale;
 
 public class TeacherAvailabilityActivity extends AppCompatActivity {
 
-    private Spinner spDay, spStart, spEnd;
+    // ---- UI ----
+    private MaterialAutoCompleteTextView spDay, spStart, spEnd;
     private Button btnAdd;
     private TextView tvMsg;
     private RecyclerView rv;
 
+    // ---- Data / Repo ----
     private final AvailabilityRepo repo = new AvailabilityRepo();
-    private String uid; // onCreate'te set edilecek
+    private String uid;
     private final List<AvailabilityBlock> items = new ArrayList<>();
     private Adapter adapter;
+
+    // Görünen etiketler
+    private static final String[] DAY_LABELS =
+            {"Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"};
+    private static final String[] HOUR_LABELS = buildHourLabels(); // "00:00" .. "24:00"
+
+    private static String[] buildHourLabels() {
+        String[] arr = new String[25];
+        for (int h = 0; h <= 24; h++) arr[h] = String.format(Locale.getDefault(), "%02d:00", h);
+        return arr;
+    }
 
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
         setContentView(R.layout.activity_teacher_availability);
 
         uid = FirebaseAuth.getInstance().getUid();
-        if (uid == null) { finish(); return; } // güvenlik
+        if (uid == null) { finish(); return; }
 
         spDay   = findViewById(R.id.spDay);
         spStart = findViewById(R.id.spStart);
@@ -49,65 +66,54 @@ public class TeacherAvailabilityActivity extends AppCompatActivity {
         adapter = new Adapter(items, this::onDelete);
         rv.setAdapter(adapter);
 
-        initSpinners();
+        initDropdowns();
         btnAdd.setOnClickListener(v -> onAdd());
 
-        loadDay(); // varsayılan Pzt için yükle
-        //debugSeedToday();
+        // Varsayılan gün: Pazartesi
+        spDay.setText(DAY_LABELS[0], false);
+        spStart.setText("09:00", false);
+        spEnd.setText("18:00", false);
+        loadDay(); // ilk yükleme
     }
 
-    private void debugSeedToday() {
-        String seedUid = FirebaseAuth.getInstance().getUid();
-        if (seedUid == null) return;
+    // ---- Dropdown’ları hazırla ----
+    private void initDropdowns() {
+        spDay.setSimpleItems(DAY_LABELS);
+        spStart.setSimpleItems(HOUR_LABELS);
+        spEnd.setSimpleItems(HOUR_LABELS);
 
-        java.util.Calendar c = java.util.Calendar.getInstance();
-        int dayMon1_7 = (c.get(java.util.Calendar.DAY_OF_WEEK) == java.util.Calendar.SUNDAY)
-                ? 7 : (c.get(java.util.Calendar.DAY_OF_WEEK) - 1);
-
-        new com.example.tutorist.repo.AvailabilityRepo()
-                .addBlock(seedUid, dayMon1_7, 9, 18)
-                .addOnSuccessListener(id -> android.util.Log.d("SEED", "Seed OK id=" + id))
-                .addOnFailureListener(e -> android.util.Log.e("SEED", "Seed FAIL", e));
-    }
-    private void initSpinners() {
-        // Günler (Mon=1..Sun=7 ile uyumlu)
-        String[] days = {"Pzt","Sal","Çar","Per","Cum","Cts","Paz"};
-        ArrayAdapter<String> adDays =
-                new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, days);
-        adDays.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spDay.setAdapter(adDays);
-        spDay.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                loadDay();
-            }
-            @Override public void onNothingSelected(AdapterView<?> parent) {}
+        spDay.setOnItemClickListener((parent, view, position, id) -> {
+            tvMsg.setText("");
+            loadDay();
         });
-
-        // Saatler 0..24
-        List<String> hours = new ArrayList<>();
-        for (int h = 0; h <= 24; h++) hours.add(String.format(Locale.getDefault(), "%02d:00", h));
-        ArrayAdapter<String> adH =
-                new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, hours);
-        adH.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spStart.setAdapter(adH);
-        spEnd.setAdapter(adH);
-
-        // Varsayılan 09:00–18:00
-        spStart.setSelection(9);
-        spEnd.setSelection(18);
     }
 
+    // Pazartesi=1 ... Pazar=7 (uygulamadaki konvansiyon)
     private int selectedDayOfWeek() {
-        return spDay.getSelectedItemPosition() + 1; // 1..7 (Pzt=1, ... Paz=7)
+        String label = String.valueOf(spDay.getText());
+        for (int i = 0; i < DAY_LABELS.length; i++) {
+            if (DAY_LABELS[i].equals(label)) return i + 1;
+        }
+        return 1; // fallback
     }
 
+    private static int parseHour(String label) {
+        // "HH:00" -> HH
+        if (label == null || label.length() < 2) return 0;
+        try { return Integer.parseInt(label.substring(0, 2)); }
+        catch (Exception ignore) { return 0; }
+    }
+
+    private int selectedStartHour() { return parseHour(String.valueOf(spStart.getText())); }
+    private int selectedEndHour()   { return parseHour(String.valueOf(spEnd.getText())); }
+
+    // ---- Data yükleme ----
     private void loadDay() {
         int day = selectedDayOfWeek();
         repo.loadDayBlocks(uid, day)
                 .addOnSuccessListener(list -> {
                     items.clear();
                     items.addAll(list);
-                    // ekrana hoş görünmesi için saat başına göre sırala
                     Collections.sort(items, Comparator.comparingInt(b -> b.startHour));
                     adapter.notifyDataSetChanged();
                     tvMsg.setText(items.isEmpty() ? "Bu gün için kayıtlı müsaitlik yok." : "");
@@ -115,10 +121,11 @@ public class TeacherAvailabilityActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> tvMsg.setText("Yükleme hatası: " + e.getMessage()));
     }
 
+    // ---- Aralık ekle ----
     private void onAdd() {
         int day   = selectedDayOfWeek();
-        int start = spStart.getSelectedItemPosition(); // 0..24
-        int end   = spEnd.getSelectedItemPosition();   // 0..24
+        int start = selectedStartHour(); // 0..24
+        int end   = selectedEndHour();   // 0..24
 
         if (!ValidationUtil.isValidBlock(start, end)) {
             tvMsg.setText("Geçersiz aralık. (Başlangıç < Bitiş, 0–24)");
@@ -132,20 +139,21 @@ public class TeacherAvailabilityActivity extends AppCompatActivity {
         repo.addBlock(uid, day, start, end)
                 .addOnSuccessListener(id -> {
                     tvMsg.setText("Eklendi.");
-                    spStart.setSelection(9);
-                    spEnd.setSelection(18);
+                    spStart.setText("09:00", false);
+                    spEnd.setText("18:00", false);
                     loadDay();
                 })
                 .addOnFailureListener(e -> tvMsg.setText("Hata: " + e.getMessage()));
     }
 
+    // ---- Silme ----
     private void onDelete(String docId) {
         repo.deleteBlock(uid, docId)
                 .addOnSuccessListener(v -> { tvMsg.setText("Silindi."); loadDay(); })
                 .addOnFailureListener(e -> tvMsg.setText("Hata: " + e.getMessage()));
     }
 
-    // --- Adapter ---
+    // ---- Adapter ----
     static class Adapter extends RecyclerView.Adapter<Adapter.VH> {
         interface OnDelete { void onDelete(String docId); }
         private final List<AvailabilityBlock> items;
@@ -172,7 +180,8 @@ public class TeacherAvailabilityActivity extends AppCompatActivity {
 
         @Override public void onBindViewHolder(VH h, int pos) {
             AvailabilityBlock b = items.get(pos);
-            h.tv.setText(String.format(Locale.getDefault(), "%02d:00–%02d:00", b.startHour, b.endHour));
+            h.tv.setText(String.format(Locale.getDefault(),
+                    "%02d:00–%02d:00", b.startHour, b.endHour));
             h.btn.setOnClickListener(v -> onDelete.onDelete(b.id));
         }
 
