@@ -1,10 +1,8 @@
-// app/src/main/java/com/example/tutorist/ui/teacher/TeacherListActivity.java
 package com.example.tutorist.ui.teacher;
 
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -29,14 +27,13 @@ public class TeacherListActivity extends AppCompatActivity {
 
     private String subjectId, subjectName;
     private RecyclerView rv;
-    private ProgressBar progress;
+    private View progress; // <-- XML’de ProgressBar ya da CircularProgressIndicator olabilir
     private TextView tvTitle, tvEmpty, tvError;
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private TeacherAdapter adapter; // <-- SADECE bu adapter'ı kullanıyoruz
 
     private static final String TAG = "TeacherListActivity";
-
 
     @Override protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,8 +55,12 @@ public class TeacherListActivity extends AppCompatActivity {
             TeacherDetailSheet.newInstance(teacherId, subjectId, subjectName)
                     .show(getSupportFragmentManager(), "teacherDetail");
         });
-
         rv.setAdapter(adapter);
+
+        if (subjectId == null || subjectId.trim().isEmpty()) {
+            showError("Ders bilgisi eksik (subjectId yok).");
+            return;
+        }
 
         loadTeachers();
     }
@@ -86,7 +87,7 @@ public class TeacherListActivity extends AppCompatActivity {
             if (n2 != null && n2 > 0) return n2;
         }
 
-        // 3) teacherProfiles.subjectsMap.{subjectId} doğrudan sayı ise (senin ekran görüntündeki gibi)
+        // 3) teacherProfiles.subjectsMap.{subjectId} doğrudan sayı ise
         Integer n3 = toIntOrNull(sm);
         if (n3 != null && n3 > 0) return n3;
 
@@ -94,18 +95,17 @@ public class TeacherListActivity extends AppCompatActivity {
     }
 
     private void processTeachers(QuerySnapshot snap) {
-        List<com.example.tutorist.ui.student.TeacherAdapter.TeacherRow> list = new ArrayList<>();
+        List<TeacherAdapter.TeacherRow> list = new ArrayList<>();
 
         for (DocumentSnapshot d : snap.getDocuments()) {
-            com.example.tutorist.ui.student.TeacherAdapter.TeacherRow row =
-                    new com.example.tutorist.ui.student.TeacherAdapter.TeacherRow();
+            TeacherAdapter.TeacherRow row = new TeacherAdapter.TeacherRow();
             row.id          = d.getId();
-            row.fullName    = d.getString("displayName");
+            row.fullName    = d.getString("displayName"); // sabah çalışan şema
             row.bio         = d.getString("bio");
             row.ratingAvg   = d.getDouble("ratingAvg");
             row.ratingCount = d.getLong("ratingCount");
 
-            // <— YENİ: önce profilden fiyatı dene
+            // profilden fiyatı dene
             row.price = extractPriceFromProfile(d, subjectId);
 
             list.add(row);
@@ -115,15 +115,15 @@ public class TeacherListActivity extends AppCompatActivity {
 
         Log.d(TAG, "processTeachers subjectId=" + subjectId + " teacherCount=" + list.size());
 
-        // <— PROFİLDEN GELMEYENLER İÇİN eskisi gibi A/B/C fallback’i çalıştır
-        for (com.example.tutorist.ui.student.TeacherAdapter.TeacherRow row : list) {
+        // profilden gelmeyenler için A/B/C fallback
+        for (TeacherAdapter.TeacherRow row : list) {
             if (row.price == null || row.price <= 0) {
-                loadPriceForRow(row.id, subjectId);  // imzayı sadeleştirdim → row param’sız
+                loadPriceForRow(row.id, subjectId);
             }
         }
 
         for (int i = 0; i < list.size(); i++) {
-            var row = list.get(i);
+            TeacherAdapter.TeacherRow row = list.get(i); // 'var' yerine açık tip
             if (row.ratingCount == null || row.ratingCount == 0L) {
                 fetchRatingFallback(row, i);
             }
@@ -133,7 +133,7 @@ public class TeacherListActivity extends AppCompatActivity {
         tvEmpty.setVisibility(list.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
-    // <— İMZAYI Sadeleştirdim (row kullanılmıyordu)
+    // row kullanılmadığı için sade imza
     private void loadPriceForRow(String teacherId, String subjectId){
         if (teacherId == null || subjectId == null) {
             Log.w(TAG, "loadPriceForRow: teacherId/subjectId null");
@@ -178,12 +178,15 @@ public class TeacherListActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> Log.e(TAG, "A teacherSubjects fetch failed", e));
     }
 
-
-
     private void loadTeachers() {
         showLoading(true);
 
-        // subjectsMap.{subjectId} > 0 olan öğretmenleri getir
+        if (subjectId == null || subjectId.trim().isEmpty()) {
+            showError("Ders bilgisi eksik.");
+            return;
+        }
+
+        // sabah çalışan sorgu: teacherProfiles.subjectsMap.{subjectId} > 0
         String mapField = "subjectsMap." + subjectId;
 
         db.collection("teacherProfiles")
@@ -194,10 +197,7 @@ public class TeacherListActivity extends AppCompatActivity {
     }
 
     /** Profil alanları boşsa: review'lardan ortalama/sayıyı hesapla ve kartı güncelle. */
-    private void fetchRatingFallback(
-            com.example.tutorist.ui.student.TeacherAdapter.TeacherRow row,
-            int position) {
-
+    private void fetchRatingFallback(TeacherAdapter.TeacherRow row, int position) {
         db.collection("teacherReviews")
                 .whereEqualTo("teacherId", row.id)
                 .get()
@@ -206,7 +206,7 @@ public class TeacherListActivity extends AppCompatActivity {
                     double sum = 0;
 
                     for (DocumentSnapshot d : snap.getDocuments()) {
-                        Number n = (Number) d.get("rating"); // select yok; direkt alanı çekiyoruz
+                        Number n = (Number) d.get("rating");
                         if (n != null) {
                             sum += n.doubleValue();
                             cnt++;
@@ -229,9 +229,8 @@ public class TeacherListActivity extends AppCompatActivity {
                             .set(up, SetOptions.merge());
                 })
                 .addOnFailureListener(e ->
-                        Log.e("TeacherListActivity", "fallback rating failed", e));
+                        Log.e(TAG, "fallback rating failed", e));
     }
-
 
     private void showLoading(boolean loading){
         progress.setVisibility(loading ? View.VISIBLE : View.GONE);

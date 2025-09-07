@@ -3,6 +3,15 @@
     <style name="Base.Theme.Tutorist" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
+        <item name="colorPrimary">@color/tutorist_primary</item>
+        <item name="colorOnPrimary">@color/tutorist_onPrimary</item>
+        <item name="colorPrimaryContainer">@color/tutorist_primaryContainer</item>
+        <item name="colorSecondary">@color/tutorist_secondary</item>
+        <item name="colorOnSecondary">@color/tutorist_onSecondary</item>
+        <item name="colorSurface">@color/tutorist_surface</item>
+        <item name="colorOnSurface">@color/tutorist_onSurface</item>
+        <item name="colorOutline">@color/tutorist_outline</item>
     </style>
 
     <style name="Theme.Tutorist" parent="Base.Theme.Tutorist" />

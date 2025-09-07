@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.*;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.tutorist.BuildConfig;
@@ -15,6 +16,7 @@ import com.example.tutorist.R;
 import com.example.tutorist.payment.PaymentActivity;
 import com.example.tutorist.repo.UserRepo;
 import com.example.tutorist.ui.auth.LoginActivity;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
@@ -26,17 +28,13 @@ import java.util.Map;
 public class StudentProfileFragment extends Fragment {
 
     private static final String FUNCTIONS_REGION = "europe-west1";
-    // Proje ID'ni yaz:
-    private static final String CALLBACK_BASE_DEBUG =
-            "http://10.0.2.2:5001/tutorist-f2a46";
-    private static final String CALLBACK_BASE_PROD  =
-            "https://europe-west1-tutorist-f2a46.cloudfunctions.net";
+    private static final String CALLBACK_BASE_DEBUG = "http://10.0.2.2:5001/tutorist-f2a46";
+    private static final String CALLBACK_BASE_PROD  = "https://europe-west1-tutorist-f2a46.cloudfunctions.net";
 
     private EditText etName, etPhone;
     private TextView tvMsg;
     private LinearLayout llCards;
     private Button btnAddCard, btnSave, btnLogout;
-
     private final UserRepo userRepo = new UserRepo();
     private FirebaseAuth auth;
     private FirebaseFirestore db;
@@ -45,8 +43,7 @@ public class StudentProfileFragment extends Fragment {
     private String uid;
     private ListenerRegistration userReg;
 
-    @Nullable
-    @Override
+    @Nullable @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
@@ -57,13 +54,13 @@ public class StudentProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View v, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(v, savedInstanceState);
 
-        etName   = v.findViewById(R.id.etName);
-        etPhone  = v.findViewById(R.id.etPhone);
-        tvMsg    = v.findViewById(R.id.tvMsg);
-        llCards  = v.findViewById(R.id.llCards);
-        btnAddCard = v.findViewById(R.id.btnAddCard);
-        btnSave  = v.findViewById(R.id.btnSave);
-        btnLogout= v.findViewById(R.id.btnLogout);
+        etName    = v.findViewById(R.id.etName);
+        etPhone   = v.findViewById(R.id.etPhone);
+        tvMsg     = v.findViewById(R.id.tvMsg);       // layout’ta yoksa null olabilir (bilerek)
+        llCards   = v.findViewById(R.id.llCards);
+        btnAddCard= v.findViewById(R.id.btnAddCard);
+        btnSave   = v.findViewById(R.id.btnSave);
+        btnLogout = v.findViewById(R.id.btnLogout);
 
         auth = FirebaseAuth.getInstance();
         db   = FirebaseFirestore.getInstance();
@@ -84,13 +81,28 @@ public class StudentProfileFragment extends Fragment {
         listenUserCards(uid);
 
         btnAddCard.setOnClickListener(x -> startAddCardFlow());
+
         btnSave.setOnClickListener(x -> {
-            String name  = etName.getText().toString().trim();
-            String phone = etPhone.getText().toString().trim();
+            String name  = etName != null ? etName.getText().toString().trim() : "";
+            String phone = etPhone != null ? etPhone.getText().toString().trim() : "";
+
+            if (name.isEmpty()) { showError("Lütfen ad-soyad girin."); return; }
+
+            btnSave.setEnabled(false);
+
             userRepo.updateUserBasic(uid, name, phone)
-                    .addOnSuccessListener(s -> tvMsg.setText("Kaydedildi."))
-                    .addOnFailureListener(e -> tvMsg.setText("Hata: " + e.getMessage()));
+                    .addOnSuccessListener(s -> {
+                        if (!isAdded()) return;
+                        showSuccess("Kaydedildi ✅");
+                        btnSave.setEnabled(true);
+                    })
+                    .addOnFailureListener(e -> {
+                        if (!isAdded()) return;
+                        showError("Kaydedilemedi: " + (e != null && e.getMessage() != null ? e.getMessage() : ""));
+                        btnSave.setEnabled(true);
+                    });
         });
+
         btnLogout.setOnClickListener(x -> {
             auth.signOut();
             startActivity(new Intent(requireContext(), LoginActivity.class)
@@ -101,18 +113,23 @@ public class StudentProfileFragment extends Fragment {
 
     private void loadProfile() {
         userRepo.loadUser(uid).addOnSuccessListener(data -> {
+            if (!isAdded()) return;
             if (data != null) {
                 Object n = data.get("fullName");
                 Object p = data.get("phone");
-                if (n != null) etName.setText(String.valueOf(n));
-                if (p != null) etPhone.setText(String.valueOf(p));
+                if (etName != null && n != null)  etName.setText(String.valueOf(n));
+                if (etPhone != null && p != null) etPhone.setText(String.valueOf(p));
             }
+        }).addOnFailureListener(e -> {
+            if (!isAdded()) return;
+            showError("Profil yüklenemedi: " + (e != null && e.getMessage()!=null ? e.getMessage() : ""));
         });
     }
 
     private void listenUserCards(String uid) {
         userReg = db.collection("users").document(uid)
                 .addSnapshotListener((snap, e) -> {
+                    if (!isAdded()) return;
                     if (e != null || snap == null) return;
                     @SuppressWarnings("unchecked")
                     Map<String, Object> iyz = (Map<String, Object>) snap.get("iyzico");
@@ -121,33 +138,30 @@ public class StudentProfileFragment extends Fragment {
     }
 
     private void renderCards(Map<String, Object> iyz) {
+        if (llCards == null || !isAdded()) return;
         llCards.removeAllViews();
-        if (iyz == null) {
-            TextView tv = new TextView(requireContext());
-            tv.setText("Kayıtlı kart yok.");
-            llCards.addView(tv);
-            return;
-        }
+
+        if (iyz == null) { addCardRow("Kayıtlı kart yok."); return; }
+
         @SuppressWarnings("unchecked")
         Map<String, Object> cards = (Map<String, Object>) iyz.get("cards");
-        if (cards == null || cards.isEmpty()) {
-            TextView tv = new TextView(requireContext());
-            tv.setText("Kayıtlı kart yok.");
-            llCards.addView(tv);
-            return;
-        }
+        if (cards == null || cards.isEmpty()) { addCardRow("Kayıtlı kart yok."); return; }
+
         for (Map.Entry<String, Object> e : cards.entrySet()) {
             @SuppressWarnings("unchecked")
             Map<String, Object> c = (Map<String, Object>) e.getValue();
             String last4  = c.get("lastFour") != null ? String.valueOf(c.get("lastFour")) : "••••";
             String bank   = c.get("bank") != null ? String.valueOf(c.get("bank")) : "";
             String scheme = c.get("scheme") != null ? String.valueOf(c.get("scheme")) : "";
-
-            TextView tv = new TextView(requireContext());
-            tv.setText((bank + " " + scheme + " •••• " + last4).trim());
-            tv.setPadding(0, 12, 0, 12);
-            llCards.addView(tv);
+            addCardRow((bank + " " + scheme + " •••• " + last4).trim());
         }
+    }
+
+    private void addCardRow(String text) {
+        TextView tv = new TextView(requireContext());
+        tv.setText(text);
+        tv.setPadding(0, 12, 0, 12);
+        llCards.addView(tv);
     }
 
     private void startAddCardFlow() {
@@ -157,6 +171,7 @@ public class StudentProfileFragment extends Fragment {
         functions.getHttpsCallable("iyziInitCardSave")
                 .call(payload)
                 .addOnSuccessListener(r -> {
+                    if (!isAdded()) return;
                     @SuppressWarnings("unchecked")
                     Map<String, Object> res = (Map<String, Object>) r.getData();
                     String opsId = res != null ? (String) res.get("opsId") : null;
@@ -167,13 +182,34 @@ public class StudentProfileFragment extends Fragment {
                     }
                     PaymentActivity.startCardSave(requireContext(), opsId, html);
                 })
-                .addOnFailureListener(err ->
-                        Toast.makeText(requireContext(), "Hata: " + err.getMessage(), Toast.LENGTH_LONG).show());
+                .addOnFailureListener(err -> {
+                    if (!isAdded()) return;
+                    Toast.makeText(requireContext(), "Hata: " + (err != null && err.getMessage()!=null ? err.getMessage() : ""), Toast.LENGTH_LONG).show();
+                });
     }
 
-    @Override
-    public void onDestroyView() {
+    @Override public void onDestroyView() {
         if (userReg != null) userReg.remove();
         super.onDestroyView();
+    }
+
+    /* ---------- mesaj yardımcıları ---------- */
+
+    private void showSuccess(String msg) { showMsg(msg, true); }
+
+    private void showError(String msg) { showMsg(msg, false); }
+
+    private void showMsg(String msg, boolean success) {
+        if (!isAdded()) return;
+        View root = getView();
+        if (tvMsg != null) {
+            tvMsg.setVisibility(View.VISIBLE);
+            tvMsg.setText(msg);
+            int color = ContextCompat.getColor(requireContext(),
+                    success ? R.color.tutorist_success : R.color.tutorist_error);
+            tvMsg.setTextColor(color);
+        } else if (root != null) {
+            Snackbar.make(root, msg, success ? Snackbar.LENGTH_SHORT : Snackbar.LENGTH_LONG).show();
+        }
     }
 }

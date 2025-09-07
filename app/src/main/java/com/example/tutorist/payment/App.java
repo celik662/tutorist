@@ -9,5 +9,7 @@ public class App extends Application {
         super.onCreate();
         FirebaseFunctions fn = FirebaseFunctions.getInstance("europe-west1");
         fn.useEmulator("10.0.2.2", 5001);
+        com.google.android.material.color.DynamicColors.applyToActivitiesIfAvailable(this);
+
     }
 }

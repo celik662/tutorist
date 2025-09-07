@@ -1,47 +1,80 @@
 <!-- res/layout/item_teacher.xml -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:padding="12dp"
-    android:layout_width="match_parent" android:layout_height="wrap_content">
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="6dp"
+    app:cardCornerRadius="16dp"
+    app:strokeColor="@color/tutorist_surfaceVariant"
+    app:cardUseCompatPadding="true">
 
-    <TextView
-        android:id="@+id/tvName"
-        android:textStyle="bold"
-        android:textSize="16sp"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Öğretmen Adı"/>
+        android:padding="12dp">
 
-    <TextView
-        android:id="@+id/tvBio"
-        android:layout_marginTop="4dp"
-        android:textColor="#666"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:maxLines="2"
-        android:ellipsize="end"
-        android:text="Kısa biyografi"/>
+        <!-- İsim -->
+        <TextView
+            android:id="@+id/tvName"
+            style="?attr/textAppearanceTitleMedium"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:ellipsize="end"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/tvPrice"
+            app:layout_constraintTop_toTopOf="parent"/>
 
-    <LinearLayout
-        android:layout_marginTop="4dp"
-        android:orientation="horizontal"
-        android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:gravity="center_vertical">
+        <!-- Fiyat (adapter TextView bekliyor) -->
+        <TextView
+            android:id="@+id/tvPrice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="—"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="6dp"
+            android:textStyle="bold"
+            android:textColor="@color/tutorist_onPrimaryContainer"
+            android:background="@drawable/bg_price_chip"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
 
+        <!-- Biyografi / kısa açıklama -->
+        <TextView
+            android:id="@+id/tvBio"
+            style="?attr/textAppearanceBodyMedium"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:alpha="0.9"
+            app:layout_constraintTop_toBottomOf="@id/tvName"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="4dp"/>
+
+        <!-- Rating bar -->
         <RatingBar
             android:id="@+id/rb"
             style="?android:attr/ratingBarStyleSmall"
-            android:isIndicator="true"
-            android:numStars="5"
-            android:stepSize="0.1"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:numStars="5"
+            android:stepSize="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvBio"
+            android:layout_marginTop="6dp"/>
 
+        <!-- Rating metni -->
         <TextView
             android:id="@+id/tvRatingText"
-            android:layout_marginStart="6dp"
-            android:text="5.0 (0)"
-            android:textColor="#333"
+            style="?attr/textAppearanceBodySmall"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
-    </LinearLayout>
-</LinearLayout>
+            android:layout_height="wrap_content"
+            android:text="5.0 (0)"
+            android:alpha="0.85"
+            app:layout_constraintBaseline_toBaselineOf="@id/rb"
+            app:layout_constraintStart_toEndOf="@id/rb"
+            android:layout_marginStart="8dp"/>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>

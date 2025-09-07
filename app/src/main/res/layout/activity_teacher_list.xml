@@ -1,35 +1,81 @@
-<!-- res/layout/activity_teacher_list.xml -->
+<!-- Öğretmen Listesi: başlık + arama + liste -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:padding="12dp"
-    android:layout_width="match_parent" android:layout_height="match_parent">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@color/tutorist_surface"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
+    <!-- Başlık (ID korunuyor) -->
     <TextView
         android:id="@+id/tvTitle"
-        android:textStyle="bold" android:textSize="18sp"
-        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        style="?attr/textAppearanceTitleLarge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Öğretmenler"
+        android:textColor="@color/tutorist_onSurface"
+        android:layout_marginBottom="8dp"/>
 
-    <ProgressBar
+    <!-- Basit arama (Outlined) -->
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:startIconDrawable="@drawable/search_24"
+        app:startIconTint="@color/tutorist_onSurface"
+        app:boxCornerRadiusTopStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusBottomEnd="12dp"
+        android:layout_marginBottom="8dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etSearch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:imeOptions="actionSearch"
+            android:inputType="textPersonName"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Yükleniyor (ID korunuyor) -->
+    <com.google.android.material.progressindicator.CircularProgressIndicator
         android:id="@+id/progress"
-        style="?android:attr/progressBarStyle"
-        android:layout_gravity="center"
-        android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:padding="16dp"/>
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginVertical="8dp"
+        android:visibility="gone"
+        app:indicatorSize="40dp"/>
 
+    <!-- Boş (ID korunuyor) -->
     <TextView
         android:id="@+id/tvEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="16dp"
         android:text="Bu dersi veren öğretmen bulunamadı."
+        android:textColor="@color/tutorist_onSurface"
+        android:background="@color/tutorist_primaryContainer"
         android:visibility="gone"
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:padding="8dp"/>
+        android:layout_marginBottom="8dp"/>
 
+    <!-- Hata (ID korunuyor) -->
     <TextView
         android:id="@+id/tvError"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/tutorist_error"
         android:visibility="gone"
-        android:textColor="#B00020"
-        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        android:layout_marginBottom="8dp"/>
 
+    <!-- Liste (ID korunuyor) -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvTeachers"
-        android:layout_width="match_parent" android:layout_height="0dp"
-        android:layout_weight="1"/>
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="12dp"/>
 </LinearLayout>

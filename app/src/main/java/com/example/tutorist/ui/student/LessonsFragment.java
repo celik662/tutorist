@@ -34,6 +34,28 @@ public class LessonsFragment extends Fragment {
             startActivity(i);
         });
         rv.setAdapter(adapter);
+        TextView tvGreeting = v.findViewById(R.id.tvGreeting);
+        TextView tvGreetingSub = v.findViewById(R.id.tvGreetingSub);
+
+
+        // Basit zaman-of-day selamlama
+        String name = null;
+        com.google.firebase.auth.FirebaseUser u =
+                com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+        if (u != null && u.getDisplayName() != null && !u.getDisplayName().isEmpty()) {
+            name = u.getDisplayName().split(" ")[0]; // sadece adı al
+        }
+
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        int h = cal.get(java.util.Calendar.HOUR_OF_DAY);
+        String greet;
+        if (h < 12)      greet = "Günaydın";
+        else if (h < 18) greet = "Merhaba";
+        else             greet = "İyi akşamlar";
+
+        tvGreeting.setText(name != null ? (greet + ", " + name + " 👋") : (greet + " 👋"));
+        tvGreetingSub.setText("Bugün ne öğrenmek istersin?");
+
 
         loadSubjects();
         return v;

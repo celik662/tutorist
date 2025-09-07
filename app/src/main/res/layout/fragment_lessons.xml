@@ -1,8 +1,37 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="match_parent"
-    android:padding="8dp">
+<!-- res/layout/fragment_lessons.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="24dp">
+
+    <TextView
+        android:id="@+id/tvGreeting"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        style="?attr/textAppearanceHeadlineSmall"
+        android:text="Merhaba 👋"
+        android:layout_marginBottom="4dp"/>
+
+    <TextView
+        android:id="@+id/tvGreetingSub"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        style="?attr/textAppearanceBodyMedium"
+        android:text="Bugün ne öğrenmek istersin?"
+        android:alpha="0.8"
+        android:layout_marginBottom="12dp"/>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvSubjects"
-        android:layout_width="match_parent" android:layout_height="match_parent"/>
-</FrameLayout>
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="16dp"
+        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+        app:spanCount="3"/>
+</LinearLayout>

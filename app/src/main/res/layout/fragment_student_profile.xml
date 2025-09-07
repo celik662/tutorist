@@ -1,52 +1,168 @@
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="match_parent">
+<!-- res/layout/fragment_student_profile.xml -->
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@color/tutorist_surface">
 
     <LinearLayout
-        android:orientation="vertical" android:padding="16dp"
-        android:layout_width="match_parent" android:layout_height="wrap_content">
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
 
-        <EditText
-            android:id="@+id/etName"
+        <!-- Başlık + mini açıklama -->
+        <TextView
+            android:id="@+id/tvGreeting"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="?attr/textAppearanceTitleLarge"
+            android:text="Profil"
+            android:textColor="@color/tutorist_onSurface"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="?attr/textAppearanceBodyMedium"
+            android:text="Bilgilerini güncelle, ödemelerini yönet."
+            android:alpha="0.8"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- AD SOYAD -->
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:hint="Ad Soyad"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            app:startIconTint="@color/tutorist_onSurface"
+            app:boxStrokeColor="@color/tutorist_outline"
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusBottomEnd="12dp">
 
-        <EditText
-            android:id="@+id/etPhone"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:imeOptions="actionNext"
+                android:inputType="textPersonName|textCapWords"
+                android:paddingStart="6dp"/>
+            <!-- paddingStart: ikon ile metin arasında nazik bir boşluk -->
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- TELEFON -->
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
             android:hint="Telefon"
-            android:inputType="phone"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            app:startIconTint="@color/tutorist_onSurface"
+            app:boxStrokeColor="@color/tutorist_outline"
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusBottomEnd="12dp">
 
-        <Button
-            android:id="@+id/btnSave"
-            android:text="Kaydet"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etPhone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="phone"
+                android:imeOptions="actionDone"
+                android:paddingStart="6dp"
+                tools:ignore="RtlSymmetry" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-        <Button
-            android:id="@+id/btnLogout"
-            android:text="Çıkış Yap"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
-
-        <TextView
-            android:id="@+id/tvMsg"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:paddingTop="8dp"/>
-
-        <!-- Ödeme kartları bölümü -->
-        <TextView
-            android:text="Ödeme bilgileri"
-            android:textStyle="bold"
-            android:paddingTop="16dp"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-
+        <!-- KAYDET / ÇIKIŞ -->
         <LinearLayout
-            android:id="@+id/llCards"
-            android:orientation="vertical"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:paddingTop="8dp"/>
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="16dp">
 
-        <Button
-            android:id="@+id/btnAddCard"
-            android:text="Kart ekle"
-            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSave"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Kaydet"
+                app:cornerRadius="14dp"
+                app:icon="@drawable/save_24"
+                app:iconPadding="8dp"
+                app:iconGravity="textStart"
+                app:backgroundTint="@color/tutorist_primary"
+                android:textColor="@color/tutorist_onPrimary"/>
+
+            <Space android:layout_width="12dp" android:layout_height="wrap_content"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLogout"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Çıkış Yap"
+                app:cornerRadius="14dp"
+                app:icon="@drawable/logout_24"
+                app:iconPadding="8dp"
+                app:iconGravity="textStart"/>
+        </LinearLayout>
+
+        <!-- Ödeme bilgileri -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            app:cardCornerRadius="16dp"
+            app:strokeColor="@color/tutorist_surfaceVariant"
+            app:cardBackgroundColor="@android:color/white">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    style="?attr/textAppearanceTitleMedium"
+                    android:text="Ödeme bilgileri"
+                    android:textColor="@color/tutorist_onSurface"/>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="8dp"/>
+
+                <LinearLayout
+                    android:id="@+id/llCards"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"/>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="8dp"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAddCard"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Kart ekle"
+                    app:icon="@drawable/credit_card_24"
+                    app:iconPadding="8dp"
+                    app:iconGravity="textStart"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="24dp" />
     </LinearLayout>
-</ScrollView>
+</androidx.core.widget.NestedScrollView>
