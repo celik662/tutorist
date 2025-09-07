@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.tutorist.R;
 import com.example.tutorist.ui.student.TeacherAdapter;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -21,19 +22,24 @@ import com.google.firebase.firestore.SetOptions;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class TeacherListActivity extends AppCompatActivity {
 
     private String subjectId, subjectName;
     private RecyclerView rv;
-    private View progress; // <-- XML’de ProgressBar ya da CircularProgressIndicator olabilir
+    private View progress;
     private TextView tvTitle, tvEmpty, tvError;
+    private TextInputEditText etSearch; // << eklenen
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
-    private TeacherAdapter adapter; // <-- SADECE bu adapter'ı kullanıyoruz
+    private TeacherAdapter adapter;
 
     private static final String TAG = "TeacherListActivity";
+
+    // Filtre için bellekte tutulan tam liste
+    private final List<TeacherAdapter.TeacherRow> all = new ArrayList<>();
 
     @Override protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -47,6 +53,7 @@ public class TeacherListActivity extends AppCompatActivity {
         tvError  = findViewById(R.id.tvError);
         rv       = findViewById(R.id.rvTeachers);
         progress = findViewById(R.id.progress);
+        etSearch = findViewById(R.id.etSearch); // << eklenen
 
         tvTitle.setText(subjectName != null ? subjectName : "Öğretmenler");
 
@@ -56,6 +63,15 @@ public class TeacherListActivity extends AppCompatActivity {
                     .show(getSupportFragmentManager(), "teacherDetail");
         });
         rv.setAdapter(adapter);
+
+        // Arama: canlı filtre
+        if (etSearch != null) {
+            etSearch.addTextChangedListener(new android.text.TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) { applyFilter(); }
+                @Override public void afterTextChanged(android.text.Editable s) {}
+            });
+        }
 
         if (subjectId == null || subjectId.trim().isEmpty()) {
             showError("Ders bilgisi eksik (subjectId yok).");
@@ -76,18 +92,15 @@ public class TeacherListActivity extends AppCompatActivity {
     private Integer extractPriceFromProfile(DocumentSnapshot d, String subjectId){
         if (d == null || subjectId == null) return null;
 
-        // 1) teacherProfiles.prices.{subjectId} (varsa)
         Integer n = toIntOrNull(d.get("prices." + subjectId));
         if (n != null && n > 0) return n;
 
-        // 2) teacherProfiles.subjectsMap.{subjectId}.price (nested obje ise)
         Object sm = d.get("subjectsMap." + subjectId);
         if (sm instanceof Map) {
             Integer n2 = toIntOrNull(((Map<?,?>) sm).get("price"));
             if (n2 != null && n2 > 0) return n2;
         }
 
-        // 3) teacherProfiles.subjectsMap.{subjectId} doğrudan sayı ise
         Integer n3 = toIntOrNull(sm);
         if (n3 != null && n3 > 0) return n3;
 
@@ -100,40 +113,40 @@ public class TeacherListActivity extends AppCompatActivity {
         for (DocumentSnapshot d : snap.getDocuments()) {
             TeacherAdapter.TeacherRow row = new TeacherAdapter.TeacherRow();
             row.id          = d.getId();
-            row.fullName    = d.getString("displayName"); // sabah çalışan şema
+            row.fullName    = d.getString("displayName");
             row.bio         = d.getString("bio");
             row.ratingAvg   = d.getDouble("ratingAvg");
             row.ratingCount = d.getLong("ratingCount");
-
-            // profilden fiyatı dene
-            row.price = extractPriceFromProfile(d, subjectId);
-
+            row.price       = extractPriceFromProfile(d, subjectId);
             list.add(row);
         }
 
-        adapter.submit(list);
+        // Tam listeyi güncelle ve filtre uygula
+        all.clear();
+        all.addAll(list);
+        applyFilter(); // arama metni varsa ona göre, yoksa tam liste
 
         Log.d(TAG, "processTeachers subjectId=" + subjectId + " teacherCount=" + list.size());
 
-        // profilden gelmeyenler için A/B/C fallback
+        // Fiyat fallback
         for (TeacherAdapter.TeacherRow row : list) {
             if (row.price == null || row.price <= 0) {
                 loadPriceForRow(row.id, subjectId);
             }
         }
 
+        // Rating fallback
         for (int i = 0; i < list.size(); i++) {
-            TeacherAdapter.TeacherRow row = list.get(i); // 'var' yerine açık tip
+            TeacherAdapter.TeacherRow row = list.get(i);
             if (row.ratingCount == null || row.ratingCount == 0L) {
                 fetchRatingFallback(row, i);
             }
         }
 
         showLoading(false);
-        tvEmpty.setVisibility(list.isEmpty() ? View.VISIBLE : View.GONE);
+        tvEmpty.setVisibility(all.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
-    // row kullanılmadığı için sade imza
     private void loadPriceForRow(String teacherId, String subjectId){
         if (teacherId == null || subjectId == null) {
             Log.w(TAG, "loadPriceForRow: teacherId/subjectId null");
@@ -144,49 +157,33 @@ public class TeacherListActivity extends AppCompatActivity {
 
         db.collection("teacherSubjects").document(tsId).get()
                 .addOnSuccessListener(d -> {
-                    Log.d(TAG, "A exists=" + d.exists() + " data=" + (d.exists()? d.getData() : null));
                     Integer price = toIntOrNull(d.get("price"));
                     if (price != null && price > 0) {
                         adapter.updatePriceById(teacherId, price);
                     } else {
-                        Log.d(TAG, "price: try B teacherSubjects/" + teacherId + "/subjects/" + subjectId);
                         db.collection("teacherSubjects").document(teacherId)
                                 .collection("subjects").document(subjectId).get()
                                 .addOnSuccessListener(sd -> {
-                                    Log.d(TAG, "B exists=" + sd.exists() + " data=" + (sd.exists()? sd.getData() : null));
                                     Integer p2 = toIntOrNull(sd.get("price"));
                                     if (p2 != null && p2 > 0) {
                                         adapter.updatePriceById(teacherId, p2);
                                     } else {
-                                        Log.d(TAG, "price: try C subjects/" + subjectId);
                                         db.collection("subjects").document(subjectId).get()
                                                 .addOnSuccessListener(ss -> {
-                                                    Log.d(TAG, "C exists=" + ss.exists() + " data=" + (ss.exists()? ss.getData() : null));
                                                     Integer p3 = toIntOrNull(ss.get("price"));
                                                     if (p3 != null && p3 > 0) {
                                                         adapter.updatePriceById(teacherId, p3);
-                                                    } else {
-                                                        Log.w(TAG, "price not found for teacher=" + teacherId + " subject=" + subjectId);
                                                     }
-                                                })
-                                                .addOnFailureListener(e -> Log.e(TAG, "C subjects fetch failed", e));
+                                                });
                                     }
-                                })
-                                .addOnFailureListener(e -> Log.e(TAG, "B subcollection fetch failed", e));
+                                });
                     }
-                })
-                .addOnFailureListener(e -> Log.e(TAG, "A teacherSubjects fetch failed", e));
+                });
     }
 
     private void loadTeachers() {
         showLoading(true);
 
-        if (subjectId == null || subjectId.trim().isEmpty()) {
-            showError("Ders bilgisi eksik.");
-            return;
-        }
-
-        // sabah çalışan sorgu: teacherProfiles.subjectsMap.{subjectId} > 0
         String mapField = "subjectsMap." + subjectId;
 
         db.collection("teacherProfiles")
@@ -196,7 +193,6 @@ public class TeacherListActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> showError("Öğretmenler yüklenemedi: " + e.getMessage()));
     }
 
-    /** Profil alanları boşsa: review'lardan ortalama/sayıyı hesapla ve kartı güncelle. */
     private void fetchRatingFallback(TeacherAdapter.TeacherRow row, int position) {
         db.collection("teacherReviews")
                 .whereEqualTo("teacherId", row.id)
@@ -204,32 +200,43 @@ public class TeacherListActivity extends AppCompatActivity {
                 .addOnSuccessListener(snap -> {
                     long cnt = 0;
                     double sum = 0;
-
                     for (DocumentSnapshot d : snap.getDocuments()) {
                         Number n = (Number) d.get("rating");
-                        if (n != null) {
-                            sum += n.doubleValue();
-                            cnt++;
-                        }
+                        if (n != null) { sum += n.doubleValue(); cnt++; }
                     }
-
                     row.ratingCount = cnt;
                     row.ratingAvg   = cnt > 0 ? (sum / cnt) : 0.0;
-
-                    // Kartı güncelle
                     adapter.notifyItemChanged(position);
 
-                    // (opsiyonel) Profili de doldur ki bir dahaki listede direkt gelsin
                     HashMap<String, Object> up = new HashMap<>();
                     up.put("ratingAvg", row.ratingAvg);
                     up.put("ratingCount", row.ratingCount);
                     up.put("updatedAt", FieldValue.serverTimestamp());
+                    db.collection("teacherProfiles").document(row.id).set(up, SetOptions.merge());
+                });
+    }
 
-                    db.collection("teacherProfiles").document(row.id)
-                            .set(up, SetOptions.merge());
-                })
-                .addOnFailureListener(e ->
-                        Log.e(TAG, "fallback rating failed", e));
+    // ------- Arama / Filtre --------
+    private void applyFilter() {
+        String q = (etSearch != null && etSearch.getText() != null) ? etSearch.getText().toString() : "";
+        String needle = q == null ? "" : q.trim().toLowerCase(new Locale("tr", "TR"));
+
+        if (needle.isEmpty()) {
+            adapter.submit(new ArrayList<>(all));
+            tvEmpty.setVisibility(all.isEmpty() ? View.VISIBLE : View.GONE);
+            rv.setVisibility(all.isEmpty() ? View.GONE : View.VISIBLE);
+            return;
+        }
+
+        List<TeacherAdapter.TeacherRow> filtered = new ArrayList<>();
+        for (TeacherAdapter.TeacherRow r : all) {
+            if (r.fullName != null && r.fullName.toLowerCase(new Locale("tr","TR")).contains(needle)) {
+                filtered.add(r);
+            }
+        }
+        adapter.submit(filtered);
+        tvEmpty.setVisibility(filtered.isEmpty() ? View.VISIBLE : View.GONE);
+        rv.setVisibility(filtered.isEmpty() ? View.GONE : View.VISIBLE);
     }
 
     private void showLoading(boolean loading){
