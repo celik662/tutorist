@@ -1,188 +1,221 @@
+// app/src/main/java/com/example/tutorist/ui/teacher/TeacherRequestsActivity.java
 package com.example.tutorist.ui.teacher;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.view.*;
 import android.widget.*;
-import androidx.annotation.Nullable;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.example.tutorist.R;
 import com.example.tutorist.repo.BookingRepo;
-import com.google.firebase.FirebaseApp;
-import com.google.firebase.FirebaseOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.*;
+
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class TeacherRequestsActivity extends AppCompatActivity {
 
     private RecyclerView rv;
-    private View progress, empty;
-    private Adapter adapter;
-    private String uid;
-    private ListenerRegistration reg;
+    private TextView empty, tvTitle, tvSubtitle;
+    private com.google.android.material.progressindicator.CircularProgressIndicator progress;
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private final BookingRepo bookingRepo = new BookingRepo();
-
-    private static final String TAG = "TeacherReq";
-
+    private ListenerRegistration reg;
+    private String uid;
 
     static class Row {
-        String id, studentId, studentName, subjectId, subjectName, date;
-        int hour;
-        Row(String id, String studentId, String studentName,
-            String subjectId, String subjectName, String date, int hour){
-            this.id=id; this.studentId=studentId; this.studentName=studentName;
-            this.subjectId=subjectId; this.subjectName=subjectName;
-            this.date=date; this.hour=hour;
-        }
+        String id;
+        String studentId, studentName;
+        String subjectId, subjectName;
+        String date; int hour; // "YYYY-MM-DD" + 0..23
     }
-
-
     private final List<Row> items = new ArrayList<>();
+    private Adapter adapter;
 
-    @Override protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    @Override protected void onCreate(Bundle b) {
+        super.onCreate(b);
         setContentView(R.layout.activity_teacher_requests);
-        setTitle("Gelen Talepler");
+        setTitle("Talepler");
 
         uid = FirebaseAuth.getInstance().getUid();
         if (uid == null) { finish(); return; }
 
-        rv       = findViewById(R.id.rv);
-        progress = findViewById(R.id.progress);
-        empty    = findViewById(R.id.empty);
+        tvTitle    = findViewById(R.id.tvTitle);
+        tvSubtitle = findViewById(R.id.tvSubtitle);
+        empty      = findViewById(R.id.empty);
+        progress   = findViewById(R.id.progress);
+        rv         = findViewById(R.id.rv);
+
         rv.setLayoutManager(new LinearLayoutManager(this));
         adapter = new Adapter(items, this::onAccept, this::onDecline);
         rv.setAdapter(adapter);
 
-        Log.d(TAG, "onCreate, uid=" + uid);
-        FirebaseOptions opts = FirebaseApp.getInstance().getOptions();
-        Log.d(TAG, "Firebase projectId=" + opts.getProjectId() + ", appId=" + opts.getApplicationId());
+        // Liste değiştikçe boş görünümü güncelle
+        adapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
+            @Override public void onChanged() { updateEmptyState(); }
+            @Override public void onItemRangeInserted(int s, int c) { updateEmptyState(); }
+            @Override public void onItemRangeRemoved(int s, int c) { updateEmptyState(); }
+        });
+    }
 
-
+    @Override protected void onStart() {
+        super.onStart();
         listenPending();
     }
 
-    private void listenPending() {
-        if (reg != null) reg.remove();
-        progress.setVisibility(View.VISIBLE);
-
-        Log.d(TAG, "listenPending(): start, teacherId=" + uid);
-
-        reg = db.collection("bookings")
-                .whereEqualTo("teacherId", uid)
-                .whereEqualTo("status", "pending")
-                .addSnapshotListener((snap, e) -> {
-                    progress.setVisibility(View.GONE);
-
-                    if (e != null) {
-                        if (e instanceof FirebaseFirestoreException) {
-                            FirebaseFirestoreException fe = (FirebaseFirestoreException) e;
-                            Log.e(TAG, "Firestore listen failed. code=" + fe.getCode()
-                                    + " msg=" + fe.getMessage(), fe);
-                        } else {
-                            Log.e(TAG, "Firestore listen failed: " + e.getMessage(), e);
-                        }
-                        Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
-                        return;
-                    }
-
-                    Log.d(TAG, "snapshot ok. size=" + snap.size()
-                            + " fromCache=" + snap.getMetadata().isFromCache());
-
-                    items.clear();
-                    for (DocumentSnapshot d : snap) {
-                        String id = d.getId();
-                        String studentId = String.valueOf(d.get("studentId"));
-                        String subjectId = String.valueOf(d.get("subjectId"));
-                        String date = String.valueOf(d.get("date"));
-                        int hour = d.getLong("hour") != null ? d.getLong("hour").intValue() : 0;
-
-                        String studentName = d.getString("studentName");
-                        if (studentName == null || studentName.trim().isEmpty()) studentName = studentId;
-
-                        String subjectName = d.getString("subjectName");
-                        if (subjectName == null || subjectName.trim().isEmpty()) subjectName = subjectId;
-
-                        items.add(new Row(id, studentId, studentName, subjectId, subjectName, date, hour));
-                    }
-
-                    items.sort(Comparator.comparing((Row r) -> r.date).thenComparingInt(r -> r.hour));
-                    adapter.notifyDataSetChanged();
-                    empty.setVisibility(items.isEmpty() ? View.VISIBLE : View.GONE);
-                });
+    @Override protected void onStop() {
+        if (reg != null) { reg.remove(); reg = null; }
+        super.onStop();
     }
 
+    private void setLoading(boolean loading){
+        progress.setVisibility(loading ? View.VISIBLE : View.GONE);
+        if (loading) { rv.setVisibility(View.GONE); empty.setVisibility(View.GONE); }
+    }
+    private void updateEmptyState(){
+        boolean isEmpty = adapter.getItemCount() == 0;
+        empty.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+        rv.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+    }
+
+    private void listenPending() {
+        if (reg != null) { reg.remove(); reg = null; }
+        setLoading(true);
+
+        // Basit ve indeks dostu: teacherId + status = pending
+        Query q = db.collection("bookings")
+                .whereEqualTo("teacherId", uid)
+                .whereEqualTo("status", "pending");
+
+        reg = q.addSnapshotListener((snap, e) -> {
+            setLoading(false);
+            if (e != null || snap == null) {
+                empty.setText(e != null ? e.getMessage() : "Hata");
+                empty.setVisibility(View.VISIBLE);
+                rv.setVisibility(View.GONE);
+                return;
+            }
+
+            items.clear();
+            for (DocumentSnapshot d : snap.getDocuments()) {
+                Row r = new Row();
+                r.id         = d.getId();
+                r.studentId  = str(d.get("studentId"));
+                Object sn    = d.get("studentName");
+                r.studentName= sn != null ? String.valueOf(sn) : r.studentId;
+
+                r.subjectId  = str(d.get("subjectId"));
+                Object subn  = d.get("subjectName");
+                r.subjectName= subn != null ? String.valueOf(subn) : r.subjectId;
+
+                r.date       = str(d.get("date"));
+                r.hour       = d.getLong("hour") != null ? d.getLong("hour").intValue() : 0;
+
+                items.add(r);
+            }
+
+            // Tarih + saat’e göre sıralama (en yakın önce)
+            items.sort((a,b) -> {
+                int c = nullSafe(a.date).compareTo(nullSafe(b.date));
+                if (c != 0) return c;
+                return Integer.compare(a.hour, b.hour);
+            });
+
+            adapter.notifyDataSetChanged();
+            updateEmptyState();
+        });
+    }
+
+    private static String str(Object o){ return o==null? "" : String.valueOf(o); }
+    private static String nullSafe(String s){ return s==null ? "" : s; }
 
     private void onAccept(Row r) {
-        Log.d(TAG, "onAccept -> " + r.id);
+        // Çift tıklama vb. için basit koruma: butonu adapter içinde disable ediyoruz
         bookingRepo.updateStatusById(r.id, "accepted")
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Hata: " + e.getMessage(), Toast.LENGTH_LONG).show());
-        // Başarılı olursa snapshot dinleyicisi zaten listeyi yenileyecek.
+                .addOnFailureListener(e -> toast("Kabul hatası: " + e.getMessage()));
     }
 
     private void onDecline(Row r) {
-        Log.d(TAG, "onDecline -> " + r.id);
-        bookingRepo.updateStatusById(r.id, "declined")
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Hata: " + e.getMessage(), Toast.LENGTH_LONG).show());
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Talebi reddet?")
+                .setMessage("Bu talebi reddetmek istediğinize emin misiniz?")
+                .setNegativeButton("Vazgeç", null)
+                .setPositiveButton("Reddet", (d,w) ->
+                        bookingRepo.updateStatusById(r.id, "declined")
+                                .addOnFailureListener(e -> toast("Reddetme hatası: " + e.getMessage())))
+                .show();
     }
 
+    private void toast(String m){ Toast.makeText(this, m, Toast.LENGTH_LONG).show(); }
 
-    @Override protected void onDestroy() {
-        if (reg != null) reg.remove();
-        super.onDestroy();
-    }
+    /* ================= Adapter ================= */
 
-    // --- Adapter ---
     static class Adapter extends RecyclerView.Adapter<Adapter.VH> {
         interface Act { void run(Row r); }
-        private final List<Row> items; private final Act onAccept, onDecline;
-        Adapter(List<Row> items, Act onAccept, Act onDecline){ this.items=items; this.onAccept=onAccept; this.onDecline=onDecline; }
+        private final List<Row> items; private final Act onAccept; private final Act onDecline;
+        Adapter(List<Row> it, Act accept, Act decline){ items=it; onAccept=accept; onDecline=decline; }
 
         static class VH extends RecyclerView.ViewHolder {
-            TextView tv;
-            Button btnAcc, btnDec;
-            VH(View v){ super(v);
-                tv=v.findViewById(R.id.tvLine);
-                btnAcc=v.findViewById(R.id.btnAccept);
-                btnDec=v.findViewById(R.id.btnDecline);
+            TextView tvTop, tvBottom;
+            com.google.android.material.button.MaterialButton btnAccept, btnDecline;
+            VH(View v){
+                super(v);
+                tvTop     = v.findViewById(R.id.tvLineTop);
+                tvBottom  = v.findViewById(R.id.tvLineBottom);
+                btnAccept = v.findViewById(R.id.btnAccept);
+                btnDecline= v.findViewById(R.id.btnDecline);
             }
         }
 
-        @Override public VH onCreateViewHolder(ViewGroup p, int vt){
-            View v = LayoutInflater.from(p.getContext())
-                    .inflate(R.layout.item_teacher_request, p, false);
+        @NonNull @Override public VH onCreateViewHolder(@NonNull ViewGroup p, int vt){
+            View v = LayoutInflater.from(p.getContext()).inflate(R.layout.item_teacher_request, p, false);
             return new VH(v);
         }
 
-        @Override public void onBindViewHolder(VH h, int pos){
+        @SuppressLint("SetTextI18n")
+        @Override public void onBindViewHolder(@NonNull VH h, int pos){
             Row r = items.get(pos);
-            h.tv.setText(String.format(
-                    Locale.getDefault(),
-                    "%s  %02d:00\nÖğrenci adı: %s\nDers adı: %s",
-                    r.date, r.hour, r.studentName, r.subjectName
-            ));
 
-            h.btnAcc.setOnClickListener(v -> {
-                h.btnAcc.setEnabled(false);
-                h.btnDec.setEnabled(false);
+            String top = (r.studentName!=null && !r.studentName.isEmpty() ? r.studentName : r.studentId)
+                    + " • " + (r.subjectName!=null && !r.subjectName.isEmpty() ? r.subjectName : r.subjectId);
+            h.tvTop.setText(top);
+
+            String bottom = fmtDate(r.date) + "  •  " + String.format(Locale.getDefault(), "%02d:00", r.hour);
+            h.tvBottom.setText(bottom);
+
+            h.btnAccept.setEnabled(true);
+            h.btnDecline.setEnabled(true);
+
+            h.btnAccept.setOnClickListener(v -> {
+                h.btnAccept.setEnabled(false);
+                h.btnDecline.setEnabled(false);
                 onAccept.run(r);
             });
-            h.btnDec.setOnClickListener(v -> {
-                h.btnAcc.setEnabled(false);
-                h.btnDec.setEnabled(false);
+            h.btnDecline.setOnClickListener(v -> {
+                h.btnAccept.setEnabled(false);
+                h.btnDecline.setEnabled(false);
                 onDecline.run(r);
             });
         }
 
         @Override public int getItemCount(){ return items.size(); }
+
+        private String fmtDate(String ymd) {
+            // "2025-08-25" → "25 Ağu 2025"
+            try {
+                java.text.DateFormat in  = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                java.text.DateFormat out = new java.text.SimpleDateFormat("d MMM yyyy", new Locale("tr"));
+                Date d = ((SimpleDateFormat)in).parse(ymd);
+                return out.format(d);
+            } catch (Exception e){
+                return ymd != null ? ymd : "";
+            }
+        }
     }
 }

@@ -1,42 +1,58 @@
-<!-- app/src/main/res/layout/activity_teacher_requests.xml -->
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:padding="16dp"
-    android:layout_width="match_parent" android:layout_height="match_parent">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:background="@color/tutorist_surface"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
-    <!-- Sabit başlık: her zaman görünür -->
+    <!-- Başlık -->
     <TextView
         android:id="@+id/tvTitle"
+        style="?attr/textAppearanceTitleLarge"
+        android:text="Bekleyen ders talepleri"
+        android:textColor="@color/tutorist_onSurface"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingBottom="8dp"
-        android:text="Bekleyen ders talepleri:"
-        android:textColor="#555"
-        android:textStyle="bold"
-        android:textSize="20sp" />
+        android:layout_height="wrap_content"/>
 
-    <!-- Boş liste mesajı: sadece liste boşken görünür -->
+    <TextView
+        android:id="@+id/tvSubtitle"
+        style="?attr/textAppearanceBodyMedium"
+        android:text="Öğrencilerden gelen talepleri onaylayın veya reddedin."
+        android:alpha="0.8"
+        android:layout_marginTop="2dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <!-- Boş görünüm -->
     <TextView
         android:id="@+id/empty"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingBottom="8dp"
+        style="?attr/textAppearanceBodyMedium"
         android:text="Şu an bekleyen talep yok."
-        android:textColor="#777"
-        android:visibility="gone" />
+        android:textColor="@color/tutorist_onSurface"
+        android:alpha="0.7"
+        android:visibility="gone"
+        android:layout_marginTop="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
 
-    <ProgressBar
+    <!-- Yükleniyor -->
+    <com.google.android.material.progressindicator.CircularProgressIndicator
         android:id="@+id/progress"
-        style="?android:attr/progressBarStyle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:visibility="gone"
         android:layout_gravity="center_horizontal"
-        android:visibility="gone"/>
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
 
+    <!-- Liste -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv"
+        android:layout_marginTop="12dp"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:paddingBottom="8dp"
         android:layout_weight="1"/>
-
-
 </LinearLayout>

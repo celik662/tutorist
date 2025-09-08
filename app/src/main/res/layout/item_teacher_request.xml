@@ -1,45 +1,74 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="12dp"
-    android:background="@android:color/white"
-    android:layout_marginBottom="8dp"
-    android:elevation="1dp">
-
-    <TextView
-        android:id="@+id/tvLine"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="2025-08-25  13:00  • öğrenci=...  • ders=..."
-        android:textSize="15sp"
-        android:textColor="#222222"
-        android:maxLines="4"
-        android:paddingBottom="8dp"/>
+    android:layout_marginBottom="10dp"
+    app:cardCornerRadius="16dp"
+    app:cardBackgroundColor="@android:color/white"
+    app:strokeColor="@color/tutorist_surfaceVariant"
+    app:strokeWidth="1dp">
 
     <LinearLayout
+        android:orientation="vertical"
+        android:padding="14dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:layout_height="wrap_content">
 
-        <Button
-            android:id="@+id/btnAccept"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:text="Kabul Et"/>
+        <!-- Üst satır: öğrenci • ders -->
+        <TextView
+            android:id="@+id/tvLineTop"
+            style="?attr/textAppearanceTitleSmall"
+            android:textColor="@color/tutorist_onSurface"
+            android:text="Öğrenci Adı • Ders Adı"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
 
-        <Space
-            android:layout_width="8dp"
-            android:layout_height="0dp"/>
+        <!-- Tarih-saat + açıklama -->
+        <TextView
+            android:id="@+id/tvLineBottom"
+            style="?attr/textAppearanceBodyMedium"
+            android:textColor="@color/tutorist_onSurface"
+            android:alpha="0.85"
+            android:text="25 Ağu 2025  •  13:00"
+            android:layout_marginTop="6dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
 
-        <Button
-            android:id="@+id/btnDecline"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:text="Reddet"/>
+        <!-- Aksiyonlar -->
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_marginTop="10dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAccept"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="40dp"
+                android:text="Kabul Et"
+                app:cornerRadius="14dp"
+                app:iconPadding="8dp"
+                app:backgroundTint="@color/tutorist_primary"
+                android:textColor="@color/tutorist_onPrimary"/>
+
+            <Space
+                android:layout_width="10dp"
+                android:layout_height="0dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDecline"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="40dp"
+                android:text="Reddet"
+                app:cornerRadius="14dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/tutorist_error"
+                android:textColor="@color/tutorist_error"/>
+        </LinearLayout>
     </LinearLayout>
-
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>

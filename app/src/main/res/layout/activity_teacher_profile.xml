@@ -1,7 +1,8 @@
-<!-- res/layout/activity_teacher_profile.xml -->
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:fillViewport="true"
+    android:background="@color/tutorist_surface"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -11,86 +12,241 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <!-- Ad Soyad -->
-        <com.google.android.material.textfield.TextInputLayout
+        <!-- Başlıklar -->
+        <TextView
+            style="?attr/textAppearanceTitleLarge"
+            android:text="Profil"
+            android:textColor="@color/tutorist_onSurface"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            style="?attr/textAppearanceBodyMedium"
+            android:text="Ad, telefon, biyografi ve ödeme ayarları"
+            android:alpha="0.85"
+            android:layout_marginBottom="12dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <!-- KART: Avatar + Ad & Telefon -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Ad Soyad">
+            app:cardCornerRadius="16dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/tutorist_surfaceVariant"
+            app:cardBackgroundColor="@android:color/white">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etName"
+            <LinearLayout
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:gravity="center_vertical"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textPersonName" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:layout_height="wrap_content">
 
-        <!-- Telefon -->
-        <com.google.android.material.textfield.TextInputLayout
+                <!-- İsteğe bağlı avatar (Java tarafı zorunlu değil) -->
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/ivAvatar"
+                    android:layout_width="84dp"
+                    android:layout_height="84dp"
+                    android:src="@drawable/ic_person"
+                    android:scaleType="centerCrop"
+                    app:strokeWidth="2dp"
+                    app:strokeColor="@color/tutorist_surfaceVariant" />
+
+                <Space android:layout_width="16dp" android:layout_height="0dp" />
+
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:hint="Ad Soyad"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:boxStrokeColor="@color/tutorist_outline"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <!-- ID’LER KORUNDU -->
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etName"
+                            android:imeOptions="actionNext"
+                            android:inputType="textPersonName|textCapWords"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_marginTop="10dp"
+                        android:hint="Telefon"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:boxStrokeColor="@color/tutorist_outline"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <!-- ID’LER KORUNDU -->
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etPhone"
+                            android:inputType="phone"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- KART: Biyografi -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_marginTop="12dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Telefon">
+            app:cardCornerRadius="16dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/tutorist_surfaceVariant"
+            app:cardBackgroundColor="@android:color/white">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etPhone"
+            <LinearLayout
+                android:orientation="vertical"
+                android:padding="16dp"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="phone" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:layout_height="wrap_content">
 
-        <!-- Biyografi -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilBio"
+                <TextView
+                    style="?attr/textAppearanceTitleMedium"
+                    android:text="Biyografi"
+                    android:textColor="@color/tutorist_onSurface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    app:counterEnabled="true"
+                    app:counterMaxLength="400"
+                    app:boxStrokeColor="@color/tutorist_outline"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    android:layout_marginTop="8dp"
+                    android:hint="Uzmanlıklar, deneyim, yöntemler…"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <!-- ID KORUNDU -->
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etBio"
+                        android:inputType="textMultiLine"
+                        android:minLines="4"
+                        android:maxLines="8"
+                        android:gravity="top|start"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    style="?attr/textAppearanceBodySmall"
+                    android:text="İpucu: 3–4 cümleyle hangi seviyelere ders verdiğinizi ve güçlü yanlarınızı yazın."
+                    android:alpha="0.75"
+                    android:layout_marginTop="6dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- KART: Ödeme bilgileri (özet) -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_marginTop="12dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Biyografinizi buraya yazabilirsiniz."
-            app:counterEnabled="true"
-            app:counterMaxLength="500" >
+            app:cardCornerRadius="16dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/tutorist_surfaceVariant"
+            app:cardBackgroundColor="@android:color/white">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etBio"
+            <LinearLayout
+                android:orientation="vertical"
+                android:padding="16dp"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minLines="4"
-                android:maxLines="8"
-                android:gravity="top|start"
-                android:inputType="textMultiLine"
-                android:maxLength="500" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:layout_height="wrap_content">
 
-        <!-- Kaydet -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSave"
-            android:layout_marginTop="20dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Kaydet" />
+                <TextView
+                    style="?attr/textAppearanceTitleMedium"
+                    android:text="Ödeme bilgileri"
+                    android:textColor="@color/tutorist_onSurface"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
 
+                <!-- Mevcut kodunda tvMsg var; onu sayfanın genel mesajı için aşağıda kullanacağız -->
+                <TextView
+                    android:id="@+id/tvPayoutSummary"
+                    style="?attr/textAppearanceBodyMedium"
+                    android:text="Ödeme ayarlarınızı ayrı ekranda yönetebilirsiniz."
+                    android:alpha="0.9"
+                    android:layout_marginTop="6dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
 
-        <Button
-            android:id="@+id/btnPayout"
-            android:text="Ödeme Bilgilerim"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+                <!-- ID KORUNDU: btnPayout -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPayout"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:text="Ödeme ayarlarını yönet"
+                    android:layout_marginTop="10dp"
+                    app:cornerRadius="14dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
-        <!-- Durum mesajı -->
+        <!-- Sayfa mesajları (ID korunuyor) -->
         <TextView
             android:id="@+id/tvMsg"
             android:layout_marginTop="8dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
-        <!-- Çıkış -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnLogout"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_marginTop="24dp"
+        <!-- Kaydet / Çıkış -->
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Çıkış Yap"
-            android:textAllCaps="false"
-            android:textColor="#B00020" />
-        <!-- İstersen buradaki rengi tema'dan ?attr/colorError yapabilirsin -->
+            android:layout_height="wrap_content">
+
+            <!-- ID KORUNDU -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSave"
+                style="@style/Widget.Material3.Button"
+                android:text="Kaydet"
+                app:cornerRadius="14dp"
+                app:backgroundTint="@color/tutorist_primary"
+                android:textColor="@color/tutorist_onPrimary"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <Space android:layout_width="12dp" android:layout_height="wrap_content" />
+
+            <!-- ID KORUNDU -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLogout"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:text="Çıkış Yap"
+                app:cornerRadius="14dp"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+        </LinearLayout>
+
+        <View android:layout_width="match_parent" android:layout_height="24dp" />
     </LinearLayout>
-</ScrollView>
+</androidx.core.widget.NestedScrollView>

@@ -1,10 +1,8 @@
 // app/src/main/java/com/example/tutorist/ui/teacher/TeacherProfileActivity.java
 package com.example.tutorist.ui.teacher;
 
-import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.*;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -15,104 +13,117 @@ import com.example.tutorist.repo.UserRepo;
 import com.example.tutorist.ui.auth.LoginActivity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.functions.FirebaseFunctions;
 
 public class TeacherProfileActivity extends AppCompatActivity {
 
     private EditText etName, etPhone, etBio;
-    private TextView tvMsg;
+    private TextView tvMsg, tvPayoutSummary;
+    private ImageView ivAvatar;
 
     private final UserRepo userRepo = new UserRepo();
     private final TeacherProfileRepo teacherProfileRepo = new TeacherProfileRepo();
-    private final FirebaseAuth auth = FirebaseAuth.getInstance();
-    private final FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private FirebaseAuth auth;
+    private FirebaseFirestore db;
     private String uid;
 
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
         setContentView(R.layout.activity_teacher_profile);
+        setTitle("Profil");
 
-        uid = auth.getUid();
+        auth = FirebaseAuth.getInstance();
+        db   = FirebaseFirestore.getInstance();
+        uid  = auth.getUid();
         if (uid == null) { finish(); return; }
 
-        etName  = findViewById(R.id.etName);
-        etPhone = findViewById(R.id.etPhone);
-        etBio   = findViewById(R.id.etBio);
-        tvMsg   = findViewById(R.id.tvMsg);
+        // XML’de verdiğin ID’lerle birebir
+        ivAvatar        = findViewById(R.id.ivAvatar);
+        etName          = findViewById(R.id.etName);
+        etPhone         = findViewById(R.id.etPhone);
+        etBio           = findViewById(R.id.etBio);
+        tvMsg           = findViewById(R.id.tvMsg);
+        tvPayoutSummary = findViewById(R.id.tvPayoutSummary); // karttaki kısa özet
         Button btnSave   = findViewById(R.id.btnSave);
         Button btnLogout = findViewById(R.id.btnLogout);
+        Button btnPayout = findViewById(R.id.btnPayout);
 
         loadProfile();
+        loadPayoutSummary(); // varsa durum metnini günceller
 
         btnSave.setOnClickListener(v -> {
             String name  = etName.getText().toString().trim();
             String phone = etPhone.getText().toString().trim();
             String bio   = etBio.getText().toString().trim();
+
             tvMsg.setText("Kaydediliyor...");
 
-
-            // 1) users -> ad & telefon
             userRepo.updateUserBasic(uid, name, phone)
-                    .addOnSuccessListener(s -> {
-                        // 2) teacherProfiles -> displayName & bio
-                        teacherProfileRepo.updateDisplayName(uid, name)
-                                .continueWithTask(t -> teacherProfileRepo.updateBio(uid, bio))
-                                .addOnSuccessListener(x -> tvMsg.setText("Kaydedildi."))
-                                .addOnFailureListener(e ->
-                                        tvMsg.setText("Profil güncellendi ama bazı alanlar yazılamadı: " + e.getMessage()));
-                    })
-                    .addOnFailureListener(e ->
-                            tvMsg.setText("Kullanıcı güncellenemedi: " + e.getMessage()));
+                    .continueWithTask(t -> teacherProfileRepo.updateDisplayName(uid, name))
+                    .continueWithTask(t -> teacherProfileRepo.updateBio(uid, bio))
+                    .addOnSuccessListener(x -> tvMsg.setText("Kaydedildi."))
+                    .addOnFailureListener(e -> tvMsg.setText("Hata: " + e.getMessage()));
         });
 
-        @SuppressLint({"MissingInflatedId", "LocalSuppress"}) Button btnPayout = findViewById(R.id.btnPayout);
         btnPayout.setOnClickListener(v ->
                 startActivity(new Intent(this, TeacherPayoutActivity.class)));
 
-        btnLogout.setOnClickListener(v -> {
-            new AlertDialog.Builder(this)
-                    .setTitle("Çıkış yapılsın mı?")
-                    .setMessage("Hesabınızdan çıkış yapacaksınız.")
-                    .setNegativeButton("İptal", null)
-                    .setPositiveButton("Çıkış yap", (d, w) -> {
-                        auth.signOut();
-                        Intent i = new Intent(this, LoginActivity.class);
-                        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        startActivity(i);
-                        finish();
-                    })
-                    .show();
-        });
+        btnLogout.setOnClickListener(v -> new AlertDialog.Builder(this)
+                .setTitle("Çıkış yapılsın mı?")
+                .setMessage("Hesabınızdan çıkış yapacaksınız.")
+                .setNegativeButton("İptal", null)
+                .setPositiveButton("Çıkış yap", (d, w) -> {
+                    auth.signOut();
+                    Intent i = new Intent(this, LoginActivity.class);
+                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(i);
+                    finish();
+                })
+                .show());
     }
 
     private void loadProfile() {
         // users: ad & telefon
-        userRepo.loadUser(uid)
-                .addOnSuccessListener(data -> {
-                    if (data != null) {
-                        Object n = data.get("fullName");
-                        Object p = data.get("phone");
-                        if (n != null) etName.setText(String.valueOf(n));
-                        if (p != null) etPhone.setText(String.valueOf(p));
-                    }
-                })
-                .addOnFailureListener(e -> tvMsg.setText("Profil okunamadı: " + e.getMessage()));
+        userRepo.loadUser(uid).addOnSuccessListener(data -> {
+            if (data != null) {
+                Object n = data.get("fullName");
+                Object p = data.get("phone");
+                if (n != null) etName.setText(String.valueOf(n));
+                if (p != null) etPhone.setText(String.valueOf(p));
+            }
+        });
 
-        // teacherProfiles: bio (+ displayName gerekirse)
+        // teacherProfiles: bio (+ displayName / photoUrl)
         db.collection("teacherProfiles").document(uid).get()
                 .addOnSuccessListener(doc -> {
                     if (doc != null && doc.exists()) {
                         String bio = doc.getString("bio");
                         if (bio != null) etBio.setText(bio);
-                        // displayName de var ise, boşsa name'e düşebiliriz
-                        if (etName.getText().toString().trim().isEmpty()) {
+
+                        if (etName.getText().length() == 0) {
                             String dn = doc.getString("displayName");
                             if (dn != null) etName.setText(dn);
                         }
+
+                        String photo = doc.getString("photoUrl");
+                        if (photo != null && ivAvatar != null) {
+                            // Glide eklediysen aç:
+                            // Glide.with(this).load(photo)
+                            //      .placeholder(R.drawable.ic_person)
+                            //      .into(ivAvatar);
+                        }
                     }
-                })
-                .addOnFailureListener(e -> {
-                    // sessiz geçebiliriz; kritik değil
+                });
+    }
+
+    private void loadPayoutSummary() {
+        if (tvPayoutSummary == null) return;
+        // Kendi şemanı uydur: örnek “payoutAccounts/{uid} { status: 'ready'|'pending' }”
+        db.collection("payoutAccounts").document(uid).get()
+                .addOnSuccessListener(doc -> {
+                    if (doc != null && doc.exists()) {
+                        String st = doc.getString("status");
+                        if (st != null) tvPayoutSummary.setText("Ödeme hesabı: " + st);
+                    }
                 });
     }
 }
