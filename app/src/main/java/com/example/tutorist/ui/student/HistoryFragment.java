@@ -47,9 +47,9 @@ public class HistoryFragment extends Fragment {
         int hour;
         Double price;
         String teacherName;
-        java.util.Date endAt;
-        boolean hasReview;      // öğrenci -> teacherReviews/{bookingId}
-        boolean hasTeacherNote; // öğretmen -> teacherNotes/{bookingId}
+        Date startAt, endAt;
+        boolean hasReview;
+        boolean hasTeacherNote;
     }
 
     private final List<Row> items = new ArrayList<>();
@@ -57,6 +57,15 @@ public class HistoryFragment extends Fragment {
     private final Map<String, Map<String, Double>> teacherPricesCache = new HashMap<>();
 
     private Adapter adapter;
+
+    // ------ Zaman bazlı otomatik yenileme (buton pencere değişimleri için) ------
+    private final Runnable tick = new Runnable() {
+        @Override public void run() {
+            if (!isAdded() || rv == null) return;
+            if (adapter != null) adapter.notifyDataSetChanged();
+            rv.postDelayed(this, 30_000); // 30 sn
+        }
+    };
 
     @Nullable @Override
     public View onCreateView(@NonNull LayoutInflater inf, @Nullable ViewGroup container, @Nullable Bundle b) {
@@ -89,15 +98,18 @@ public class HistoryFragment extends Fragment {
         );
         rv.setAdapter(adapter);
 
-        // Adapter değiştikçe boş/dolu durumu otomatik güncelle
         adapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
             @Override public void onChanged() { updateEmptyState(); }
             @Override public void onItemRangeInserted(int positionStart, int itemCount) { updateEmptyState(); }
             @Override public void onItemRangeRemoved(int positionStart, int itemCount) { updateEmptyState(); }
         });
 
+        // Başlangıçta doğru sekme bilgisini adapter'a aktar
+        if (adapter != null) adapter.setHistoryTab(currentFilter == Filter.HISTORY);
+
         rgFilter.setOnCheckedChangeListener((g, id) -> {
             currentFilter = rbPending.isChecked() ? Filter.PENDING : Filter.HISTORY;
+            if (adapter != null) adapter.setHistoryTab(currentFilter == Filter.HISTORY);
             listen(currentFilter);
         });
 
@@ -109,12 +121,21 @@ public class HistoryFragment extends Fragment {
         if (uid != null) listen(currentFilter);
     }
 
+    @Override public void onResume() {
+        super.onResume();
+        if (rv != null) rv.post(tick);
+    }
+
+    @Override public void onPause() {
+        if (rv != null) rv.removeCallbacks(tick);
+        super.onPause();
+    }
+
     @Override public void onStop() {
         if (reg != null) { reg.remove(); reg = null; }
         super.onStop();
     }
 
-    // ---------------- UI yardımcıları ----------------
     private void setLoading(boolean loading) {
         if (!isAdded()) return;
         progress.setVisibility(loading ? View.VISIBLE : View.GONE);
@@ -134,7 +155,6 @@ public class HistoryFragment extends Fragment {
         empty.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
         rv.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
     }
-    // -------------------------------------------------
 
     private void listen(Filter filter) {
         if (reg != null) { reg.remove(); reg = null; }
@@ -142,10 +162,10 @@ public class HistoryFragment extends Fragment {
 
         Query q = db.collection("bookings").whereEqualTo("studentId", uid);
         if (filter == Filter.PENDING) {
-            // pending’i olduğu gibi getir (normalize bind aşamasında)
-            q = q.whereEqualTo("status", "pending");
+            q = q.whereIn("status", Arrays.asList("pending","accepted"))
+                    .whereGreaterThanOrEqualTo("startAt", new Date())
+                    .orderBy("startAt", Query.Direction.ASCENDING); // gerekirse index
         } else {
-            // History: pending dışındaki tüm anlamlı durumlar
             q = q.whereIn("status", Adapter.HISTORY_STATUSES_WHEREIN);
         }
 
@@ -167,18 +187,23 @@ public class HistoryFragment extends Fragment {
                 r.subjectId  = String.valueOf(d.get("subjectId"));
                 Object sn    = d.get("subjectName");
                 r.subjectName = (sn != null) ? String.valueOf(sn) : r.subjectId;
-                r.status = Adapter.normalizeStatus(String.valueOf(d.get("status")));
+                r.status     = Adapter.normalizeStatus(String.valueOf(d.get("status")));
                 r.date       = String.valueOf(d.get("date"));
                 r.hour       = d.getLong("hour") != null ? d.getLong("hour").intValue() : 0;
 
-                Object ts = d.get("endAt");
-                if (ts instanceof com.google.firebase.Timestamp)
-                    r.endAt = ((com.google.firebase.Timestamp) ts).toDate();
-                else if (ts instanceof java.util.Date)
-                    r.endAt = (java.util.Date) ts;
+                Object tsStart = d.get("startAt");
+                if (tsStart instanceof com.google.firebase.Timestamp)
+                    r.startAt = ((com.google.firebase.Timestamp) tsStart).toDate();
+                else if (tsStart instanceof Date)
+                    r.startAt = (Date) tsStart;
 
-                if ("pending".equals(r.status) && r.endAt != null && new java.util.Date().after(r.endAt)) {
-                    // DB’de saklamasan bile, UI tarafında expired gibi renklendir
+                Object tsEnd = d.get("endAt");
+                if (tsEnd instanceof com.google.firebase.Timestamp)
+                    r.endAt = ((com.google.firebase.Timestamp) tsEnd).toDate();
+                else if (tsEnd instanceof Date)
+                    r.endAt = (Date) tsEnd;
+
+                if ("pending".equals(r.status) && r.endAt != null && new Date().after(r.endAt)) {
                     r.status = "expired";
                 }
 
@@ -188,16 +213,14 @@ public class HistoryFragment extends Fragment {
                 r.hasReview = false;
                 r.hasTeacherNote = false;
 
-                checkReviewExists(r);       // teacherReviews/{bookingId}
-                checkTeacherNoteExists(r);  // teacherNotes/{bookingId}
+                checkReviewExists(r);
+                checkTeacherNoteExists(r);
 
                 teacherIdsSeen.add(r.teacherId);
                 items.add(r);
             }
 
-            // Sıralama: önce tarihe göre; varsa endAt geçmiş için daha iyi bir sinyal
             items.sort((a,b) -> {
-                // endAt varsa ona göre, yoksa date+hour
                 if (a.endAt != null && b.endAt != null) return a.endAt.compareTo(b.endAt);
                 if (a.endAt != null) return -1;
                 if (b.endAt != null) return 1;
@@ -300,14 +323,12 @@ public class HistoryFragment extends Fragment {
                 .setNegativeButton("Vazgeç", null)
                 .setPositiveButton("Gönder", (d, w) -> {
                     int rating = Math.max(1, Math.min(5, Math.round(ratingBar.getRating())));
-                    String review = et.getText().toString().trim();
-
                     Map<String, Object> data = new HashMap<>();
                     data.put("bookingId", r.id);
                     data.put("teacherId", r.teacherId);
                     data.put("studentId", uid);
                     data.put("rating", rating);
-                    data.put("comment", et.getText().toString().trim()); // <-- review değil, comment
+                    data.put("comment", et.getText().toString().trim());
                     data.put("createdAt", FieldValue.serverTimestamp());
 
                     db.collection("teacherReviews").document(r.id)
@@ -316,9 +337,6 @@ public class HistoryFragment extends Fragment {
                                 Toast.makeText(requireContext(), "Teşekkürler! Değerlendirmen kaydedildi.", Toast.LENGTH_SHORT).show();
                                 r.hasReview = true;
                                 if (isAdded()) adapter.notifyDataSetChanged();
-
-                                // İSTEĞE BAĞLI: Öğretmen profil istatistiklerini güncelle
-                                // updateTeacherRatingAgg(r.teacherId, rating);
                             })
                             .addOnFailureListener(e ->
                                     Toast.makeText(requireContext(), e.getMessage(), Toast.LENGTH_LONG).show());
@@ -357,7 +375,6 @@ public class HistoryFragment extends Fragment {
                         return;
                     }
                     String note = String.valueOf(doc.get("note"));
-
                     new androidx.appcompat.app.AlertDialog.Builder(requireContext())
                             .setTitle("Öğretmen Notu")
                             .setMessage(note != null ? note : "")
@@ -367,7 +384,6 @@ public class HistoryFragment extends Fragment {
                 .addOnFailureListener(e ->
                         Toast.makeText(requireContext(), e.getMessage(), Toast.LENGTH_LONG).show());
     }
-
 
     // ---------------- Adapter ----------------
     static class Adapter extends RecyclerView.Adapter<Adapter.VH> {
@@ -384,6 +400,10 @@ public class HistoryFragment extends Fragment {
         private final OnReview onReview;
         private final OnNote onNote;
 
+        // Hangi sekmedeyiz? (History'de Katıl asla görünmesin)
+        private boolean historyTab = false;
+        void setHistoryTab(boolean isHistory) { this.historyTab = isHistory; }
+
         Adapter(List<Row> items, OnCancel onCancel, NameProvider nameProvider,
                 PriceProvider priceProvider, OnReview onReview, OnNote onNote) {
             this.items = items;
@@ -395,9 +415,9 @@ public class HistoryFragment extends Fragment {
         }
 
         static class VH extends RecyclerView.ViewHolder {
-            TextView tv1, tv2, tvStatus;
-            Button btnCancel, btnReview;
-            ImageView ivNote; // opsiyonel (layout'a eklersen görünür olur)
+            TextView tv1, tv2, tvStatus, tvLocalRecordHint;
+            Button btnCancel, btnReview, btnJoin;
+            ImageView ivNote;
 
             VH(View v){
                 super(v);
@@ -406,7 +426,9 @@ public class HistoryFragment extends Fragment {
                 tvStatus = v.findViewById(R.id.tvStatus);
                 btnCancel = v.findViewById(R.id.btnCancel);
                 btnReview = v.findViewById(R.id.btnReview);
-                ivNote = v.findViewById(R.id.ivNote); // item_student_booking'e eklersen bağlanır
+                btnJoin = v.findViewById(R.id.btnJoin);
+                tvLocalRecordHint = v.findViewById(R.id.tvLocalRecordHint);
+                ivNote = v.findViewById(R.id.ivNote);
             }
         }
 
@@ -427,9 +449,40 @@ public class HistoryFragment extends Fragment {
             String priceStr = (price != null) ? String.format(Locale.getDefault(),"₺%.0f", price) : "";
             String dt = String.format(Locale.getDefault(), "%s %02d:00", r.date, r.hour);
 
-            // Status metin/renk
+            // ---- Katıl butonu mantığı (TEK BLOK, GÜNCEL) ----
+            boolean accepted = "accepted".equalsIgnoreCase(r.status);
+
+            long now = System.currentTimeMillis();
+            boolean showJoin = false;
+            boolean enableJoin;
+
+            if (accepted && r.startAt != null && r.endAt != null) {
+                long openAt  = r.startAt.getTime() - 5 * 60 * 1000;  // 5 dk önce aç
+                long closeAt = r.endAt.getTime()   + 10 * 60 * 1000; // 10 dk sonra tamamen gizle
+                boolean notHistory = !this.historyTab;
+
+                showJoin   = (now < closeAt) && notHistory;                 // kapanıştan sonra GONE
+                enableJoin = (now >= openAt) && (now <= closeAt);           // pencere içinde tıklanabilir
+            } else {
+                enableJoin = false;
+            }
+
+            h.btnJoin.setVisibility(showJoin ? View.VISIBLE : View.GONE);
+            h.btnJoin.setEnabled(enableJoin);
+
+            h.btnJoin.setOnClickListener(v -> {
+                if (!enableJoin) {
+                    Toast.makeText(v.getContext(), "Ders zamanı gelmedi.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                h.btnJoin.setEnabled(false);
+                com.example.tutorist.util.MeetingUtil.joinDailyMeeting(v.getContext(), r.id);
+                v.postDelayed(() -> h.btnJoin.setEnabled(true), 1200);
+            });
+
+            // Status chip & alt satır
             StatusUi ui = statusUi(h.itemView, r.status);
-            String line = String.format(Locale.getDefault(), "%s  %s", dt, priceStr);
+            String line = String.format(Locale.getDefault(), "%s  %s  %s", dt, priceStr, ui.label);
             SpannableString ss = new SpannableString(line);
             int idx = line.lastIndexOf(ui.label);
             if (idx >= 0) {
@@ -445,9 +498,8 @@ public class HistoryFragment extends Fragment {
             }
 
             boolean canReview = r.endAt != null
-                    && new java.util.Date().after(r.endAt)
-                    && ( "accepted".equalsIgnoreCase(r.status)
-                    || "completed".equalsIgnoreCase(r.status) )
+                    && new Date().after(r.endAt)
+                    && ("accepted".equalsIgnoreCase(r.status) || "completed".equalsIgnoreCase(r.status))
                     && !r.hasReview;
 
             boolean cancellable = "pending".equalsIgnoreCase(r.status);
@@ -456,41 +508,32 @@ public class HistoryFragment extends Fragment {
 
             h.btnReview.setVisibility(canReview ? View.VISIBLE : View.GONE);
             h.btnReview.setOnClickListener(v -> {
-                h.btnReview.setEnabled(false); // çift tık önle
+                h.btnReview.setEnabled(false);
                 onReview.run(r);
                 h.btnReview.setEnabled(true);
             });
 
-            // Öğretmen notu: info ikonu ve satır tıklaması
-            boolean showNote = r.hasTeacherNote
-                    && r.endAt != null
-                    && new java.util.Date().after(r.endAt); // sadece geçmiş
-
+            boolean showNote = r.hasTeacherNote && r.endAt != null && new Date().after(r.endAt);
             if (h.ivNote != null) {
                 h.ivNote.setVisibility(showNote ? View.VISIBLE : View.GONE);
                 h.ivNote.setOnClickListener(v -> { if (showNote) onNote.run(r); });
             }
-            // Tüm satır tıklaması da notu açsın (varsa)
             h.itemView.setOnClickListener(v -> { if (showNote) onNote.run(r); });
         }
 
         private static class StatusUi {
             final String label;
-            final int inlineColor;     // tv2 içindeki renk
-            final int chipBgRes;       // tvStatus arka plan drawable
-            final int chipTextColor;   // tvStatus yazı rengi
+            final int inlineColor;
+            final int chipBgRes;
+            final int chipTextColor;
             StatusUi(String l, int inline, int bgRes, int chipText){
                 label = l; inlineColor = inline; chipBgRes = bgRes; chipTextColor = chipText;
             }
         }
 
-
-        /** Firestore’dan gelebilecek muhtemel haller → kanonik isim */
-        private static String normalizeStatus(String raw) {
+        static String normalizeStatus(String raw) {
             if (raw == null) return "pending";
             String s = raw.trim().toLowerCase(Locale.ROOT);
-
-            // eşanlamlılar
             if (s.equals("canceled")) s = "cancelled";
             if (s.equals("rejected") || s.equals("denied")) s = "declined";
             if (s.equals("teacher_rejected") || s.equals("declined_by_teacher")) s = "teacher_declined";
@@ -498,7 +541,6 @@ public class HistoryFragment extends Fragment {
             if (s.equals("student_canceled") || s.equals("student_cancelled")) s = "student_cancelled";
             if (s.equals("done") || s.equals("finished")) s = "completed";
 
-            // kanonik set
             switch (s) {
                 case "pending":
                 case "accepted":
@@ -516,8 +558,6 @@ public class HistoryFragment extends Fragment {
             }
         }
 
-        /** History sekmesinde göstermek istediğimiz (pending harici) ham status değerleri.
-         *  whereIn max 10 öğe → tam 10 olacak şekilde seçtik. */
         private static final List<String> HISTORY_STATUSES_WHEREIN = Arrays.asList(
                 "accepted","completed","declined","teacher_declined",
                 "cancelled","canceled","student_cancelled","teacher_cancelled",
@@ -533,50 +573,42 @@ public class HistoryFragment extends Fragment {
                             ContextCompat.getColor(c, R.color.status_accepted),
                             R.drawable.bg_status_completed,
                             R.color.status_accepted);
-
                 case "completed":
                     return new StatusUi("Tamamlandı",
                             ContextCompat.getColor(c, R.color.status_completed),
                             R.drawable.bg_status_completed,
                             R.color.status_completed);
-
                 case "declined":
                     return new StatusUi("Reddedildi",
                             ContextCompat.getColor(c, R.color.status_declined),
                             R.drawable.bg_status_canceled,
                             R.color.status_declined);
-
                 case "teacher_declined":
                     return new StatusUi("Öğretmen reddetti",
                             ContextCompat.getColor(c, R.color.status_declined),
                             R.drawable.bg_status_canceled,
                             R.color.status_declined);
-
                 case "cancelled":
                 case "student_cancelled":
                     return new StatusUi("Öğrenci iptal etti",
                             ContextCompat.getColor(c, R.color.status_cancelled),
                             R.drawable.bg_status_canceled,
                             R.color.status_cancelled);
-
                 case "teacher_cancelled":
                     return new StatusUi("Öğretmen iptal etti",
                             ContextCompat.getColor(c, R.color.status_cancelled),
                             R.drawable.bg_status_canceled,
                             R.color.status_cancelled);
-
                 case "expired":
                     return new StatusUi("Süresi doldu",
                             ContextCompat.getColor(c, R.color.status_expired),
                             R.drawable.bg_status_warning,
                             R.color.status_expired);
-
                 case "no_show":
                     return new StatusUi("Katılım yok",
                             ContextCompat.getColor(c, R.color.status_no_show),
                             R.drawable.bg_status_warning,
                             R.color.status_no_show);
-
                 case "pending":
                 default:
                     return new StatusUi("Beklemede",
@@ -585,8 +617,6 @@ public class HistoryFragment extends Fragment {
                             R.color.tutorist_onPrimaryContainer);
             }
         }
-
-
 
         @Override public int getItemCount(){ return items.size(); }
     }

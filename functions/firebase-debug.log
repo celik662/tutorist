@@ -1,0 +1,655 @@
+[debug] [2025-09-18T12:38:35.121Z] ----------------------------------------------------------------------
+[debug] [2025-09-18T12:38:35.124Z] Command:       /usr/local/Cellar/node/23.2.0_1/bin/node /usr/local/bin/firebase emulators:start --only functions --project tutorist-f2a46
+[debug] [2025-09-18T12:38:35.125Z] CLI Version:   14.15.2
+[debug] [2025-09-18T12:38:35.125Z] Platform:      darwin
+[debug] [2025-09-18T12:38:35.125Z] Node Version:  v23.2.0
+[debug] [2025-09-18T12:38:35.126Z] Time:          Thu Sep 18 2025 14:38:35 GMT+0200 (Central European Summer Time)
+[debug] [2025-09-18T12:38:35.127Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-09-18T12:38:35.320Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-09-18T12:38:35.321Z] > authorizing via signed-in user (celik662@gmail.com)
+[info] i  emulators: Starting emulators: functions {"metadata":{"emulator":{"name":"hub"},"message":"Starting emulators: functions"}}
+[debug] [2025-09-18T12:38:36.374Z] [logging] Logging Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-18T12:38:36.374Z] assigned listening specs for emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}]},"metadata":{"message":"assigned listening specs for emulators"}}
+[debug] [2025-09-18T12:38:36.379Z] [hub] writing locator at /var/folders/nh/mz932t5n48q7zf5xr0d9k6vr0000gn/T/hub-tutorist-f2a46.json
+[debug] [2025-09-18T12:38:36.909Z] [eventarc] Eventarc Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-18T12:38:36.909Z] [tasks] Cloud Tasks Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-18T12:38:36.909Z] late-assigned ports for functions and eventarc emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}],"functions":[{"address":"0.0.0.0","family":"IPv4","port":5001}],"eventarc":[{"address":"127.0.0.1","family":"IPv4","port":9299}],"tasks":[{"address":"127.0.0.1","family":"IPv4","port":9499}]},"metadata":{"message":"late-assigned ports for functions and eventarc emulators"}}
+[warn] ⚠  functions: The following emulators are not running, calls to these services from the Functions emulator will affect production: apphosting, auth, firestore, database, hosting, pubsub, storage, dataconnect {"metadata":{"emulator":{"name":"functions"},"message":"The following emulators are not running, calls to these services from the Functions emulator will affect production: \u001b[1mapphosting, auth, firestore, database, hosting, pubsub, storage, dataconnect\u001b[22m"}}
+[debug] [2025-09-18T12:38:36.932Z] defaultcredentials: writing to file /Users/onurcelik/.config/firebase/celik662_gmail_com_application_default_credentials.json
+[debug] [2025-09-18T12:38:36.933Z] Setting GAC to /Users/onurcelik/.config/firebase/celik662_gmail_com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to /Users/onurcelik/.config/firebase/celik662_gmail_com_application_default_credentials.json"}}
+[debug] [2025-09-18T12:38:36.933Z] Checked if tokens are valid: true, expires at: 1758201778694
+[debug] [2025-09-18T12:38:36.933Z] Checked if tokens are valid: true, expires at: 1758201778694
+[debug] [2025-09-18T12:38:36.934Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/tutorist-f2a46/adminSdkConfig [none]
+[debug] [2025-09-18T12:38:37.278Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/tutorist-f2a46/adminSdkConfig 200
+[debug] [2025-09-18T12:38:37.279Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/tutorist-f2a46/adminSdkConfig {"projectId":"tutorist-f2a46","storageBucket":"tutorist-f2a46.firebasestorage.app"}
+[info] i  functions: Watching "/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions" for Cloud Functions... {"metadata":{"emulator":{"name":"functions"},"message":"Watching \"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions\" for Cloud Functions..."}}
+[debug] [2025-09-18T12:38:37.320Z] Validating nodejs source
+[debug] [2025-09-18T12:38:37.935Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "lint": "eslint .",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.4.0",
+    "iyzipay": "^2.0.64"
+  },
+  "devDependencies": {
+    "eslint": "^8.15.0",
+    "eslint-config-google": "^0.14.0",
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-09-18T12:38:37.935Z] Building nodejs source
+[debug] [2025-09-18T12:38:37.936Z] Failed to find version of module node: reached end of search path /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "18" doesn't match your global version "23". Using node@23 from host. 
+[info] i  functions: Loaded environment variables from .env. 
+[debug] [2025-09-18T12:38:37.939Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-09-18T12:38:37.947Z] Found firebase-functions binary at '/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8115
+
+[debug] [2025-09-18T12:38:38.353Z] Got response from /__/functions.yaml {"endpoints":{"onBookingAccepted":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"bookings/{id}"},"retry":false},"entryPoint":"onBookingAccepted"},"getJoinToken":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"getJoinToken"},"ping":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"ping"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[info] ✔  functions: Loaded functions definitions from source: onBookingAccepted, getJoinToken, ping. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: onBookingAccepted, getJoinToken, ping."}}
+[info] i  functions[europe-west1-onBookingAccepted]: function ignored because the firestore emulator does not exist or is not running. {"metadata":{"emulator":{"name":"functions"},"message":"function ignored because the firestore emulator does not exist or is not running."}}
+[info] ✔  functions[europe-west1-getJoinToken]: http function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/getJoinToken). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/getJoinToken)."}}
+[info] ✔  functions[europe-west1-ping]: http function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/ping). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/ping)."}}
+[debug] [2025-09-18T12:38:42.406Z] Could not find VSCode notification endpoint: FetchError: request to http://localhost:40001/vscode/notify failed, reason: . If you are not running the Firebase Data Connect VSCode extension, this is expected and not an issue.
+[info] 
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+│ i  View Emulator UI at http://127.0.0.1:4000/               │
+└─────────────────────────────────────────────────────────────┘
+
+┌───────────┬──────────────┬─────────────────────────────────┐
+│ Emulator  │ Host:Port    │ View in Emulator UI             │
+├───────────┼──────────────┼─────────────────────────────────┤
+│ Functions │ 0.0.0.0:5001 │ http://127.0.0.1:4000/functions │
+└───────────┴──────────────┴─────────────────────────────────┘
+  Emulator Hub host: 127.0.0.1 port: 4400
+  Other reserved ports: 4500
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 
+[debug] [2025-09-18T12:39:08.364Z] [work-queue] {"queuedWork":["/tutorist-f2a46/europe-west1/getJoinToken-2025-09-18T12:39:08.364Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-18T12:39:08.371Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/tutorist-f2a46/europe-west1/getJoinToken-2025-09-18T12:39:08.364Z"],"workRunningCount":1}
+[debug] [2025-09-18T12:39:08.372Z] Accepted request POST /tutorist-f2a46/europe-west1/getJoinToken --> europe-west1-getJoinToken
+[debug] [2025-09-18T12:39:08.373Z] [functions] Runtime ready! Sending request! {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Runtime ready! Sending request!"}}
+[debug] [2025-09-18T12:39:08.375Z] [functions] Got req.url=/tutorist-f2a46/europe-west1/getJoinToken, mapping to path=/ {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Got req.url=/tutorist-f2a46/europe-west1/getJoinToken, mapping to path=/"}}
+[info] i  functions: Loaded environment variables from .env. 
+[debug] [2025-09-18T12:39:08.387Z] [worker-pool] addWorker(europe-west1-getJoinToken) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] addWorker(europe-west1-getJoinToken)"}}
+[debug] [2025-09-18T12:39:08.388Z] [worker-pool] Adding worker with key europe-west1-getJoinToken, total=1 {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] Adding worker with key europe-west1-getJoinToken, total=1"}}
+[info] >  (node:4463) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead. {"user":"(node:4463) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m (node:4463) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead."}}
+[info] >  (Use `node --trace-deprecation ...` to show where the warning was created) {"user":"(Use `node --trace-deprecation ...` to show where the warning was created)","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m (Use `node --trace-deprecation ...` to show where the warning was created)"}}
+[debug] [2025-09-18T12:39:09.137Z] [runtime-status] [4463] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [4463] Resolved module firebase-admin {\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js\"}"}}
+[debug] [2025-09-18T12:39:09.137Z] [runtime-status] [4463] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [4463] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}"}}
+[debug] [2025-09-18T12:39:09.138Z] [runtime-status] [4463] Found local functions config: /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/.runtimeconfig.json {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [4463] Found local functions config: /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/.runtimeconfig.json"}}
+[debug] [2025-09-18T12:39:09.138Z] [runtime-status] [4463] Outgoing network have been stubbed. [{"name":"http","status":"mocked"},{"name":"http","status":"mocked"},{"name":"https","status":"mocked"},{"name":"https","status":"mocked"},{"name":"net","status":"mocked"}] {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [4463] Outgoing network have been stubbed. [{\"name\":\"http\",\"status\":\"mocked\"},{\"name\":\"http\",\"status\":\"mocked\"},{\"name\":\"https\",\"status\":\"mocked\"},{\"name\":\"https\",\"status\":\"mocked\"},{\"name\":\"net\",\"status\":\"mocked\"}]"}}
+[debug] [2025-09-18T12:39:09.139Z] [runtime-status] [4463] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [4463] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}"}}
+[debug] [2025-09-18T12:39:09.274Z] [runtime-status] [4463] Checked functions.config() {"config":{"iyzico":{"api_key":"XXX","secret_key":"YYY","base_url":"https://sandbox-api.iyzipay.com","callback_url":"http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCallback"}}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [4463] Checked functions.config() {\"config\":{\"iyzico\":{\"api_key\":\"XXX\",\"secret_key\":\"YYY\",\"base_url\":\"https://sandbox-api.iyzipay.com\",\"callback_url\":\"http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCallback\"}}}"}}
+[debug] [2025-09-18T12:39:09.275Z] [runtime-status] [4463] firebase-functions has been stubbed. {"functionsResolution":{"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [4463] firebase-functions has been stubbed. {\"functionsResolution\":{\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}}"}}
+[debug] [2025-09-18T12:39:09.276Z] [runtime-status] [4463] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [4463] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}"}}
+[debug] [2025-09-18T12:39:09.279Z] [runtime-status] [4463] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [4463] Resolved module firebase-admin {\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js\"}"}}
+[debug] [2025-09-18T12:39:09.280Z] [runtime-status] [4463] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [4463] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}"}}
+[debug] [2025-09-18T12:39:09.280Z] [runtime-status] [4463] firebase-admin has been stubbed. {"adminResolution":{"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js"}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [4463] firebase-admin has been stubbed. {\"adminResolution\":{\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js\"}}"}}
+[debug] [2025-09-18T12:39:09.282Z] [runtime-status] [4463] initializeApp(DEFAULT) {"storageBucket":"tutorist-f2a46.firebasestorage.app","projectId":"tutorist-f2a46"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [4463] initializeApp(DEFAULT) {\"storageBucket\":\"tutorist-f2a46.firebasestorage.app\",\"projectId\":\"tutorist-f2a46\"}"}}
+[warn] ⚠  functions: The Cloud Firestore emulator is not running, so calls to Firestore will affect production. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"The Cloud Firestore emulator is not running, so calls to Firestore will affect production."}}
+[debug] [2025-09-18T12:39:09.290Z] [runtime-status] [4463] Functions runtime initialized. {"cwd":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions","node_version":"23.2.0"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [4463] Functions runtime initialized. {\"cwd\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions\",\"node_version\":\"23.2.0\"}"}}
+[debug] [2025-09-18T12:39:09.291Z] [runtime-status] [4463] Listening to port: /var/folders/nh/mz932t5n48q7zf5xr0d9k6vr0000gn/T/fire_emu_66d92c8ac0692e63.sock {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [4463] Listening to port: /var/folders/nh/mz932t5n48q7zf5xr0d9k6vr0000gn/T/fire_emu_66d92c8ac0692e63.sock"}}
+[debug] [2025-09-18T12:39:09.318Z] [worker-europe-west1-getJoinToken-9e3f9b9a-70ab-4056-86b0-f6658540af46]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-9e3f9b9a-70ab-4056-86b0-f6658540af46]: IDLE"}}
+[debug] [2025-09-18T12:39:09.319Z] [worker-pool] submitRequest(triggerId=europe-west1-getJoinToken) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] submitRequest(triggerId=europe-west1-getJoinToken)"}}
+[info] i  functions: Beginning execution of "europe-west1-getJoinToken" {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Beginning execution of \"europe-west1-getJoinToken\""}}
+[debug] [2025-09-18T12:39:09.319Z] [worker-europe-west1-getJoinToken-9e3f9b9a-70ab-4056-86b0-f6658540af46]: BUSY {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-9e3f9b9a-70ab-4056-86b0-f6658540af46]: BUSY"}}
+[info] >  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"} {"user":{"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"},"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m {\"verifications\":{\"app\":\"MISSING\",\"auth\":\"VALID\"},\"logging.googleapis.com/labels\":{\"firebase-log-type\":\"callable-request-verification\"},\"severity\":\"DEBUG\",\"message\":\"Callable request verification passed\"}"}}
+[info] >  getJoinToken CALL { {"user":"getJoinToken CALL {","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m getJoinToken CALL {"}}
+[info] >    uid: 'l57xlflMkuZuOWDJ7Nt6z4jxRR13', {"user":"  uid: 'l57xlflMkuZuOWDJ7Nt6z4jxRR13',","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m   uid: 'l57xlflMkuZuOWDJ7Nt6z4jxRR13',"}}
+[info] >    bookingId: '9UNxNaSpjHhOij3CCwaSUQHsQOs2_2025-09-18_18' {"user":"  bookingId: '9UNxNaSpjHhOij3CCwaSUQHsQOs2_2025-09-18_18'","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m   bookingId: '9UNxNaSpjHhOij3CCwaSUQHsQOs2_2025-09-18_18'"}}
+[info] >  } {"user":"}","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m }"}}
+[warn] ⚠  Google API requested!
+   - URL: "https://oauth2.googleapis.com/token"
+   - Be careful, this may be a production service. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Google API requested!\n   - URL: \"https://oauth2.googleapis.com/token\"\n   - Be careful, this may be a production service."}}
+[info] >  getJoinToken booking exists? true {"user":"getJoinToken booking exists? true","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m getJoinToken booking exists? true"}}
+[info] >  getJoinToken DEBUG/BYPASS time window { now: 1758199149950, start: 1758196800743, end: 1758200400011 } {"user":"getJoinToken DEBUG/BYPASS time window { now: 1758199149950, start: 1758196800743, end: 1758200400011 }","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m getJoinToken DEBUG/BYPASS time window { now: 1758199149950, start: 1758196800743, end: 1758200400011 }"}}
+[debug] [2025-09-18T12:39:10.800Z] Finishing up request with event=pause {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finishing up request with event=pause"}}
+[info] i  functions: Finished "europe-west1-getJoinToken" in 1481.507667ms {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finished \"europe-west1-getJoinToken\" in 1481.507667ms"}}
+[debug] [2025-09-18T12:39:10.801Z] [worker-europe-west1-getJoinToken-9e3f9b9a-70ab-4056-86b0-f6658540af46]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-9e3f9b9a-70ab-4056-86b0-f6658540af46]: IDLE"}}
+[debug] [2025-09-18T12:39:10.801Z] Finishing up request with event=finish {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finishing up request with event=finish"}}
+[debug] [2025-09-18T12:39:10.801Z] Finishing up request with event=close {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finishing up request with event=close"}}
+[debug] [2025-09-18T12:39:10.801Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-18T13:09:08.946Z] File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers"}}
+[debug] [2025-09-18T13:09:09.949Z] Validating nodejs source
+[debug] [2025-09-18T13:09:10.861Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "lint": "eslint .",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.4.0",
+    "iyzipay": "^2.0.64"
+  },
+  "devDependencies": {
+    "eslint": "^8.15.0",
+    "eslint-config-google": "^0.14.0",
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-09-18T13:09:10.862Z] Building nodejs source
+[debug] [2025-09-18T13:09:10.862Z] Failed to find version of module node: reached end of search path /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "18" doesn't match your global version "23". Using node@23 from host. 
+[info] i  functions: Loaded environment variables from .env. 
+[debug] [2025-09-18T13:09:10.866Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-09-18T13:09:10.870Z] Found firebase-functions binary at '/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8710
+
+[debug] [2025-09-18T13:09:11.446Z] Got response from /__/functions.yaml {"endpoints":{"onBookingAccepted":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"bookings/{id}"},"retry":false},"entryPoint":"onBookingAccepted"},"getJoinToken":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"getJoinToken"},"ping":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"ping"},"startRecording":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"startRecording"},"stopRecording":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"stopRecording"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[info] ✔  functions: Loaded functions definitions from source: onBookingAccepted, getJoinToken, ping, startRecording, stopRecording. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: onBookingAccepted, getJoinToken, ping, startRecording, stopRecording."}}
+[debug] [2025-09-18T13:09:15.477Z] [worker-pool] Shutting down IDLE worker (europe-west1-getJoinToken) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] Shutting down IDLE worker (europe-west1-getJoinToken)"}}
+[debug] [2025-09-18T13:09:15.477Z] [worker-europe-west1-getJoinToken-9e3f9b9a-70ab-4056-86b0-f6658540af46]: FINISHING {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-9e3f9b9a-70ab-4056-86b0-f6658540af46]: FINISHING"}}
+[info] ✔  functions[europe-west1-startRecording]: http function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/startRecording). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/startRecording)."}}
+[info] ✔  functions[europe-west1-stopRecording]: http function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/stopRecording). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/stopRecording)."}}
+[debug] [2025-09-18T13:09:15.488Z] [worker-europe-west1-getJoinToken-9e3f9b9a-70ab-4056-86b0-f6658540af46]: exited {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-9e3f9b9a-70ab-4056-86b0-f6658540af46]: exited"}}
+[debug] [2025-09-18T13:09:15.488Z] [worker-europe-west1-getJoinToken-9e3f9b9a-70ab-4056-86b0-f6658540af46]: FINISHED {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-9e3f9b9a-70ab-4056-86b0-f6658540af46]: FINISHED"}}
+[debug] [2025-09-18T13:27:14.671Z] File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers"}}
+[debug] [2025-09-18T13:27:15.686Z] Validating nodejs source
+[debug] [2025-09-18T13:27:17.708Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "lint": "eslint .",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.4.0",
+    "iyzipay": "^2.0.64"
+  },
+  "devDependencies": {
+    "eslint": "^8.15.0",
+    "eslint-config-google": "^0.14.0",
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-09-18T13:27:17.708Z] Building nodejs source
+[debug] [2025-09-18T13:27:17.709Z] Failed to find version of module node: reached end of search path /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "18" doesn't match your global version "23". Using node@23 from host. 
+[info] i  functions: Loaded environment variables from .env. 
+[debug] [2025-09-18T13:27:17.712Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-09-18T13:27:17.714Z] Found firebase-functions binary at '/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8019
+
+[error] [Daily] Missing DAILY_API_KEY / DAILY_SUBDOMAIN
+
+[debug] [2025-09-18T13:27:18.304Z] Got response from /__/functions.yaml {"endpoints":{"onBookingAccepted":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"bookings/{id}"},"retry":false},"entryPoint":"onBookingAccepted"},"dailyWebhook":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"httpsTrigger":{},"entryPoint":"dailyWebhook"},"cleanupDailyRecordings":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"scheduleTrigger":{"schedule":"every 24 hours","retryConfig":{}},"entryPoint":"cleanupDailyRecordings"},"getJoinToken":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"getJoinToken"},"ping":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"ping"}},"specVersion":"v1alpha1","requiredAPIs":[{"api":"cloudscheduler.googleapis.com","reason":"Needed for scheduled functions."}],"extensions":{}}
+[info] ✔  functions: Loaded functions definitions from source: onBookingAccepted, dailyWebhook, cleanupDailyRecordings, getJoinToken, ping. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: onBookingAccepted, dailyWebhook, cleanupDailyRecordings, getJoinToken, ping."}}
+[info] ✔  functions[europe-west1-dailyWebhook]: http function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/dailyWebhook). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/tutorist-f2a46/europe-west1/dailyWebhook)."}}
+[info] i  functions[europe-west1-cleanupDailyRecordings]: function ignored because the pubsub emulator does not exist or is not running. {"metadata":{"emulator":{"name":"functions"},"message":"function ignored because the pubsub emulator does not exist or is not running."}}
+[debug] [2025-09-18T15:32:38.235Z] [work-queue] {"queuedWork":["/tutorist-f2a46/europe-west1/iyziInitCheckout-2025-09-18T15:32:38.234Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-18T15:32:38.240Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/tutorist-f2a46/europe-west1/iyziInitCheckout-2025-09-18T15:32:38.234Z"],"workRunningCount":1}
+[debug] [2025-09-18T15:32:38.248Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-19T07:25:39.330Z] [work-queue] {"queuedWork":["/tutorist-f2a46/europe-west1/iyziInitCheckout-2025-09-19T07:25:39.329Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-19T07:25:39.334Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/tutorist-f2a46/europe-west1/iyziInitCheckout-2025-09-19T07:25:39.329Z"],"workRunningCount":1}
+[debug] [2025-09-19T07:25:39.340Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-19T07:25:43.239Z] [work-queue] {"queuedWork":["/tutorist-f2a46/europe-west1/iyziInitCheckout-2025-09-19T07:25:43.238Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-19T07:25:43.239Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/tutorist-f2a46/europe-west1/iyziInitCheckout-2025-09-19T07:25:43.238Z"],"workRunningCount":1}
+[debug] [2025-09-19T07:25:43.242Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-19T07:25:47.260Z] [work-queue] {"queuedWork":["/tutorist-f2a46/europe-west1/iyziInitCheckout-2025-09-19T07:25:47.260Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-19T07:25:47.260Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/tutorist-f2a46/europe-west1/iyziInitCheckout-2025-09-19T07:25:47.260Z"],"workRunningCount":1}
+[debug] [2025-09-19T07:25:47.262Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-19T07:28:11.116Z] [work-queue] {"queuedWork":["/tutorist-f2a46/europe-west1/getJoinToken-2025-09-19T07:28:11.116Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-19T07:28:11.117Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/tutorist-f2a46/europe-west1/getJoinToken-2025-09-19T07:28:11.116Z"],"workRunningCount":1}
+[debug] [2025-09-19T07:28:11.117Z] Accepted request POST /tutorist-f2a46/europe-west1/getJoinToken --> europe-west1-getJoinToken
+[debug] [2025-09-19T07:28:11.123Z] [functions] Runtime ready! Sending request! {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Runtime ready! Sending request!"}}
+[debug] [2025-09-19T07:28:11.126Z] [functions] Got req.url=/tutorist-f2a46/europe-west1/getJoinToken, mapping to path=/ {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Got req.url=/tutorist-f2a46/europe-west1/getJoinToken, mapping to path=/"}}
+[debug] [2025-09-19T07:28:11.127Z] [worker-pool] Cleaned up workers for europe-west1-getJoinToken: 1 --> 0 {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] Cleaned up workers for europe-west1-getJoinToken: 1 --> 0"}}
+[info] i  functions: Loaded environment variables from .env. 
+[debug] [2025-09-19T07:28:11.144Z] [worker-pool] addWorker(europe-west1-getJoinToken) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] addWorker(europe-west1-getJoinToken)"}}
+[debug] [2025-09-19T07:28:11.146Z] [worker-pool] Adding worker with key europe-west1-getJoinToken, total=1 {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] Adding worker with key europe-west1-getJoinToken, total=1"}}
+[info] >  (node:7361) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead. {"user":"(node:7361) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m (node:7361) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead."}}
+[info] >  (Use `node --trace-deprecation ...` to show where the warning was created) {"user":"(Use `node --trace-deprecation ...` to show where the warning was created)","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m (Use `node --trace-deprecation ...` to show where the warning was created)"}}
+[debug] [2025-09-19T07:28:12.860Z] [runtime-status] [7361] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [7361] Resolved module firebase-admin {\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js\"}"}}
+[debug] [2025-09-19T07:28:12.861Z] [runtime-status] [7361] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [7361] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}"}}
+[debug] [2025-09-19T07:28:12.862Z] [runtime-status] [7361] Found local functions config: /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/.runtimeconfig.json {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [7361] Found local functions config: /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/.runtimeconfig.json"}}
+[debug] [2025-09-19T07:28:12.863Z] [runtime-status] [7361] Outgoing network have been stubbed. [{"name":"http","status":"mocked"},{"name":"http","status":"mocked"},{"name":"https","status":"mocked"},{"name":"https","status":"mocked"},{"name":"net","status":"mocked"}] {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [7361] Outgoing network have been stubbed. [{\"name\":\"http\",\"status\":\"mocked\"},{\"name\":\"http\",\"status\":\"mocked\"},{\"name\":\"https\",\"status\":\"mocked\"},{\"name\":\"https\",\"status\":\"mocked\"},{\"name\":\"net\",\"status\":\"mocked\"}]"}}
+[debug] [2025-09-19T07:28:12.864Z] [runtime-status] [7361] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [7361] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}"}}
+[debug] [2025-09-19T07:28:13.208Z] [runtime-status] [7361] Checked functions.config() {"config":{"iyzico":{"api_key":"XXX","secret_key":"YYY","base_url":"https://sandbox-api.iyzipay.com","callback_url":"http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCallback"}}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [7361] Checked functions.config() {\"config\":{\"iyzico\":{\"api_key\":\"XXX\",\"secret_key\":\"YYY\",\"base_url\":\"https://sandbox-api.iyzipay.com\",\"callback_url\":\"http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCallback\"}}}"}}
+[debug] [2025-09-19T07:28:13.209Z] [runtime-status] [7361] firebase-functions has been stubbed. {"functionsResolution":{"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [7361] firebase-functions has been stubbed. {\"functionsResolution\":{\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}}"}}
+[debug] [2025-09-19T07:28:13.210Z] [runtime-status] [7361] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [7361] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}"}}
+[debug] [2025-09-19T07:28:13.213Z] [runtime-status] [7361] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [7361] Resolved module firebase-admin {\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js\"}"}}
+[debug] [2025-09-19T07:28:13.216Z] [runtime-status] [7361] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [7361] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}"}}
+[debug] [2025-09-19T07:28:13.216Z] [runtime-status] [7361] firebase-admin has been stubbed. {"adminResolution":{"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js"}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [7361] firebase-admin has been stubbed. {\"adminResolution\":{\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js\"}}"}}
+[debug] [2025-09-19T07:28:13.220Z] [runtime-status] [7361] initializeApp(DEFAULT) {"storageBucket":"tutorist-f2a46.firebasestorage.app","projectId":"tutorist-f2a46"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [7361] initializeApp(DEFAULT) {\"storageBucket\":\"tutorist-f2a46.firebasestorage.app\",\"projectId\":\"tutorist-f2a46\"}"}}
+[warn] ⚠  It looks like you're trying to access functions.config().daily but there is no value there. You can learn more about setting up config here: https://firebase.google.com/docs/functions/local-emulator {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"It looks like you're trying to access functions.config().daily but there is no value there. You can learn more about setting up config here: https://firebase.google.com/docs/functions/local-emulator"}}
+[debug] [2025-09-19T07:28:13.235Z] [runtime-status] [7361] Functions runtime initialized. {"cwd":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions","node_version":"23.2.0"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [7361] Functions runtime initialized. {\"cwd\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions\",\"node_version\":\"23.2.0\"}"}}
+[debug] [2025-09-19T07:28:13.235Z] [runtime-status] [7361] Listening to port: /var/folders/nh/mz932t5n48q7zf5xr0d9k6vr0000gn/T/fire_emu_517eba6eb115bfdf.sock {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [7361] Listening to port: /var/folders/nh/mz932t5n48q7zf5xr0d9k6vr0000gn/T/fire_emu_517eba6eb115bfdf.sock"}}
+[debug] [2025-09-19T07:28:13.310Z] [worker-europe-west1-getJoinToken-0332f712-3959-4921-9392-72bfed66ab1e]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-0332f712-3959-4921-9392-72bfed66ab1e]: IDLE"}}
+[debug] [2025-09-19T07:28:13.311Z] [worker-pool] submitRequest(triggerId=europe-west1-getJoinToken) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] submitRequest(triggerId=europe-west1-getJoinToken)"}}
+[info] i  functions: Beginning execution of "europe-west1-getJoinToken" {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Beginning execution of \"europe-west1-getJoinToken\""}}
+[debug] [2025-09-19T07:28:13.325Z] [worker-europe-west1-getJoinToken-0332f712-3959-4921-9392-72bfed66ab1e]: BUSY {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-0332f712-3959-4921-9392-72bfed66ab1e]: BUSY"}}
+[info] >  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"} {"user":{"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"},"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m {\"verifications\":{\"app\":\"MISSING\",\"auth\":\"VALID\"},\"logging.googleapis.com/labels\":{\"firebase-log-type\":\"callable-request-verification\"},\"severity\":\"DEBUG\",\"message\":\"Callable request verification passed\"}"}}
+[info] >  getJoinToken CALL { {"user":"getJoinToken CALL {","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m getJoinToken CALL {"}}
+[info] >    uid: 'l57xlflMkuZuOWDJ7Nt6z4jxRR13', {"user":"  uid: 'l57xlflMkuZuOWDJ7Nt6z4jxRR13',","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m   uid: 'l57xlflMkuZuOWDJ7Nt6z4jxRR13',"}}
+[info] >    bookingId: 'rAstC39QmzfgRlMYowAMGo030vn1_2025-09-26_19' {"user":"  bookingId: 'rAstC39QmzfgRlMYowAMGo030vn1_2025-09-26_19'","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m   bookingId: 'rAstC39QmzfgRlMYowAMGo030vn1_2025-09-26_19'"}}
+[info] >  } {"user":"}","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m }"}}
+[warn] ⚠  Google API requested!
+   - URL: "https://oauth2.googleapis.com/token"
+   - Be careful, this may be a production service. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Google API requested!\n   - URL: \"https://oauth2.googleapis.com/token\"\n   - Be careful, this may be a production service."}}
+[info] >  getJoinToken DEBUG/BYPASS time window { now: 1758266894718, start: 1758906000000, end: 1758909600000 } {"user":"getJoinToken DEBUG/BYPASS time window { now: 1758266894718, start: 1758906000000, end: 1758909600000 }","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m getJoinToken DEBUG/BYPASS time window { now: 1758266894718, start: 1758906000000, end: 1758909600000 }"}}
+[debug] [2025-09-19T07:28:16.133Z] Finishing up request with event=pause {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finishing up request with event=pause"}}
+[info] i  functions: Finished "europe-west1-getJoinToken" in 2808.867ms {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finished \"europe-west1-getJoinToken\" in 2808.867ms"}}
+[debug] [2025-09-19T07:28:16.134Z] [worker-europe-west1-getJoinToken-0332f712-3959-4921-9392-72bfed66ab1e]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-0332f712-3959-4921-9392-72bfed66ab1e]: IDLE"}}
+[debug] [2025-09-19T07:28:16.135Z] Finishing up request with event=finish {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finishing up request with event=finish"}}
+[debug] [2025-09-19T07:28:16.135Z] Finishing up request with event=close {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finishing up request with event=close"}}
+[debug] [2025-09-19T07:28:16.135Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-19T08:41:32.443Z] [work-queue] {"queuedWork":["/tutorist-f2a46/europe-west1/iyziInitCheckout-2025-09-19T08:41:32.439Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-19T08:41:32.447Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/tutorist-f2a46/europe-west1/iyziInitCheckout-2025-09-19T08:41:32.439Z"],"workRunningCount":1}
+[debug] [2025-09-19T08:41:32.456Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-19T09:54:45.136Z] [work-queue] {"queuedWork":["/tutorist-f2a46/europe-west1/getJoinToken-2025-09-19T09:54:45.131Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-19T09:54:45.143Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/tutorist-f2a46/europe-west1/getJoinToken-2025-09-19T09:54:45.131Z"],"workRunningCount":1}
+[debug] [2025-09-19T09:54:45.144Z] Accepted request POST /tutorist-f2a46/europe-west1/getJoinToken --> europe-west1-getJoinToken
+[debug] [2025-09-19T09:54:45.152Z] [functions] Runtime ready! Sending request! {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Runtime ready! Sending request!"}}
+[debug] [2025-09-19T09:54:45.166Z] [functions] Got req.url=/tutorist-f2a46/europe-west1/getJoinToken, mapping to path=/ {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Got req.url=/tutorist-f2a46/europe-west1/getJoinToken, mapping to path=/"}}
+[debug] [2025-09-19T09:54:45.167Z] [worker-pool] submitRequest(triggerId=europe-west1-getJoinToken) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] submitRequest(triggerId=europe-west1-getJoinToken)"}}
+[info] i  functions: Beginning execution of "europe-west1-getJoinToken" {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Beginning execution of \"europe-west1-getJoinToken\""}}
+[debug] [2025-09-19T09:54:45.173Z] [worker-europe-west1-getJoinToken-0332f712-3959-4921-9392-72bfed66ab1e]: BUSY {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-0332f712-3959-4921-9392-72bfed66ab1e]: BUSY"}}
+[info] >  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"} {"user":{"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"},"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m {\"verifications\":{\"app\":\"MISSING\",\"auth\":\"VALID\"},\"logging.googleapis.com/labels\":{\"firebase-log-type\":\"callable-request-verification\"},\"severity\":\"DEBUG\",\"message\":\"Callable request verification passed\"}"}}
+[info] >  getJoinToken CALL { {"user":"getJoinToken CALL {","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m getJoinToken CALL {"}}
+[info] >    uid: 'l57xlflMkuZuOWDJ7Nt6z4jxRR13', {"user":"  uid: 'l57xlflMkuZuOWDJ7Nt6z4jxRR13',","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m   uid: 'l57xlflMkuZuOWDJ7Nt6z4jxRR13',"}}
+[info] >    bookingId: 'rAstC39QmzfgRlMYowAMGo030vn1_2025-09-19_11' {"user":"  bookingId: 'rAstC39QmzfgRlMYowAMGo030vn1_2025-09-19_11'","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m   bookingId: 'rAstC39QmzfgRlMYowAMGo030vn1_2025-09-19_11'"}}
+[info] >  } {"user":"}","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m }"}}
+[info] >  getJoinToken DEBUG/BYPASS time window { now: 1758275685713, start: 1758272400000, end: 1758276000000 } {"user":"getJoinToken DEBUG/BYPASS time window { now: 1758275685713, start: 1758272400000, end: 1758276000000 }","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m getJoinToken DEBUG/BYPASS time window { now: 1758275685713, start: 1758272400000, end: 1758276000000 }"}}
+[debug] [2025-09-19T09:54:47.114Z] Finishing up request with event=pause {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finishing up request with event=pause"}}
+[info] i  functions: Finished "europe-west1-getJoinToken" in 1941.613834ms {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finished \"europe-west1-getJoinToken\" in 1941.613834ms"}}
+[debug] [2025-09-19T09:54:47.115Z] [worker-europe-west1-getJoinToken-0332f712-3959-4921-9392-72bfed66ab1e]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-0332f712-3959-4921-9392-72bfed66ab1e]: IDLE"}}
+[debug] [2025-09-19T09:54:47.115Z] Finishing up request with event=finish {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finishing up request with event=finish"}}
+[debug] [2025-09-19T09:54:47.115Z] Finishing up request with event=close {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finishing up request with event=close"}}
+[debug] [2025-09-19T09:54:47.116Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-19T10:38:43.662Z] File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers"}}
+[debug] [2025-09-19T10:38:44.669Z] Validating nodejs source
+[debug] [2025-09-19T10:38:45.856Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "lint": "eslint .",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.4.0",
+    "iyzipay": "^2.0.64"
+  },
+  "devDependencies": {
+    "eslint": "^8.15.0",
+    "eslint-config-google": "^0.14.0",
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-09-19T10:38:45.856Z] Building nodejs source
+[debug] [2025-09-19T10:38:45.857Z] Failed to find version of module node: reached end of search path /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "18" doesn't match your global version "23". Using node@23 from host. 
+[info] i  functions: Loaded environment variables from .env. 
+[debug] [2025-09-19T10:38:45.860Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-09-19T10:38:45.863Z] Found firebase-functions binary at '/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8143
+
+[error] /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js:298
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+        ^
+
+SyntaxError: Identifier 'onCall' has already been declared
+    at wrapSafe (node:internal/modules/cjs/loader:1481:18)
+    at Module._compile (node:internal/modules/cjs/loader:1524:20)
+    at Object..js (node:internal/modules/cjs/loader:1702:10)
+    at Module.load (node:internal/modules/cjs/loader:1307:32)
+    at Function._load (node:internal/modules/cjs/loader:1121:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:219:24)
+    at Module.require (node:internal/modules/cjs/loader:1329:12)
+    at require (node:internal/modules/helpers:136:16)
+    at loadModule (/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/runtime/loader.js:40:16)
+
+[debug] [2025-09-19T10:38:46.183Z] Got response code 400; body Failed to generate manifest from function source: Identifier 'onCall' has already been declared
+[error] ⬢  functions: Failed to load function definition from source: FirebaseError: Functions codebase could not be analyzed successfully. It may have a syntax or runtime error {"metadata":{"emulator":{"name":"functions"},"message":"Failed to load function definition from source: FirebaseError: Functions codebase could not be analyzed successfully. It may have a syntax or runtime error"}}
+[debug] [2025-09-19T10:49:00.408Z] [work-queue] {"queuedWork":["/tutorist-f2a46/europe-west1/iyziInitCheckout-2025-09-19T10:49:00.407Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-19T10:49:00.410Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/tutorist-f2a46/europe-west1/iyziInitCheckout-2025-09-19T10:49:00.407Z"],"workRunningCount":1}
+[debug] [2025-09-19T10:49:00.416Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-19T10:49:07.923Z] [work-queue] {"queuedWork":["/tutorist-f2a46/europe-west1/iyziInitCheckout-2025-09-19T10:49:07.923Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-19T10:49:07.923Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/tutorist-f2a46/europe-west1/iyziInitCheckout-2025-09-19T10:49:07.923Z"],"workRunningCount":1}
+[debug] [2025-09-19T10:49:07.925Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-19T10:49:10.130Z] [work-queue] {"queuedWork":["/tutorist-f2a46/europe-west1/iyziInitCheckout-2025-09-19T10:49:10.130Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-19T10:49:10.131Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/tutorist-f2a46/europe-west1/iyziInitCheckout-2025-09-19T10:49:10.130Z"],"workRunningCount":1}
+[debug] [2025-09-19T10:49:10.131Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-19T10:50:35.592Z] [work-queue] {"queuedWork":["/tutorist-f2a46/europe-west1/getJoinToken-2025-09-19T10:50:35.592Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-19T10:50:35.592Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/tutorist-f2a46/europe-west1/getJoinToken-2025-09-19T10:50:35.592Z"],"workRunningCount":1}
+[debug] [2025-09-19T10:50:35.593Z] Accepted request POST /tutorist-f2a46/europe-west1/getJoinToken --> europe-west1-getJoinToken
+[debug] [2025-09-19T10:50:35.596Z] [functions] Runtime ready! Sending request! {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Runtime ready! Sending request!"}}
+[debug] [2025-09-19T10:50:35.597Z] [functions] Got req.url=/tutorist-f2a46/europe-west1/getJoinToken, mapping to path=/ {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Got req.url=/tutorist-f2a46/europe-west1/getJoinToken, mapping to path=/"}}
+[debug] [2025-09-19T10:50:35.597Z] [worker-pool] submitRequest(triggerId=europe-west1-getJoinToken) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] submitRequest(triggerId=europe-west1-getJoinToken)"}}
+[info] i  functions: Beginning execution of "europe-west1-getJoinToken" {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Beginning execution of \"europe-west1-getJoinToken\""}}
+[debug] [2025-09-19T10:50:35.599Z] [worker-europe-west1-getJoinToken-0332f712-3959-4921-9392-72bfed66ab1e]: BUSY {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-0332f712-3959-4921-9392-72bfed66ab1e]: BUSY"}}
+[info] >  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"} {"user":{"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"},"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m {\"verifications\":{\"app\":\"MISSING\",\"auth\":\"VALID\"},\"logging.googleapis.com/labels\":{\"firebase-log-type\":\"callable-request-verification\"},\"severity\":\"DEBUG\",\"message\":\"Callable request verification passed\"}"}}
+[info] >  getJoinToken CALL { {"user":"getJoinToken CALL {","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m getJoinToken CALL {"}}
+[info] >    uid: 'l57xlflMkuZuOWDJ7Nt6z4jxRR13', {"user":"  uid: 'l57xlflMkuZuOWDJ7Nt6z4jxRR13',","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m   uid: 'l57xlflMkuZuOWDJ7Nt6z4jxRR13',"}}
+[info] >    bookingId: 'rAstC39QmzfgRlMYowAMGo030vn1_2025-09-19_13' {"user":"  bookingId: 'rAstC39QmzfgRlMYowAMGo030vn1_2025-09-19_13'","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m   bookingId: 'rAstC39QmzfgRlMYowAMGo030vn1_2025-09-19_13'"}}
+[info] >  } {"user":"}","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m }"}}
+[info] >  getJoinToken DEBUG/BYPASS time window { now: 1758279035945, start: 1758279600000, end: 1758283200000 } {"user":"getJoinToken DEBUG/BYPASS time window { now: 1758279035945, start: 1758279600000, end: 1758283200000 }","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m getJoinToken DEBUG/BYPASS time window { now: 1758279035945, start: 1758279600000, end: 1758283200000 }"}}
+[debug] [2025-09-19T10:50:37.277Z] Finishing up request with event=pause {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finishing up request with event=pause"}}
+[info] i  functions: Finished "europe-west1-getJoinToken" in 1678.840542ms {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finished \"europe-west1-getJoinToken\" in 1678.840542ms"}}
+[debug] [2025-09-19T10:50:37.277Z] [worker-europe-west1-getJoinToken-0332f712-3959-4921-9392-72bfed66ab1e]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-0332f712-3959-4921-9392-72bfed66ab1e]: IDLE"}}
+[debug] [2025-09-19T10:50:37.277Z] Finishing up request with event=finish {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finishing up request with event=finish"}}
+[debug] [2025-09-19T10:50:37.277Z] Finishing up request with event=close {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finishing up request with event=close"}}
+[debug] [2025-09-19T10:50:37.277Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-20T11:56:35.709Z] File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers"}}
+[debug] [2025-09-20T11:56:36.722Z] Validating nodejs source
+[debug] [2025-09-20T11:56:38.665Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "lint": "eslint .",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.4.0",
+    "iyzipay": "^2.0.64"
+  },
+  "devDependencies": {
+    "eslint": "^8.15.0",
+    "eslint-config-google": "^0.14.0",
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-09-20T11:56:38.665Z] Building nodejs source
+[debug] [2025-09-20T11:56:38.665Z] Failed to find version of module node: reached end of search path /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "18" doesn't match your global version "23". Using node@23 from host. 
+[info] i  functions: Loaded environment variables from .env. 
+[debug] [2025-09-20T11:56:38.671Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-09-20T11:56:38.677Z] Found firebase-functions binary at '/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8172
+
+[error] /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js:297
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+        ^
+
+SyntaxError: Identifier 'onCall' has already been declared
+    at wrapSafe (node:internal/modules/cjs/loader:1481:18)
+    at Module._compile (node:internal/modules/cjs/loader:1524:20)
+    at Object..js (node:internal/modules/cjs/loader:1702:10)
+    at Module.load (node:internal/modules/cjs/loader:1307:32)
+    at Function._load (node:internal/modules/cjs/loader:1121:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:219:24)
+    at Module.require (node:internal/modules/cjs/loader:1329:12)
+    at require (node:internal/modules/helpers:136:16)
+    at loadModule (/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/runtime/loader.js:40:16)
+
+[debug] [2025-09-20T11:56:39.300Z] Got response code 400; body Failed to generate manifest from function source: Identifier 'onCall' has already been declared
+[error] ⬢  functions: Failed to load function definition from source: FirebaseError: Functions codebase could not be analyzed successfully. It may have a syntax or runtime error {"metadata":{"emulator":{"name":"functions"},"message":"Failed to load function definition from source: FirebaseError: Functions codebase could not be analyzed successfully. It may have a syntax or runtime error"}}
+[debug] [2025-09-20T12:13:33.229Z] File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers"}}
+[debug] [2025-09-20T12:13:34.299Z] Validating nodejs source
+[debug] [2025-09-20T12:13:35.673Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "lint": "eslint .",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.4.0",
+    "iyzipay": "^2.0.64"
+  },
+  "devDependencies": {
+    "eslint": "^8.15.0",
+    "eslint-config-google": "^0.14.0",
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-09-20T12:13:35.673Z] Building nodejs source
+[debug] [2025-09-20T12:13:35.673Z] Failed to find version of module node: reached end of search path /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "18" doesn't match your global version "23". Using node@23 from host. 
+[info] i  functions: Loaded environment variables from .env. 
+[debug] [2025-09-20T12:13:35.686Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-09-20T12:13:35.690Z] Found firebase-functions binary at '/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8231
+
+[error] /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js:254
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+        ^
+
+SyntaxError: Identifier 'onCall' has already been declared
+    at wrapSafe (node:internal/modules/cjs/loader:1481:18)
+    at Module._compile (node:internal/modules/cjs/loader:1524:20)
+    at Object..js (node:internal/modules/cjs/loader:1702:10)
+    at Module.load (node:internal/modules/cjs/loader:1307:32)
+    at Function._load (node:internal/modules/cjs/loader:1121:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:219:24)
+    at Module.require (node:internal/modules/cjs/loader:1329:12)
+    at require (node:internal/modules/helpers:136:16)
+    at loadModule (/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/runtime/loader.js:40:16)
+
+[debug] [2025-09-20T12:13:36.138Z] Got response code 400; body Failed to generate manifest from function source: Identifier 'onCall' has already been declared
+[error] ⬢  functions: Failed to load function definition from source: FirebaseError: Functions codebase could not be analyzed successfully. It may have a syntax or runtime error {"metadata":{"emulator":{"name":"functions"},"message":"Failed to load function definition from source: FirebaseError: Functions codebase could not be analyzed successfully. It may have a syntax or runtime error"}}
+[debug] [2025-09-20T12:13:52.626Z] File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers"}}
+[debug] [2025-09-20T12:13:53.631Z] Validating nodejs source
+[debug] [2025-09-20T12:13:54.755Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "lint": "eslint .",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.4.0",
+    "iyzipay": "^2.0.64"
+  },
+  "devDependencies": {
+    "eslint": "^8.15.0",
+    "eslint-config-google": "^0.14.0",
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-09-20T12:13:54.756Z] Building nodejs source
+[debug] [2025-09-20T12:13:54.756Z] Failed to find version of module node: reached end of search path /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "18" doesn't match your global version "23". Using node@23 from host. 
+[info] i  functions: Loaded environment variables from .env. 
+[debug] [2025-09-20T12:13:54.759Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-09-20T12:13:54.761Z] Found firebase-functions binary at '/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8562
+
+[error] /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js:210
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+        ^
+
+SyntaxError: Identifier 'onCall' has already been declared
+    at wrapSafe (node:internal/modules/cjs/loader:1481:18)
+    at Module._compile (node:internal/modules/cjs/loader:1524:20)
+    at Object..js (node:internal/modules/cjs/loader:1702:10)
+    at Module.load (node:internal/modules/cjs/loader:1307:32)
+    at Function._load (node:internal/modules/cjs/loader:1121:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:219:24)
+    at Module.require (node:internal/modules/cjs/loader:1329:12)
+    at require (node:internal/modules/helpers:136:16)
+    at loadModule (/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/runtime/loader.js:40:16)
+
+[debug] [2025-09-20T12:13:55.215Z] Got response code 400; body Failed to generate manifest from function source: Identifier 'onCall' has already been declared
+[error] ⬢  functions: Failed to load function definition from source: FirebaseError: Functions codebase could not be analyzed successfully. It may have a syntax or runtime error {"metadata":{"emulator":{"name":"functions"},"message":"Failed to load function definition from source: FirebaseError: Functions codebase could not be analyzed successfully. It may have a syntax or runtime error"}}
+[debug] [2025-09-20T12:15:13.878Z] File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers {"metadata":{"emulator":{"name":"functions"},"message":"File /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/index.js changed, reloading triggers"}}
+[debug] [2025-09-20T12:15:14.881Z] Validating nodejs source
+[debug] [2025-09-20T12:15:16.391Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "lint": "eslint .",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.4.0",
+    "iyzipay": "^2.0.64"
+  },
+  "devDependencies": {
+    "eslint": "^8.15.0",
+    "eslint-config-google": "^0.14.0",
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-09-20T12:15:16.392Z] Building nodejs source
+[debug] [2025-09-20T12:15:16.392Z] Failed to find version of module node: reached end of search path /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "18" doesn't match your global version "23". Using node@23 from host. 
+[info] i  functions: Loaded environment variables from .env. 
+[debug] [2025-09-20T12:15:16.398Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-09-20T12:15:16.401Z] Found firebase-functions binary at '/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8976
+
+[error] [Daily] Missing DAILY_API_KEY / DAILY_SUBDOMAIN
+
+[debug] [2025-09-20T12:15:17.909Z] Got response from /__/functions.yaml {"endpoints":{"onBookingAccepted":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.updated","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"bookings/{id}"},"retry":false},"entryPoint":"onBookingAccepted"},"getJoinToken":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"getJoinToken"},"ping":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","region":["europe-west1"],"labels":{},"callableTrigger":{},"entryPoint":"ping"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[info] ✔  functions: Loaded functions definitions from source: onBookingAccepted, getJoinToken, ping. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: onBookingAccepted, getJoinToken, ping."}}
+[debug] [2025-09-20T12:15:21.988Z] [worker-pool] Shutting down IDLE worker (europe-west1-getJoinToken) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] Shutting down IDLE worker (europe-west1-getJoinToken)"}}
+[debug] [2025-09-20T12:15:21.988Z] [worker-europe-west1-getJoinToken-0332f712-3959-4921-9392-72bfed66ab1e]: FINISHING {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-0332f712-3959-4921-9392-72bfed66ab1e]: FINISHING"}}
+[debug] [2025-09-20T12:15:22.007Z] [worker-europe-west1-getJoinToken-0332f712-3959-4921-9392-72bfed66ab1e]: exited {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-0332f712-3959-4921-9392-72bfed66ab1e]: exited"}}
+[debug] [2025-09-20T12:15:22.007Z] [worker-europe-west1-getJoinToken-0332f712-3959-4921-9392-72bfed66ab1e]: FINISHED {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-0332f712-3959-4921-9392-72bfed66ab1e]: FINISHED"}}
+[debug] [2025-09-20T12:16:04.511Z] [work-queue] {"queuedWork":["/tutorist-f2a46/europe-west1/getJoinToken-2025-09-20T12:16:04.511Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-20T12:16:04.513Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/tutorist-f2a46/europe-west1/getJoinToken-2025-09-20T12:16:04.511Z"],"workRunningCount":1}
+[debug] [2025-09-20T12:16:04.513Z] Accepted request POST /tutorist-f2a46/europe-west1/getJoinToken --> europe-west1-getJoinToken
+[debug] [2025-09-20T12:16:04.515Z] [functions] Runtime ready! Sending request! {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Runtime ready! Sending request!"}}
+[debug] [2025-09-20T12:16:04.516Z] [functions] Got req.url=/tutorist-f2a46/europe-west1/getJoinToken, mapping to path=/ {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Got req.url=/tutorist-f2a46/europe-west1/getJoinToken, mapping to path=/"}}
+[debug] [2025-09-20T12:16:04.516Z] [worker-pool] Cleaned up workers for europe-west1-getJoinToken: 1 --> 0 {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] Cleaned up workers for europe-west1-getJoinToken: 1 --> 0"}}
+[info] i  functions: Loaded environment variables from .env. 
+[debug] [2025-09-20T12:16:04.531Z] [worker-pool] addWorker(europe-west1-getJoinToken) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] addWorker(europe-west1-getJoinToken)"}}
+[debug] [2025-09-20T12:16:04.532Z] [worker-pool] Adding worker with key europe-west1-getJoinToken, total=1 {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] Adding worker with key europe-west1-getJoinToken, total=1"}}
+[info] >  (node:9317) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead. {"user":"(node:9317) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m (node:9317) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead."}}
+[info] >  (Use `node --trace-deprecation ...` to show where the warning was created) {"user":"(Use `node --trace-deprecation ...` to show where the warning was created)","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m (Use `node --trace-deprecation ...` to show where the warning was created)"}}
+[debug] [2025-09-20T12:16:06.039Z] [runtime-status] [9317] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [9317] Resolved module firebase-admin {\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js\"}"}}
+[debug] [2025-09-20T12:16:06.041Z] [runtime-status] [9317] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [9317] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}"}}
+[debug] [2025-09-20T12:16:06.054Z] [runtime-status] [9317] Found local functions config: /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/.runtimeconfig.json {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [9317] Found local functions config: /Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/.runtimeconfig.json"}}
+[debug] [2025-09-20T12:16:06.055Z] [runtime-status] [9317] Outgoing network have been stubbed. [{"name":"http","status":"mocked"},{"name":"http","status":"mocked"},{"name":"https","status":"mocked"},{"name":"https","status":"mocked"},{"name":"net","status":"mocked"}] {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [9317] Outgoing network have been stubbed. [{\"name\":\"http\",\"status\":\"mocked\"},{\"name\":\"http\",\"status\":\"mocked\"},{\"name\":\"https\",\"status\":\"mocked\"},{\"name\":\"https\",\"status\":\"mocked\"},{\"name\":\"net\",\"status\":\"mocked\"}]"}}
+[debug] [2025-09-20T12:16:06.055Z] [runtime-status] [9317] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [9317] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}"}}
+[debug] [2025-09-20T12:16:06.376Z] [runtime-status] [9317] Checked functions.config() {"config":{"iyzico":{"api_key":"XXX","secret_key":"YYY","base_url":"https://sandbox-api.iyzipay.com","callback_url":"http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCallback"}}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [9317] Checked functions.config() {\"config\":{\"iyzico\":{\"api_key\":\"XXX\",\"secret_key\":\"YYY\",\"base_url\":\"https://sandbox-api.iyzipay.com\",\"callback_url\":\"http://127.0.0.1:5001/tutorist-f2a46/europe-west1/iyziCallback\"}}}"}}
+[debug] [2025-09-20T12:16:06.377Z] [runtime-status] [9317] firebase-functions has been stubbed. {"functionsResolution":{"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [9317] firebase-functions has been stubbed. {\"functionsResolution\":{\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}}"}}
+[debug] [2025-09-20T12:16:06.378Z] [runtime-status] [9317] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [9317] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}"}}
+[debug] [2025-09-20T12:16:06.382Z] [runtime-status] [9317] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [9317] Resolved module firebase-admin {\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js\"}"}}
+[debug] [2025-09-20T12:16:06.385Z] [runtime-status] [9317] Resolved module firebase-functions {"declared":true,"installed":true,"version":"6.4.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [9317] Resolved module firebase-functions {\"declared\":true,\"installed\":true,\"version\":\"6.4.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-functions/lib/v2/index.js\"}"}}
+[debug] [2025-09-20T12:16:06.385Z] [runtime-status] [9317] firebase-admin has been stubbed. {"adminResolution":{"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js"}} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [9317] firebase-admin has been stubbed. {\"adminResolution\":{\"declared\":true,\"installed\":true,\"version\":\"12.7.0\",\"resolution\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions/node_modules/firebase-admin/lib/index.js\"}}"}}
+[debug] [2025-09-20T12:16:06.388Z] [runtime-status] [9317] initializeApp(DEFAULT) {"storageBucket":"tutorist-f2a46.firebasestorage.app","projectId":"tutorist-f2a46"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [9317] initializeApp(DEFAULT) {\"storageBucket\":\"tutorist-f2a46.firebasestorage.app\",\"projectId\":\"tutorist-f2a46\"}"}}
+[debug] [2025-09-20T12:16:06.400Z] [runtime-status] [9317] Functions runtime initialized. {"cwd":"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions","node_version":"23.2.0"} {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [9317] Functions runtime initialized. {\"cwd\":\"/Users/onurcelik/AndroidStudioProjects/Tutorist4/functions\",\"node_version\":\"23.2.0\"}"}}
+[debug] [2025-09-20T12:16:06.401Z] [runtime-status] [9317] Listening to port: /var/folders/nh/mz932t5n48q7zf5xr0d9k6vr0000gn/T/fire_emu_a8f1e221be000708.sock {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[runtime-status] [9317] Listening to port: /var/folders/nh/mz932t5n48q7zf5xr0d9k6vr0000gn/T/fire_emu_a8f1e221be000708.sock"}}
+[debug] [2025-09-20T12:16:06.464Z] [worker-europe-west1-getJoinToken-4bf3aaef-1ded-48dd-9382-afef8f0c6b4f]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-4bf3aaef-1ded-48dd-9382-afef8f0c6b4f]: IDLE"}}
+[debug] [2025-09-20T12:16:06.465Z] [worker-pool] submitRequest(triggerId=europe-west1-getJoinToken) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] submitRequest(triggerId=europe-west1-getJoinToken)"}}
+[info] i  functions: Beginning execution of "europe-west1-getJoinToken" {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Beginning execution of \"europe-west1-getJoinToken\""}}
+[debug] [2025-09-20T12:16:06.465Z] [worker-europe-west1-getJoinToken-4bf3aaef-1ded-48dd-9382-afef8f0c6b4f]: BUSY {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-4bf3aaef-1ded-48dd-9382-afef8f0c6b4f]: BUSY"}}
+[info] >  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"} {"user":{"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"},"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m {\"verifications\":{\"app\":\"MISSING\",\"auth\":\"VALID\"},\"logging.googleapis.com/labels\":{\"firebase-log-type\":\"callable-request-verification\"},\"severity\":\"DEBUG\",\"message\":\"Callable request verification passed\"}"}}
+[info] >  getJoinToken CALL { {"user":"getJoinToken CALL {","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m getJoinToken CALL {"}}
+[info] >    uid: 'l57xlflMkuZuOWDJ7Nt6z4jxRR13', {"user":"  uid: 'l57xlflMkuZuOWDJ7Nt6z4jxRR13',","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m   uid: 'l57xlflMkuZuOWDJ7Nt6z4jxRR13',"}}
+[info] >    bookingId: 'rAstC39QmzfgRlMYowAMGo030vn1_2025-09-26_14' {"user":"  bookingId: 'rAstC39QmzfgRlMYowAMGo030vn1_2025-09-26_14'","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m   bookingId: 'rAstC39QmzfgRlMYowAMGo030vn1_2025-09-26_14'"}}
+[info] >  } {"user":"}","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m }"}}
+[warn] ⚠  Google API requested!
+   - URL: "https://oauth2.googleapis.com/token"
+   - Be careful, this may be a production service. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Google API requested!\n   - URL: \"https://oauth2.googleapis.com/token\"\n   - Be careful, this may be a production service."}}
+[info] >  getJoinToken DEBUG/BYPASS time window { now: 1758370567262, start: 1758888000000, end: 1758891600000 } {"user":"getJoinToken DEBUG/BYPASS time window { now: 1758370567262, start: 1758888000000, end: 1758891600000 }","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m getJoinToken DEBUG/BYPASS time window { now: 1758370567262, start: 1758888000000, end: 1758891600000 }"}}
+[debug] [2025-09-20T12:16:08.635Z] Finishing up request with event=pause {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finishing up request with event=pause"}}
+[info] i  functions: Finished "europe-west1-getJoinToken" in 2170.732583ms {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finished \"europe-west1-getJoinToken\" in 2170.732583ms"}}
+[debug] [2025-09-20T12:16:08.636Z] [worker-europe-west1-getJoinToken-4bf3aaef-1ded-48dd-9382-afef8f0c6b4f]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-4bf3aaef-1ded-48dd-9382-afef8f0c6b4f]: IDLE"}}
+[debug] [2025-09-20T12:16:08.636Z] Finishing up request with event=finish {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finishing up request with event=finish"}}
+[debug] [2025-09-20T12:16:08.636Z] Finishing up request with event=close {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finishing up request with event=close"}}
+[debug] [2025-09-20T12:16:08.636Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-20T12:19:56.924Z] [work-queue] {"queuedWork":["/tutorist-f2a46/europe-west1/getJoinToken-2025-09-20T12:19:56.924Z"],"queueLength":1,"runningWork":[],"workRunningCount":0}
+[debug] [2025-09-20T12:19:56.927Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":["/tutorist-f2a46/europe-west1/getJoinToken-2025-09-20T12:19:56.924Z"],"workRunningCount":1}
+[debug] [2025-09-20T12:19:56.927Z] Accepted request POST /tutorist-f2a46/europe-west1/getJoinToken --> europe-west1-getJoinToken
+[debug] [2025-09-20T12:19:56.930Z] [functions] Runtime ready! Sending request! {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Runtime ready! Sending request!"}}
+[debug] [2025-09-20T12:19:56.932Z] [functions] Got req.url=/tutorist-f2a46/europe-west1/getJoinToken, mapping to path=/ {"metadata":{"emulator":{"name":"functions"},"message":"[functions] Got req.url=/tutorist-f2a46/europe-west1/getJoinToken, mapping to path=/"}}
+[debug] [2025-09-20T12:19:56.934Z] [worker-pool] submitRequest(triggerId=europe-west1-getJoinToken) {"metadata":{"emulator":{"name":"functions"},"message":"[worker-pool] submitRequest(triggerId=europe-west1-getJoinToken)"}}
+[info] i  functions: Beginning execution of "europe-west1-getJoinToken" {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Beginning execution of \"europe-west1-getJoinToken\""}}
+[debug] [2025-09-20T12:19:56.937Z] [worker-europe-west1-getJoinToken-4bf3aaef-1ded-48dd-9382-afef8f0c6b4f]: BUSY {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-4bf3aaef-1ded-48dd-9382-afef8f0c6b4f]: BUSY"}}
+[info] >  {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"} {"user":{"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"},"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m {\"verifications\":{\"app\":\"MISSING\",\"auth\":\"VALID\"},\"logging.googleapis.com/labels\":{\"firebase-log-type\":\"callable-request-verification\"},\"severity\":\"DEBUG\",\"message\":\"Callable request verification passed\"}"}}
+[info] >  getJoinToken CALL { {"user":"getJoinToken CALL {","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m getJoinToken CALL {"}}
+[info] >    uid: 'l57xlflMkuZuOWDJ7Nt6z4jxRR13', {"user":"  uid: 'l57xlflMkuZuOWDJ7Nt6z4jxRR13',","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m   uid: 'l57xlflMkuZuOWDJ7Nt6z4jxRR13',"}}
+[info] >    bookingId: 'rAstC39QmzfgRlMYowAMGo030vn1_2025-09-14_18' {"user":"  bookingId: 'rAstC39QmzfgRlMYowAMGo030vn1_2025-09-14_18'","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m   bookingId: 'rAstC39QmzfgRlMYowAMGo030vn1_2025-09-14_18'"}}
+[info] >  } {"user":"}","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m }"}}
+[info] >  getJoinToken DEBUG/BYPASS time window { now: 1758370797075, start: 1757865600000, end: 1757869200000 } {"user":"getJoinToken DEBUG/BYPASS time window { now: 1758370797075, start: 1757865600000, end: 1757869200000 }","metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"\u001b[90m> \u001b[39m getJoinToken DEBUG/BYPASS time window { now: 1758370797075, start: 1757865600000, end: 1757869200000 }"}}
+[debug] [2025-09-20T12:19:58.584Z] Finishing up request with event=pause {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finishing up request with event=pause"}}
+[info] i  functions: Finished "europe-west1-getJoinToken" in 1648.3372920000002ms {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finished \"europe-west1-getJoinToken\" in 1648.3372920000002ms"}}
+[debug] [2025-09-20T12:19:58.586Z] [worker-europe-west1-getJoinToken-4bf3aaef-1ded-48dd-9382-afef8f0c6b4f]: IDLE {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"[worker-europe-west1-getJoinToken-4bf3aaef-1ded-48dd-9382-afef8f0c6b4f]: IDLE"}}
+[debug] [2025-09-20T12:19:58.586Z] Finishing up request with event=finish {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finishing up request with event=finish"}}
+[debug] [2025-09-20T12:19:58.586Z] Finishing up request with event=close {"metadata":{"emulator":{"name":"functions"},"function":{"name":"europe-west1-getJoinToken"},"extension":{},"message":"Finishing up request with event=close"}}
+[debug] [2025-09-20T12:19:58.586Z] [work-queue] {"queuedWork":[],"queueLength":0,"runningWork":[],"workRunningCount":0}

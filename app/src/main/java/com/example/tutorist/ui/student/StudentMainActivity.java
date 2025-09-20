@@ -1,17 +1,26 @@
 package com.example.tutorist.ui.student;
 
 import android.os.Bundle;
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+
 import com.example.tutorist.R;
 import com.google.android.material.badge.BadgeDrawable;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.Query;
 
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 public class StudentMainActivity extends AppCompatActivity {
+    private static final String TAG = "StudentMain";
     private ListenerRegistration histReg;
     private BadgeDrawable histBadge;
     private BottomNavigationView nav;
@@ -26,11 +35,16 @@ public class StudentMainActivity extends AppCompatActivity {
         nav.setOnItemSelectedListener(item -> {
             Fragment f;
             int id = item.getItemId();
-            if (id == R.id.nav_lessons)      f = new LessonsFragment();
-            else if (id == R.id.nav_history) f = new HistoryFragment();
-            else                              f = new StudentProfileFragment();
+            if (id == R.id.nav_lessons) {
+                f = new LessonsFragment();
+            } else if (id == R.id.nav_history) {
+                f = new HistoryFragment();
+            } else {
+                f = new StudentProfileFragment();
+            }
             getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, f).commit();
+                    .replace(R.id.fragment_container, f)
+                    .commit();
             return true;
         });
 
@@ -53,20 +67,43 @@ public class StudentMainActivity extends AppCompatActivity {
         if (histReg != null) { histReg.remove(); histReg = null; }
     }
 
+    /** Bottom nav rozetini (badge) güncel tut: pending + accepted (gelecek/süren dersler) */
     private void subscribeHistoryBadge() {
-        String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
-        if (uid == null) return;
-
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid == null) {
+            Log.w(TAG, "subscribeHistoryBadge: uid null");
+            return;
+        }
         if (histReg != null) { histReg.remove(); histReg = null; }
 
-        histReg = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        // Yalnız bekleyen + onaylı ve YAKLAŞAN/SÜREN dersler sayılsın:
+        // status in ['pending','accepted'] AND startAt >= now
+        List<String> statuses = Arrays.asList("pending", "accepted");
+        Date now = new Date();
+
+        Query q = FirebaseFirestore.getInstance()
                 .collection("bookings")
                 .whereEqualTo("studentId", uid)
-                .whereIn("status", List.of("pending"))
-                .addSnapshotListener((snap, e) -> {
-                    int count = (snap != null) ? snap.size() : 0;
-                    histBadge.setVisible(count > 0);
-                    histBadge.setNumber(count);
-                });
+                .whereIn("status", statuses)
+                .whereGreaterThanOrEqualTo("startAt", now);
+
+        Log.d(TAG, "subscribeHistoryBadge: listen start (uid=" + uid + ")");
+        histReg = q.addSnapshotListener((snap, e) -> {
+            if (e != null) {
+                Log.e(TAG, "badge snapshot error: " + e.getMessage(), e);
+                // Hata olsa da rozeti gizle
+                if (histBadge != null) {
+                    histBadge.setVisible(false);
+                }
+                return;
+            }
+            int count = (snap != null) ? snap.size() : 0;
+            Log.d(TAG, "badge snapshot ok, count=" + count);
+
+            if (histBadge != null) {
+                histBadge.setVisible(count > 0);
+                histBadge.setNumber(count);
+            }
+        });
     }
 }
