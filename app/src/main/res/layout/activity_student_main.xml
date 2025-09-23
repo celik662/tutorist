@@ -11,6 +11,21 @@
         android:layout_height="0dp"
         android:layout_weight="1"/>
 
+    <!-- YAKLAŞAN DERS FAB -->
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/fabUpcoming"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:text="00:00"
+        android:textAllCaps="false"
+        android:visibility="gone"
+        app:backgroundTint="@color/tutorist_primary"
+        android:textColor="@color/tutorist_onPrimary"
+        app:iconTint="@color/tutorist_onPrimary"
+        app:icon="@drawable/ic_timer" />
+    <!-- /FAB -->
     <!-- İnce bir ayraç, içerik ile nav arasında nefes -->
     <com.google.android.material.divider.MaterialDivider
         android:layout_width="match_parent"

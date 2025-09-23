@@ -53,28 +53,37 @@
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginTop="4dp"/>
 
-        <!-- Rating bar -->
-        <RatingBar
-            android:id="@+id/rb"
-            style="?android:attr/ratingBarStyleSmall"
+        <LinearLayout
+            android:id="@+id/rowRating"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:numStars="5"
-            android:stepSize="0.5"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="8dp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvBio"
-            android:layout_marginTop="6dp"/>
+            app:layout_constraintTop_toBottomOf="@id/tvBio">
 
-        <!-- Rating metni -->
-        <TextView
-            android:id="@+id/tvRatingText"
-            style="?attr/textAppearanceBodySmall"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="5.0 (0)"
-            android:alpha="0.85"
-            app:layout_constraintBaseline_toBaselineOf="@id/rb"
-            app:layout_constraintStart_toEndOf="@id/rb"
-            android:layout_marginStart="8dp"/>
+            <RatingBar
+                android:id="@+id/rb"
+                style="@style/Widget.AppCompat.RatingBar.Small"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:isIndicator="true"
+                android:numStars="5"
+                android:stepSize="0.5"
+            android:progressTint="@color/tutorist_warning"
+            android:secondaryProgressTint="@color/tutorist_warning"
+            android:progressBackgroundTint="@color/tutorist_surfaceVariant" />
+
+            <TextView
+                android:id="@+id/tvRatingText"
+                style="?attr/textAppearanceBodySmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="5.0 (0)"
+                android:textColor="@color/tutorist_onSurface"
+                android:alpha="0.85"/>
+        </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

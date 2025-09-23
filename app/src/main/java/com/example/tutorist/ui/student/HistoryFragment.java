@@ -20,6 +20,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.tutorist.R;
 import com.example.tutorist.repo.BookingRepo;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.*;
 
@@ -58,7 +60,7 @@ public class HistoryFragment extends Fragment {
 
     private Adapter adapter;
 
-    // ------ Zaman bazlı otomatik yenileme (buton pencere değişimleri için) ------
+    // Zaman bazlı görünürlük/enable değişimleri için hafif "tick"
     private final Runnable tick = new Runnable() {
         @Override public void run() {
             if (!isAdded() || rv == null) return;
@@ -104,12 +106,12 @@ public class HistoryFragment extends Fragment {
             @Override public void onItemRangeRemoved(int positionStart, int itemCount) { updateEmptyState(); }
         });
 
-        // Başlangıçta doğru sekme bilgisini adapter'a aktar
-        if (adapter != null) adapter.setHistoryTab(currentFilter == Filter.HISTORY);
+        // Başlangıç sekmesini adapter'a yansıt
+        adapter.setHistoryTab(currentFilter == Filter.HISTORY);
 
         rgFilter.setOnCheckedChangeListener((g, id) -> {
             currentFilter = rbPending.isChecked() ? Filter.PENDING : Filter.HISTORY;
-            if (adapter != null) adapter.setHistoryTab(currentFilter == Filter.HISTORY);
+            adapter.setHistoryTab(currentFilter == Filter.HISTORY);
             listen(currentFilter);
         });
 
@@ -229,10 +231,64 @@ public class HistoryFragment extends Fragment {
                 return Integer.compare(a.hour, b.hour);
             });
 
-            adapter.notifyDataSetChanged();
-            updateEmptyState();
+            // --- Toplu profil yükleme ve tek seferde çizme (flicker yok) ---
+            List<String> missing = new ArrayList<>();
+            for (String tid : teacherIdsSeen) {
+                boolean nameMissing  = !teacherNameCache.containsKey(tid);
+                boolean priceMissing = !teacherPricesCache.containsKey(tid);
+                if (nameMissing || priceMissing) missing.add(tid);
+            }
 
-            for (String tid : teacherIdsSeen) ensureTeacherProfileLoaded(tid);
+            if (missing.isEmpty()) {
+                adapter.notifyDataSetChanged();
+                updateEmptyState();
+                return;
+            }
+
+            setLoading(true); // kısa bir spinner (opsiyonel)
+
+            List<Task<DocumentSnapshot>> gets = new ArrayList<>();
+            for (String tid : missing) {
+                gets.add(db.collection("teacherProfiles").document(tid).get());
+            }
+
+            Tasks.whenAllSuccess(gets)
+                    .addOnSuccessListener(results -> {
+                        for (Object obj : results) {
+                            if (!(obj instanceof DocumentSnapshot)) continue;
+                            DocumentSnapshot doc = (DocumentSnapshot) obj;
+                            String tid = doc.getId();
+
+                            String name = null;
+                            Object dn = doc.get("displayName");
+                            if (dn == null) dn = doc.get("fullName");
+                            if (dn != null) name = String.valueOf(dn);
+                            // İSİM YOKSA BİLE "" koyuyoruz (id'ye asla düşmeyelim)
+                            teacherNameCache.put(tid, (name != null && !name.isEmpty()) ? name : "");
+
+                            Map<String, Double> map = new HashMap<>();
+                            Object raw = doc.get("subjectsMap");
+                            if (raw instanceof Map) {
+                                Map<?,?> m = (Map<?,?>) raw;
+                                for (Map.Entry<?,?> en : m.entrySet()) {
+                                    Object k = en.getKey(), v = en.getValue();
+                                    if (k != null && v instanceof Number) {
+                                        map.put(String.valueOf(k), ((Number)v).doubleValue());
+                                    }
+                                }
+                            }
+                            teacherPricesCache.put(tid, map);
+                        }
+                        setLoading(false);
+                        adapter.notifyDataSetChanged();
+                        updateEmptyState();
+                    })
+                    .addOnFailureListener(err -> {
+                        // Yükleme patlarsa bile id'ye düşmeyeceğiz; placeholder görünecek
+                        setLoading(false);
+                        adapter.notifyDataSetChanged();
+                        updateEmptyState();
+                    });
         });
     }
 
@@ -256,52 +312,15 @@ public class HistoryFragment extends Fragment {
                 .addOnFailureListener(e -> { /* yok say */ });
     }
 
-    private void ensureTeacherProfileLoaded(String teacherId) {
-        if (teacherNameCache.containsKey(teacherId) && teacherPricesCache.containsKey(teacherId)) return;
-
-        db.collection("teacherProfiles").document(teacherId).get()
-                .addOnSuccessListener(doc -> {
-                    if (!isAdded()) return;
-                    if (doc != null && doc.exists()) {
-                        String name = null;
-                        Object dn = doc.get("displayName");
-                        if (dn == null) dn = doc.get("fullName");
-                        if (dn != null) name = String.valueOf(dn);
-                        teacherNameCache.put(teacherId, (name != null && !name.isEmpty()) ? name : teacherId);
-
-                        Map<String, Double> map = new HashMap<>();
-                        Object raw = doc.get("subjectsMap");
-                        if (raw instanceof Map) {
-                            Map<?,?> m = (Map<?,?>) raw;
-                            for (Map.Entry<?,?> en : m.entrySet()) {
-                                Object k = en.getKey(), v = en.getValue();
-                                if (k != null && v instanceof Number) {
-                                    map.put(String.valueOf(k), ((Number)v).doubleValue());
-                                }
-                            }
-                        }
-                        teacherPricesCache.put(teacherId, map);
-                    } else {
-                        teacherNameCache.put(teacherId, teacherId);
-                        teacherPricesCache.put(teacherId, Collections.emptyMap());
-                    }
-                    if (isAdded()) adapter.notifyDataSetChanged();
-                })
-                .addOnFailureListener(err -> {
-                    teacherNameCache.put(teacherId, teacherId);
-                    teacherPricesCache.put(teacherId, Collections.emptyMap());
-                    if (isAdded()) adapter.notifyDataSetChanged();
-                });
-    }
-
+    // İSİM YOKSA ASLA ID'YE DÜŞME — boş string dön, UI placeholder gösterecek.
     private String teacherNameOf(String teacherId) {
         String n = teacherNameCache.get(teacherId);
-        return n != null ? n : teacherId;
+        return (n != null && !n.isEmpty()) ? n : "";
     }
 
     private Double priceOf(String teacherId, String subjectId) {
         Map<String, Double> m = teacherPricesCache.get(teacherId);
-        return m != null ? m.get(subjectId) : null;
+        return (m != null) ? m.get(subjectId) : null;
     }
 
     private void onCancelClicked(Row r) {
@@ -400,7 +419,7 @@ public class HistoryFragment extends Fragment {
         private final OnReview onReview;
         private final OnNote onNote;
 
-        // Hangi sekmedeyiz? (History'de Katıl asla görünmesin)
+        // History sekmesinde "Katıl" asla görünmesin
         private boolean historyTab = false;
         void setHistoryTab(boolean isHistory) { this.historyTab = isHistory; }
 
@@ -432,40 +451,44 @@ public class HistoryFragment extends Fragment {
             }
         }
 
-        @NonNull @Override public VH onCreateViewHolder(@NonNull ViewGroup p, int vt) {
-            View v = LayoutInflater.from(p.getContext()).inflate(R.layout.item_student_booking, p, false);
+        @NonNull
+        @Override
+        public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View v = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_student_booking, parent, false);
             return new VH(v);
         }
-
         @SuppressLint("SetTextI18n")
         @Override public void onBindViewHolder(@NonNull VH h, int pos) {
             Row r = items.get(pos);
 
             String teacherName = nameProvider.apply(r.teacherId);
-            Double price = priceProvider.apply(r.teacherId, r.subjectId);
+            String leftTitle = !teacherName.isEmpty() ? teacherName : "Öğretmen yükleniyor…";
 
-            h.tv1.setText(teacherName + " • " + (r.subjectName != null ? r.subjectName : r.subjectId));
+            Double price = priceProvider.apply(r.teacherId, r.subjectId);
+            String subjectLabel = (r.subjectName != null && !r.subjectName.isEmpty())
+                    ? r.subjectName : "Ders";
+
+            h.tv1.setText(leftTitle + " • " + subjectLabel);
 
             String priceStr = (price != null) ? String.format(Locale.getDefault(),"₺%.0f", price) : "";
             String dt = String.format(Locale.getDefault(), "%s %02d:00", r.date, r.hour);
-
-            // ---- Katıl butonu mantığı (TEK BLOK, GÜNCEL) ----
             boolean accepted = "accepted".equalsIgnoreCase(r.status);
 
             long now = System.currentTimeMillis();
             boolean showJoin = false;
-            boolean enableJoin;
+            boolean enableJoinTmp = false;   // geçici hesaplama
 
             if (accepted && r.startAt != null && r.endAt != null) {
-                long openAt  = r.startAt.getTime() - 5 * 60 * 1000;  // 5 dk önce aç
-                long closeAt = r.endAt.getTime()   + 10 * 60 * 1000; // 10 dk sonra tamamen gizle
+                long openAt  = r.startAt.getTime() - 5 * 60 * 1000;
+                long closeAt = r.endAt.getTime()   + 10 * 60 * 1000;
                 boolean notHistory = !this.historyTab;
 
-                showJoin   = (now < closeAt) && notHistory;                 // kapanıştan sonra GONE
-                enableJoin = (now >= openAt) && (now <= closeAt);           // pencere içinde tıklanabilir
-            } else {
-                enableJoin = false;
+                showJoin   = (now < closeAt) && notHistory;
+                enableJoinTmp = (now >= openAt) && (now <= closeAt);
             }
+
+            final boolean enableJoin = enableJoinTmp;   // 👈 lambda için final kopya
 
             h.btnJoin.setVisibility(showJoin ? View.VISIBLE : View.GONE);
             h.btnJoin.setEnabled(enableJoin);
@@ -480,22 +503,23 @@ public class HistoryFragment extends Fragment {
                 v.postDelayed(() -> h.btnJoin.setEnabled(true), 1200);
             });
 
+
             // Status chip & alt satır
             StatusUi ui = statusUi(h.itemView, r.status);
-            String line = String.format(Locale.getDefault(), "%s  %s  %s", dt, priceStr, ui.label);
-            SpannableString ss = new SpannableString(line);
-            int idx = line.lastIndexOf(ui.label);
-            if (idx >= 0) {
-                ss.setSpan(new ForegroundColorSpan(ui.inlineColor), idx, idx + ui.label.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                ss.setSpan(new StyleSpan(Typeface.BOLD), idx, idx + ui.label.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            }
-            h.tv2.setText(ss);
 
+// tv2: sadece tarih (+ varsa ücret)
+            String line = priceStr == null || priceStr.isEmpty()
+                    ? dt
+                    : String.format(Locale.getDefault(), "%s  %s", dt, priceStr);
+            h.tv2.setText(line);
+
+// Sağdaki chip zaten durumu gösteriyor
             if (h.tvStatus != null) {
                 h.tvStatus.setText(ui.label);
                 h.tvStatus.setBackgroundResource(ui.chipBgRes);
                 h.tvStatus.setTextColor(ContextCompat.getColor(h.itemView.getContext(), ui.chipTextColor));
             }
+
 
             boolean canReview = r.endAt != null
                     && new Date().after(r.endAt)

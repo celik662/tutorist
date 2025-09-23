@@ -32,6 +32,17 @@ public class ChooseSlotActivity extends AppCompatActivity {
     private Button btnPickDate, btnRequest;
     private RecyclerView rv;
     private HourAdapter adapter;
+    private ListenerRegistration bookingsReg;
+    // Canlı dinleyiciler
+    private ListenerRegistration availReg;
+
+    // Günün saat modeli (09–21)
+    private final List<Hour> currentHours = new ArrayList<>();
+
+    // Müsait saat kümesi (weekly availabilities → union)
+    private final Set<Integer> allowedHoursForDay = new HashSet<>();
+    private boolean availLoadedForDay = false;
+
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private final BookingRepo bookingRepo = new BookingRepo();
@@ -129,30 +140,124 @@ public class ChooseSlotActivity extends AppCompatActivity {
         }
     }
 
-    /** Seçili gün için 09–21 saatleri ve slotLock durumlarını oku */
+    /** Seçili gün için saatleri canlı dinle: weekly availability + bookings */
     private void loadDayAvailability() {
-        List<Hour> hours = new ArrayList<>();
-        for (int h = 9; h <= 21; h++) hours.add(new Hour(h, false, false));
+        // Modeli başlat
+        currentHours.clear();
+        for (int h = 9; h <= 21; h++) currentHours.add(new Hour(h, false, false));
 
-        // slotLocks/{teacherId_date_hour}
-        List<Task<DocumentSnapshot>> tasks = new ArrayList<>();
-        for (Hour hr : hours) {
-            String slotId = BookingRepo.slotId(teacherId, selDateIso, hr.h);
-            tasks.add(db.collection("slotLocks").document(slotId).get());
+        // Eski dinleyicileri kapat
+        if (bookingsReg != null) { bookingsReg.remove(); bookingsReg = null; }
+        if (availReg != null)    { availReg.remove();    availReg    = null; }
+
+        // Günün dayOfWeek değeri (hem Calendar hem ISO uyumu için iki olası değer)
+        Calendar dayCal = Calendar.getInstance();
+        String[] p = selDateIso.split("-");
+        int y = Integer.parseInt(p[0]), m = Integer.parseInt(p[1]) - 1, d = Integer.parseInt(p[2]);
+        dayCal.set(y, m, d, 0, 0, 0); dayCal.set(Calendar.MILLISECOND, 0);
+
+        int dowCalendar = dayCal.get(Calendar.DAY_OF_WEEK);              // SUNDAY=1..SATURDAY=7
+        int dowIso      = (dowCalendar == Calendar.SUNDAY ? 7 : dowCalendar - 1); // MON=1..SUN=7
+
+        // 1) WEEKLY AVAILABILITIES → allowedHoursForDay
+        availLoadedForDay = false;
+        allowedHoursForDay.clear();
+
+        availReg = db.collection("availabilities")
+                .document(teacherId)
+                .collection("weekly")
+                // dayOfWeek hangi standarda yazıldıysa yakalayalım diye iki değere de bakıyoruz
+                .whereIn("dayOfWeek", Arrays.asList(dowCalendar, dowIso))
+                .addSnapshotListener((snap, e) -> {
+                    if (isFinishing() || isDestroyed()) return;
+
+                    allowedHoursForDay.clear();
+
+                    if (snap != null) {
+                        for (DocumentSnapshot dSnap : snap.getDocuments()) {
+                            Integer start = dSnap.getLong("startHour") != null ? dSnap.getLong("startHour").intValue() : null;
+                            Integer end   = dSnap.getLong("endHour")   != null ? dSnap.getLong("endHour").intValue()   : null;
+                            if (start == null || end == null) continue;
+
+                            // start..end aralığını (her doküman için) birleşime ekle
+                            for (int h = Math.max(9, start); h <= Math.min(21, end); h++) {
+                                allowedHoursForDay.add(h);
+                            }
+                        }
+                    }
+
+                    availLoadedForDay = true;
+                    applyFiltersAndRefresh(); // disabled’ları availability + geçmişe göre belirle
+                });
+
+        // 2) BOOKINGS → taken (pending/accepted dolu sayılır)
+        bookingsReg = db.collection("bookings")
+                .whereEqualTo("teacherId", teacherId)
+                .whereEqualTo("date", selDateIso)
+                .whereIn("status", Arrays.asList("pending", "accepted"))
+                .addSnapshotListener((snap, e) -> {
+                    if (isFinishing() || isDestroyed()) return;
+
+                    // önce tümünü boş kabul et (taken=false), disabled’a DOKUNMA
+                    for (Hour hr : currentHours) hr.taken = false;
+
+                    if (snap != null) {
+                        for (DocumentSnapshot dSnap : snap.getDocuments()) {
+                            Integer hr = dSnap.getLong("hour") != null ? dSnap.getLong("hour").intValue() : null;
+                            if (hr == null) continue;
+                            int idx = hr - 9;
+                            if (idx >= 0 && idx < currentHours.size()) {
+                                currentHours.get(idx).taken = true;
+                            }
+                        }
+                    }
+
+                    // Müsaitlik yüklenmişse disabled’ları yeniden uygula (birleşik görünüm)
+                    if (availLoadedForDay) applyFiltersAndRefresh();
+                    else adapter.submit(cloneHours(currentHours)); // geçici çizim
+                });
+    }
+    /** Availability + geçmiş saatlere göre disabled’ları hesapla ve UI’yi yenile */
+    /** Availability + geçmiş saat + taken durumuna göre sadece görünmesi gereken saatleri listele */
+    private void applyFiltersAndRefresh() {
+        Calendar now = Calendar.getInstance();
+        List<Hour> visible = new ArrayList<>();
+
+        for (Hour hr : currentHours) {
+            boolean past    = isPast(selDateIso, hr.h, now);
+            boolean allowed = allowedHoursForDay.contains(hr.h);
+
+            // Sadece allowed ve geçmiş olmayanları göster
+            if (!allowed || past) continue;
+
+            // Adapter'e temiz kopya ver
+            visible.add(new Hour(hr.h, hr.taken, false)); // disabled=false (zaten görünür olanlar)
         }
 
-        Tasks.whenAllSuccess(tasks).addOnSuccessListener(list -> {
-            for (int i = 0; i < list.size(); i++) {
-                DocumentSnapshot d = (DocumentSnapshot) list.get(i);
-                boolean taken = d.exists() && !"declined".equals(d.getString("status")) && !"cancelled".equals(d.getString("status"));
-                hours.get(i).taken = taken;
-                // geçmiş saatleri kapat
-                Calendar now = Calendar.getInstance();
-                if (isPast(selDateIso, hours.get(i).h, now)) hours.get(i).disabled = true;
-            }
-            adapter.submit(hours);
-        });
+        adapter.submit(visible);
+
+        // Boş gün mesajı + buton durumu
+        if (visible.isEmpty()) {
+            selHour = null;
+            btnRequest.setEnabled(false);
+            tvInfo.setText("Bu gün için müsait saat yok.");
+        }
     }
+
+
+    /** Adapter’e temiz veri vermek için kopya oluştur (referans çakışmasını önler) */
+    private List<Hour> cloneHours(List<Hour> src) {
+        List<Hour> out = new ArrayList<>(src.size());
+        for (Hour h : src) out.add(new Hour(h.h, h.taken, h.disabled));
+        return out;
+    }
+
+    @Override protected void onStop() {
+        super.onStop();
+        if (bookingsReg != null) { bookingsReg.remove(); bookingsReg = null; }
+        if (availReg != null)    { availReg.remove();    availReg    = null; }
+    }
+
 
     private boolean isPast(String dateIso, int hour, Calendar now) {
         String[] p = dateIso.split("-");
