@@ -1,20 +1,54 @@
 package com.example.tutorist.ui.teacher;
 
+import static android.content.ContentValues.TAG;
+
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.example.tutorist.R;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 
+import java.text.DateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
 public class TeacherMainActivity extends AppCompatActivity {
     private ListenerRegistration pendingReg;
 
+    private ListenerRegistration upcomingReg;
+
+    // --- Yeni: FAB & upcoming ---
+    private ExtendedFloatingActionButton fabUpcoming;
+    private BottomSheetDialog upcomingDialog;
+    private RecyclerView upcomingRv;
+    private UpcomingAdapter upcomingAdapter;
+    private final List<UpcomingItem> upcomingItems = new ArrayList<>();
+    private final Map<String, String> studentNameCache = new HashMap<>();
+    private static final String TAG = "TeacherMain";
+
+    private Date nextStartAt = null;
+    private Date nextEndAt = null;
+
+    @SuppressLint("MissingInflatedId")
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
         setContentView(R.layout.activity_teacher_main);
@@ -46,8 +80,181 @@ public class TeacherMainActivity extends AppCompatActivity {
 
         btnProfile.setOnClickListener(v ->
                 startActivity(new Intent(this, TeacherProfileActivity.class)));
+
+        fabUpcoming = findViewById(R.id.fabUpcoming_teacher);
+        if (fabUpcoming != null) {
+            fabUpcoming.setOnClickListener(v -> openUpcomingSheet());
+        }
     }
 
+    @Override protected void onStart() {
+        super.onStart();
+        subscribePendingBadge();
+        subscribeUpcomingForFab();
+        if (fabUpcoming != null) fabUpcoming.post(countdownTick);
+    }
+
+
+    @Override protected void onStop() {
+        if (pendingReg != null) { pendingReg.remove(); pendingReg = null; }
+        if (fabUpcoming != null) fabUpcoming.removeCallbacks(countdownTick);
+        super.onStop();
+    }
+
+    private void updateFabState() {
+        if (fabUpcoming == null) return;
+        fabUpcoming.setVisibility(nextStartAt != null ? View.VISIBLE : View.GONE);
+        updateFabCountdownText();
+    }
+
+
+    private void updateFabCountdownText() {
+        if (fabUpcoming == null || nextStartAt == null || fabUpcoming.getVisibility()!=View.VISIBLE) return;
+
+        long diff = nextStartAt.getTime() - System.currentTimeMillis();
+        if (diff <= 0) { fabUpcoming.setText("00:00"); return; }
+
+        long totalMin = diff / 60000L;
+        long days = totalMin / (24*60);
+        long hours = (totalMin % (24*60)) / 60;
+        long minutes = totalMin % 60;
+        String text = (days > 0)
+                ? String.format(Locale.getDefault(), "%dg %02d:%02d", days, hours, minutes)
+                : String.format(Locale.getDefault(), "%02d:%02d", hours, minutes);
+        fabUpcoming.setText(text);
+    }
+    private void subscribeUpcomingForFab() {
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid == null || fabUpcoming == null) {
+            if (fabUpcoming != null) fabUpcoming.setVisibility(View.GONE);
+            return;
+        }
+
+        if (upcomingReg != null) { upcomingReg.remove(); upcomingReg = null; }
+
+        Date now = new Date();
+
+        upcomingReg = FirebaseFirestore.getInstance()
+                .collection("bookings")
+                .whereEqualTo("teacherId", uid)
+                .whereEqualTo("status", "accepted")
+                .whereGreaterThanOrEqualTo("startAt", now)
+                .addSnapshotListener((snap, e) -> {
+                    if (e != null) {
+                        android.util.Log.e(TAG, "Upcoming listen error", e);
+                        // Index hatası durumunda geçici olarak FAB’ı gizleyelim
+                        nextStartAt = nextEndAt = null;
+                        if (fabUpcoming != null) fabUpcoming.setVisibility(View.GONE);
+
+                        // Geliştiriciye ipucu (logcat’te “FAILED_PRECONDITION” görürsen Firebase Console’un verdiği index linkine tıkla)
+                        if (String.valueOf(e).contains("FAILED_PRECONDITION")) {
+                            Toast.makeText(this, "Firestore index gerekli. Logcat’teki linke tıkla.", Toast.LENGTH_LONG).show();
+                        }
+                        return;
+                    }
+
+                    nextStartAt = null;
+                    nextEndAt   = null;
+                    upcomingItems.clear();
+
+                    int count = (snap != null) ? snap.size() : 0;
+                    android.util.Log.d(TAG, "Upcoming snapshot ok, count=" + count);
+
+                    if (snap != null && !snap.isEmpty()) {
+                        Date bestStart = null, bestEnd = null;
+
+                        for (var d : snap.getDocuments()) {
+                            Date s = tsToDate(d.get("startAt"));
+                            Date eEnd = tsToDate(d.get("endAt"));
+                            if (s == null) continue;
+
+                            UpcomingItem u = new UpcomingItem();
+                            u.id          = d.getId();
+                            u.studentId   = str(d.get("studentId"));
+                            u.subjectName = str(d.get("subjectName"));
+                            u.startAt     = s;
+                            u.endAt       = eEnd;
+                            upcomingItems.add(u);
+
+                            if (bestStart == null || s.before(bestStart)) {
+                                bestStart = s; bestEnd = eEnd;
+                            }
+                        }
+
+                        // En yakın tarihe göre sırala
+                        upcomingItems.sort((a, b) -> a.startAt.compareTo(b.startAt));
+                        nextStartAt = bestStart;
+                        nextEndAt   = bestEnd;
+                    }
+
+                    // Görünürlük + metin
+                    updateFabState();
+
+                    if (upcomingAdapter != null) {
+                        upcomingAdapter.notifyDataSetChanged();
+                    }
+                });
+    }
+
+    private void openUpcomingSheet() {
+        if (upcomingDialog == null) {
+            View content = getLayoutInflater().inflate(R.layout.sheet_teacher_upcoming, null, false);
+            upcomingRv = content.findViewById(R.id.rvUpcoming);
+            upcomingRv.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(this));
+            upcomingAdapter = new UpcomingAdapter(
+                    upcomingItems,
+                    this::getStudentName,
+                    this::joinWithWindow
+            );
+
+            upcomingRv.setAdapter(upcomingAdapter);
+            upcomingDialog = new BottomSheetDialog(this);
+            upcomingDialog.setContentView(content);
+        }
+        upcomingAdapter.notifyDataSetChanged();
+        upcomingDialog.show();
+    }
+
+    private void getStudentName(String studentId, java.util.function.Consumer<String> cb) {
+        if (studentId == null || studentId.isEmpty()) { cb.accept(""); return; }
+        String cached = studentNameCache.get(studentId);
+        if (cached != null) { cb.accept(cached); return; }
+
+        FirebaseFirestore.getInstance().collection("users").document(studentId).get()
+                .addOnSuccessListener(d -> {
+                    String name = "";
+                    if (d != null && d.exists()) {
+                        Object n = d.get("fullName");
+                        Object e = d.get("email");
+                        name = n != null ? String.valueOf(n) : (e != null ? String.valueOf(e) : "");
+                    }
+                    studentNameCache.put(studentId, name);
+                    cb.accept(name);
+                })
+                .addOnFailureListener(x -> cb.accept(""));
+    }
+
+    private void joinWithWindow(UpcomingItem u, View source) {
+        if (u == null || u.startAt == null || u.endAt == null) return;
+        long now = System.currentTimeMillis();
+        long openAt  = u.startAt.getTime() - 5*60*1000;
+        long closeAt = u.endAt.getTime()   + 10*60*1000;
+
+        if (now < openAt) { Toast.makeText(this,"Ders zamanı gelmedi.",Toast.LENGTH_SHORT).show(); return; }
+        if (now > closeAt){ Toast.makeText(this,"Ders süresi geçti.", Toast.LENGTH_SHORT).show(); return; }
+
+        source.setEnabled(false);
+        com.example.tutorist.util.MeetingUtil.joinDailyMeeting(this, u.id);
+        source.postDelayed(() -> source.setEnabled(true), 1200);
+    }
+
+    private static Date tsToDate(Object o) {
+        if (o instanceof com.google.firebase.Timestamp) return ((com.google.firebase.Timestamp)o).toDate();
+        if (o instanceof Date) return (Date)o;
+        return null;
+    }
+
+    private static String str(Object o) { return o != null ? String.valueOf(o) : ""; }
     private void ensureTeacherProfileDoc() {
         String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
         if (uid == null) return;
@@ -74,24 +281,30 @@ public class TeacherMainActivity extends AppCompatActivity {
     }
 
 
+    private final Runnable countdownTick = new Runnable() {
+        @Override public void run() {
+            if (isFinishing() || isDestroyed()) return;
+            updateFabCountdownText();
+            fabUpcoming.postDelayed(this, 1000);
+        }
+    };
+
+
+    static class UpcomingItem {
+        String id;           // bookingId
+        String studentId;
+        String subjectName;
+        Date startAt, endAt;
+    }
+
     private void subscribePendingBadge() {
         TextView badge = findViewById(R.id.badgeRequests);
         String uid = FirebaseAuth.getInstance().getUid();
-        if (pendingReg != null) pendingReg.remove();
+        if (uid == null || badge == null) return;
 
-        pendingReg = FirebaseFirestore.getInstance().collection("bookings")
-                .whereEqualTo("teacherId", uid)
-                .whereEqualTo("status", "pending")
-                .addSnapshotListener((snap, e) -> {
-                    int count = (snap != null) ? snap.size() : 0;
-                    if (count > 0) {
-                        badge.setText(String.valueOf(Math.min(count, 99)));
-                        badge.setVisibility(View.VISIBLE);
-                    } else {
-                        badge.setVisibility(View.GONE);
-                    }
-                });
-        pendingReg = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        if (pendingReg != null) { pendingReg.remove(); pendingReg = null; }
+
+        pendingReg = FirebaseFirestore.getInstance()
                 .collection("bookings")
                 .whereEqualTo("teacherId", uid)
                 .whereEqualTo("status", "pending")
@@ -104,12 +317,96 @@ public class TeacherMainActivity extends AppCompatActivity {
                         badge.setVisibility(View.GONE);
                     }
                 });
-
     }
 
 
-    @Override protected void onStart() { super.onStart(); subscribePendingBadge(); }
+
     @Override protected void onDestroy() { if (pendingReg!=null) pendingReg.remove(); super.onDestroy(); }
+
+
+    private static class UpcomingAdapter extends RecyclerView.Adapter<UpcomingAdapter.VH> {
+        interface NameProvider { void get(String id, java.util.function.Consumer<String> cb); }
+        interface OnJoin { void run(UpcomingItem u, View source); }
+
+        private final List<UpcomingItem> data;
+        private final NameProvider nameProvider;
+        private final OnJoin onJoin;
+
+        UpcomingAdapter(List<UpcomingItem> d, NameProvider np, OnJoin oj){
+            data=d; nameProvider=np; onJoin=oj;
+        }
+
+        static class VH extends RecyclerView.ViewHolder {
+            TextView tvTitle, tvWhen, chipCountdown;
+            Button btnJoin;
+            VH(View v){
+                super(v);
+                tvTitle = v.findViewById(R.id.tvTitle);
+                tvWhen = v.findViewById(R.id.tvWhen);
+                chipCountdown = v.findViewById(R.id.chipCountdown);
+                btnJoin = v.findViewById(R.id.btnJoin);
+            }
+        }
+
+        @NonNull @Override public VH onCreateViewHolder(@NonNull ViewGroup p, int vt) {
+            View v = LayoutInflater.from(p.getContext()).inflate(R.layout.item_teacher_upcoming, p, false);
+            return new VH(v);
+        }
+
+        @Override public void onBindViewHolder(@NonNull VH h, int pos) {
+            UpcomingItem u = data.get(pos);
+
+            String subj = (u.subjectName!=null && !u.subjectName.isEmpty()) ? u.subjectName : "Ders";
+            h.tvTitle.setText(subj);
+
+            nameProvider.get(u.studentId, name -> {
+                if (h.getBindingAdapterPosition()==RecyclerView.NO_POSITION) return;
+                if (name!=null && !name.isEmpty()) h.tvTitle.setText(subj + " • " + name);
+                else h.tvTitle.setText(subj);
+            });
+
+            if (u.startAt != null) {
+                DateFormat df = android.text.format.DateFormat.getMediumDateFormat(h.itemView.getContext());
+                DateFormat tf = android.text.format.DateFormat.getTimeFormat(h.itemView.getContext());
+                h.tvWhen.setText(df.format(u.startAt) + " • " + tf.format(u.startAt));
+            } else h.tvWhen.setText("");
+
+            long now = System.currentTimeMillis();
+            String countdown = "00:00";
+            if (u.startAt != null) {
+                long diff = u.startAt.getTime() - now;
+                if (diff > 0) {
+                    long totalMin = diff/60000L;
+                    long days = totalMin/(24*60);
+                    long hours = (totalMin%(24*60))/60;
+                    long mins  = totalMin%60;
+                    countdown = (days>0)
+                            ? String.format(Locale.getDefault(), "%dg %02d:%02d", days, hours, mins)
+                            : String.format(Locale.getDefault(), "%02d:%02d", hours, mins);
+                }
+            }
+            h.chipCountdown.setText(countdown);
+
+            boolean canJoin = false;
+            if (u.startAt != null && u.endAt != null) {
+                long openAt  = u.startAt.getTime() - 5*60*1000;
+                long closeAt = u.endAt.getTime()   + 10*60*1000;
+                canJoin = now >= openAt && now <= closeAt;
+            }
+            h.btnJoin.setEnabled(canJoin);
+            if (canJoin) {
+                h.btnJoin.setBackgroundResource(R.drawable.bg_btn_outline_primary);
+                h.btnJoin.setTextColor(androidx.core.content.ContextCompat.getColor(h.itemView.getContext(), R.color.tutorist_primary));
+                h.btnJoin.setOnClickListener(v -> onJoin.run(u, v));
+            } else {
+                h.btnJoin.setBackgroundResource(R.drawable.bg_btn_outline_primary_disabled);
+                h.btnJoin.setTextColor(androidx.core.content.ContextCompat.getColor(h.itemView.getContext(), R.color.tutorist_onSurfaceVariant));
+                h.btnJoin.setOnClickListener(null);
+            }
+        }
+
+        @Override public int getItemCount() { return data.size(); }
+    }
 
 
 }

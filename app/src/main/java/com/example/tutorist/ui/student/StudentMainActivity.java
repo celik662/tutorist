@@ -67,11 +67,11 @@ public class StudentMainActivity extends AppCompatActivity {
     // Opsiyonel: öğretmen adını sheet’te göstermek için hafif cache
     private final Map<String, String> teacherNameCache = new HashMap<>();
 
-    static class UpcomingItem {
+    public static class UpcomingItem {
         String id;
         String teacherId;
         String subjectName;
-        Date startAt;
+        public Date startAt;
         Date endAt;
     }
 
@@ -385,7 +385,7 @@ public class StudentMainActivity extends AppCompatActivity {
         fabUpcoming.setText(text);
     }
 
-    private static class UpcomingAdapter extends RecyclerView.Adapter<UpcomingAdapter.VH> {
+    public static class UpcomingAdapter extends RecyclerView.Adapter<UpcomingAdapter.VH> {
         interface TeacherNameProvider { void get(String teacherId, java.util.function.Consumer<String> cb); }
         interface OnJoin { void run(UpcomingItem u, View source); }
 
