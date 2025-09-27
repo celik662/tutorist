@@ -15,8 +15,15 @@
 
         <TextView
             style="?attr/textAppearanceTitleLarge"
-            android:text="Ders ve Ücret"
+            android:text="Ders Seçimi"
             android:textColor="@color/tutorist_onSurface"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+        <TextView
+            style="?attr/textAppearanceBodyMedium"
+            android:text="Ders verebileceğiniz alanları buradan seçin"
+            android:alpha="0.8"
+            android:layout_marginTop="2dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
 

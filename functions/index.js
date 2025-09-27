@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 
 // ── Firebase Functions v2
-const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const functions = require("firebase-functions");
@@ -10,6 +10,7 @@ const admin = require("firebase-admin");
 // Node 18+/20: fetch global
 admin.initializeApp();
 const db = admin.firestore();
+const REGION = "europe-west1";
 
 /* ====================================================================================
  * Ortak yardımcılar
@@ -20,9 +21,22 @@ function safeServerTimestamp() {
     ? fv.serverTimestamp()
     : new Date();
 }
+function tsPlusMinutes(m) {
+  return admin.firestore.Timestamp.fromDate(new Date(Date.now() + m * 60 * 1000));
+}
 
-function addDays(ms, days) {
-  return ms + days * 24 * 60 * 60 * 1000;
+/* Kullanıcıların FCM tokenlarını topla (users/{uid}.fcmTokens) */
+async function tokensForUsers(uids = []) {
+  const uniq = Array.from(new Set(uids.filter(Boolean)));
+  const tokens = [];
+  await Promise.all(
+    uniq.map(async (uid) => {
+      const snap = await db.collection("users").doc(uid).get();
+      const arr = (snap.data()?.fcmTokens || []).filter(Boolean);
+      tokens.push(...arr);
+    })
+  );
+  return Array.from(new Set(tokens)).filter(Boolean);
 }
 
 /* ====================================================================================
@@ -38,8 +52,7 @@ if (!DAILY_API_KEY || !DAILY_SUBDOMAIN) {
 }
 
 /** bookingId için Daily odasını garanti eder; yoksa oluşturur ve
- *  bookings/{id}.meeting alanını {provider:'daily',roomName,roomUrl} ile yazar.
- *  Oda recording=cloud açık kurulur. */
+ *  bookings/{id}.meeting alanını {provider:'daily',roomName,roomUrl} ile yazar. */
 async function ensureDailyRoomForBooking(bookingId) {
   if (!DAILY_API_KEY || !DAILY_SUBDOMAIN) {
     throw new HttpsError("failed-precondition", "Daily config missing (DAILY_API_KEY / DAILY_SUBDOMAIN).");
@@ -53,7 +66,7 @@ async function ensureDailyRoomForBooking(bookingId) {
     headers: { Authorization: `Bearer ${DAILY_API_KEY}` },
   });
 
-  // 2) Yoksa oluştur (recording açık)
+  // 2) Yoksa oluştur
   if (!res.ok) {
     res = await fetch("https://api.daily.co/v1/rooms", {
       method: "POST",
@@ -69,6 +82,7 @@ async function ensureDailyRoomForBooking(bookingId) {
           start_video_off: true,
           start_audio_off: false,
           eject_at_room_exp: true,
+          enable_screenshare: true,
         },
       }),
     });
@@ -95,7 +109,7 @@ async function ensureDailyRoomForBooking(bookingId) {
  * (Opsiyonel) Status değişince oda kur
  * ==================================================================================== */
 exports.onBookingAccepted = onDocumentUpdated(
-  { region: "europe-west1", document: "bookings/{id}" },
+  { region: REGION, document: "bookings/{id}" },
   async (event) => {
     try {
       const before = event.data.before.data();
@@ -115,21 +129,89 @@ exports.onBookingAccepted = onDocumentUpdated(
 );
 
 /* ====================================================================================
- * Webhook: Daily’den recording hazır olduğunda kayıt bilgisini işaretle
- *  - Daily dashboard’da webhook URL olarak bu fonksiyonu gir (event türü: recording.ready)
- *  - Güvenlik için basit secret header doğrulaması ekledim (opsiyonel).
+ * Ders hatırlatmaları: T-60 ve T-10
+ *  - status=='accepted' ve startAt yaklaşan dersleri tarar
+ *  - Hem öğrenciye hem öğretmene FCM gönderir
+ *  - bookings/{id}.reminders.{sent60|sent10} = true (idempotent)
  * ==================================================================================== */
+async function sendReminderIfNotSent(bookingRef, bData, flag, minutes) {
+  // Aynı bildirimi iki kez göndermemek için önce bayrağı transaction ile yaz
+  const res = await db.runTransaction(async (tx) => {
+    const doc = await tx.get(bookingRef);
+    const curr = doc.data() || {};
+    const already = curr?.reminders?.[flag] === true;
+    if (already) return { skip: true };
+    tx.set(bookingRef, { reminders: { [flag]: true }, updatedAt: safeServerTimestamp() }, { merge: true });
+    return { skip: false };
+  });
+  if (res.skip) return;
 
-/* ====================================================================================
- * Scheduled cleanup: expiresAt geçmiş kayıtları Daily’den sil + Firestore’dan işaretle
- *  - Günde 1 kez çalışır
- * ==================================================================================== */
+  const tokens = await tokensForUsers([bData.teacherId, bData.studentId]);
+  if (!tokens.length) {
+    console.log("[reminder]", bookingRef.id, flag, "no tokens");
+    return;
+  }
+
+  const startDate = (bData.startAt?.toDate?.() ?? new Date(bData.startAt));
+  const hhmm = startDate.toISOString().substring(11, 16);
+  const title = minutes === 60 ? "1 saat sonra dersin var" : "10 dk sonra ders başlıyor";
+  const body  = `${bData.subjectName || "Ders"} • ${hhmm}`;
+
+  const link = bData?.meeting?.roomUrl || "";
+
+  await admin.messaging().sendEachForMulticast({
+    tokens,
+    notification: { title, body },
+    data: {
+      kind: "lessonReminder",
+      bookingId: bookingRef.id,
+      roomUrl: link,
+      startAt: startDate.toISOString(),
+      subjectName: bData.subjectName || ""
+    },
+    android: {
+      priority: "high",
+      notification: { clickAction: "OPEN_LESSON" } // opsiyonel; sistem bildirimi için
+    }
+  });
+
+  console.log("[reminder] sent", { bookingId: bookingRef.id, flag, tokens: tokens.length });
+}
+
+exports.remindUpcomingLessons = onSchedule(
+  { region: REGION, schedule: "every 1 minutes", timeZone: "Europe/Berlin" },
+  async () => {
+    const now = admin.firestore.Timestamp.now();
+
+    // T-60: şimdi → +60 dk
+    const in60 = tsPlusMinutes(60);
+    const q60 = await db.collection("bookings")
+      .where("status", "==", "accepted")
+      .where("startAt", ">=", now)
+      .where("startAt", "<=", in60)
+      .get();
+    for (const doc of q60.docs) {
+      await sendReminderIfNotSent(doc.ref, doc.data(), "sent60", 60);
+    }
+
+    // T-10: şimdi → +10 dk
+    const in10 = tsPlusMinutes(10);
+    const q10 = await db.collection("bookings")
+      .where("status", "==", "accepted")
+      .where("startAt", ">=", now)
+      .where("startAt", "<=", in10)
+      .get();
+    for (const doc of q10.docs) {
+      await sendReminderIfNotSent(doc.ref, doc.data(), "sent10", 10);
+    }
+  }
+);
 
 /* ====================================================================================
  * getJoinToken: Katıl → token ver (zaman penceresi, taraf kontrolü)
  *  - Oda yoksa oluşturur
  * ==================================================================================== */
-exports.getJoinToken = onCall({ region: "europe-west1" }, async (req) => {
+exports.getJoinToken = onCall({ region: REGION }, async (req) => {
   if (!req.auth) throw new HttpsError("unauthenticated", "Login required");
   const bookingId = req.data && req.data.bookingId;
   if (!bookingId) throw new HttpsError("invalid-argument", "bookingId missing");
@@ -200,9 +282,29 @@ exports.getJoinToken = onCall({ region: "europe-west1" }, async (req) => {
 });
 
 /* Basit ping */
-exports.ping = onCall({ region: "europe-west1" }, (req) => {
+exports.ping = onCall({ region: REGION }, (req) => {
   if (!req.auth) throw new HttpsError("unauthenticated", "Giriş gerekli");
   return { ok: true };
 });
 
 
+fabUpcoming.setVisibility(View.VISIBLE);
+fabUpcoming.setEnabled(false);
+fabUpcoming.setText("—:—");
+
+query.get()
+  .addOnSuccessListener(snap -> {
+    if (!snap.isEmpty()) {
+      Timestamp ts = snap.getDocuments().get(0).getTimestamp("startAt");
+      fabUpcoming.setText(formatHHmm(ts));
+      fabUpcoming.setEnabled(true);
+    } else {
+      fabUpcoming.setText("Yok");
+    }
+  })
+  .addOnFailureListener(e -> {
+    // Index building vs. durumunda da görünür kalsın
+    fabUpcoming.setText("…");
+    fabUpcoming.setEnabled(false);
+    Log.w("Upcoming", "Query failed", e);
+  });

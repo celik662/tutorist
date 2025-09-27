@@ -1,0 +1,10 @@
+// firestore.rules  (GEÇİCİ, test amaçlı)
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Sadece oturum açmış kullanıcıya her şeyi açar (geçici)
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
