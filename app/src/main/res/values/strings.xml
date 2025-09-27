@@ -3,5 +3,6 @@
     <string name="retmen_notu">Öğretmen notu</string>
 
     <string name="kvkk_url">https://tutorist.web.app/kvkk/v1.html</string>
+    <string name="profile_photo" />
 
 </resources>

@@ -49,12 +49,16 @@
                     android:id="@+id/ivAvatar"
                     android:layout_width="84dp"
                     android:layout_height="84dp"
-                    android:src="@drawable/ic_person"
+                    android:src="@drawable/ic_photo"
                     android:scaleType="centerCrop"
+                    android:contentDescription="@string/profile_photo"
+                    android:clickable="true"
+                    android:focusable="true"
                     app:strokeWidth="2dp"
                     app:strokeColor="@color/tutorist_surfaceVariant" />
 
-                <Space android:layout_width="16dp" android:layout_height="0dp" />
+                <Space android:layout_width="16dp"
+                    android:layout_height="0dp" />
 
                 <LinearLayout
                     android:orientation="vertical"
@@ -104,6 +108,12 @@
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+        <!-- Sayfa mesajları (ID korunuyor) -->
+        <TextView
+            android:id="@+id/tvMsg"
+            android:layout_marginTop="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
 
         <!-- KART: Biyografi -->
         <com.google.android.material.card.MaterialCardView
@@ -208,12 +218,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Sayfa mesajları (ID korunuyor) -->
-        <TextView
-            android:id="@+id/tvMsg"
-            android:layout_marginTop="8dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+
 
         <!-- Kaydet / Çıkış -->
         <LinearLayout

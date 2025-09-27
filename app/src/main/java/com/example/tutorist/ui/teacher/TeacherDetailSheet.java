@@ -210,10 +210,24 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
                     String bio   = snap.getString("bio");
                     Double avg   = snap.getDouble("ratingAvg");
                     Long   count = snap.getLong("ratingCount");
+                    String photo = snap.getString("photoUrl");
 
                     if (tvName != null) tvName.setText(name != null ? name : "Öğretmen");
                     if (tvBio  != null) tvBio.setText(bio != null ? bio : "—");
 
+                    // FOTOĞRAF: yoksa placeholder
+                    if (img != null) {
+                        if (photo != null && !photo.isEmpty()) {
+                            com.bumptech.glide.Glide.with(requireContext())
+                                    .load(photo)
+                                    .placeholder(R.drawable.person_100)
+                                    .error(R.drawable.person_100)
+                                    .centerCrop()          // XML’de already bg ring var; centerCrop yeterli
+                                    .into(img);
+                        } else {
+                            img.setImageResource(R.drawable.person_100);
+                        }
+                    }
                     // Fiyatı profilden tekrar dene (profil güncellenmiş olabilir)
                     Integer p = extractPriceFromProfile(snap, subjectId);
                     if (p != null && p > 0) {
@@ -221,11 +235,8 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
                         setPriceText(currentPrice);
                     }
 
-                    if (avg == null || count == null) {
-                        fetchRatingFallbackFromReviews();
-                    } else {
-                        bindRating(avg, count);
-                    }
+                    if (avg == null || count == null) fetchRatingFallbackFromReviews();
+                    else bindRating(avg, count);
                 });
 
         // Yorumlar (son 20)

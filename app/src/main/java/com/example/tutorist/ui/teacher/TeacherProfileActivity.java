@@ -2,17 +2,24 @@
 package com.example.tutorist.ui.teacher;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.widget.*;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.bumptech.glide.Glide;
 import com.example.tutorist.R;
 import com.example.tutorist.repo.TeacherProfileRepo;
 import com.example.tutorist.repo.UserRepo;
 import com.example.tutorist.ui.auth.LoginActivity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
 public class TeacherProfileActivity extends AppCompatActivity {
 
@@ -25,6 +32,9 @@ public class TeacherProfileActivity extends AppCompatActivity {
     private FirebaseAuth auth;
     private FirebaseFirestore db;
     private String uid;
+
+    private ActivityResultLauncher<String> pickImageLauncher;
+    private final FirebaseStorage storage = FirebaseStorage.getInstance();
 
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
@@ -47,6 +57,17 @@ public class TeacherProfileActivity extends AppCompatActivity {
         Button btnLogout = findViewById(R.id.btnLogout);
         Button btnPayout = findViewById(R.id.btnPayout);
 
+        // 1) Görsel seçici (gallery)
+        pickImageLauncher = registerForActivityResult(
+                new ActivityResultContracts.GetContent(),
+                uri -> {
+                    if (uri != null) {
+                        uploadAvatar(uri);
+                    }
+                });
+
+        // 2) Avatar’a tıklayınca galeriyi aç
+        ivAvatar.setOnClickListener(v -> pickImageLauncher.launch("image/*"));
         loadProfile();
         loadPayoutSummary(); // varsa durum metnini günceller
 
@@ -81,18 +102,53 @@ public class TeacherProfileActivity extends AppCompatActivity {
                 .show());
     }
 
-    private void loadProfile() {
-        // users: ad & telefon
-        userRepo.loadUser(uid).addOnSuccessListener(data -> {
-            if (data != null) {
-                Object n = data.get("fullName");
-                Object p = data.get("phone");
-                if (n != null) etName.setText(String.valueOf(n));
-                if (p != null) etPhone.setText(String.valueOf(p));
-            }
-        });
+    /** Seçilen resmi Storage'a yükle, URL’i teacherProfiles.photoUrl’e yaz */
+    private void uploadAvatar(Uri imageUri) {
+        tvMsg.setText("Fotoğraf yükleniyor...");
 
-        // teacherProfiles: bio (+ displayName / photoUrl)
+        // Storage referansı
+        StorageReference ref = FirebaseStorage.getInstance()
+                .getReference()
+                .child("teachers")
+                .child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                .child("avatar.jpg");
+
+
+        // (Opsiyonel) Boyut küçültme: 1024px max edge (hafızayı korumak için)
+        // Basit yol: dosyayı direkt yükle. İleri seviye: Bitmap sıkıştırma yap.
+        ref.putFile(imageUri)
+                .continueWithTask(task -> {
+                    if (!task.isSuccessful()) throw task.getException();
+                    return ref.getDownloadUrl();
+                })
+                .continueWithTask(task -> {
+                    Uri download = task.getResult();
+                    // Firestore’a yaz
+                    return FirebaseFirestore.getInstance()
+                            .collection("teacherProfiles")
+                            .document(uid)
+                            .update("photoUrl", download.toString());
+                })
+                .addOnSuccessListener(x -> {
+                    tvMsg.setText("Fotoğraf güncellendi.");
+                    // Ekranda da göster
+                    FirebaseFirestore.getInstance().collection("teacherProfiles")
+                            .document(uid).get().addOnSuccessListener(doc -> {
+                                String url = doc.getString("photoUrl");
+                                if (url != null) {
+                                    Glide.with(this)
+                                            .load(url)
+                                            .placeholder(R.drawable.ic_person)
+                                            .circleCrop()
+                                            .into(ivAvatar);
+                                }
+                            });
+                })
+                .addOnFailureListener(e -> tvMsg.setText("Fotoğraf yüklenemedi: " + e.getMessage()));
+    }
+
+    private void loadProfile() {
+        // ... mevcut kodun
         db.collection("teacherProfiles").document(uid).get()
                 .addOnSuccessListener(doc -> {
                     if (doc != null && doc.exists()) {
@@ -106,15 +162,16 @@ public class TeacherProfileActivity extends AppCompatActivity {
 
                         String photo = doc.getString("photoUrl");
                         if (photo != null && ivAvatar != null) {
-                            // Glide eklediysen aç:
-                            // Glide.with(this).load(photo)
-                            //      .placeholder(R.drawable.ic_person)
-                            //      .into(ivAvatar);
+                            // Glide ile resmi çek
+                            Glide.with(this)
+                                    .load(photo)
+                                    .placeholder(R.drawable.ic_person)
+                                    .circleCrop()
+                                    .into(ivAvatar);
                         }
                     }
                 });
     }
-
     private void loadPayoutSummary() {
         if (tvPayoutSummary == null) return;
         // Kendi şemanı uydur: örnek “payoutAccounts/{uid} { status: 'ready'|'pending' }”
@@ -126,4 +183,6 @@ public class TeacherProfileActivity extends AppCompatActivity {
                     }
                 });
     }
+
+
 }
