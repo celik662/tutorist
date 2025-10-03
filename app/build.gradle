@@ -11,7 +11,7 @@ android {
         applicationId "com.example.tutorist"
         minSdk 24
         targetSdk 36
-        versionCode 1
+        versionCode 2
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -21,18 +21,25 @@ android {
         buildConfig = true
     }
 
+    defaultConfig {
+        // (bunlar opsiyonel ama kalabilir)
+        buildConfigField "String",  "EMULATOR_HOST",          "\"10.0.2.2\""
+        buildConfigField "int",     "EMULATOR_FUNCTIONS_PORT","5001"
+    }
+
     buildTypes {
         debug {
-            buildConfigField "String", "FUNCTIONS_HOST", "\"10.0.2.2\""   // emulator
-            buildConfigField "int",    "FUNCTIONS_PORT", "5001"
+            // Gerçek cihazda test ederken emülatöre gitmesin:
+            buildConfigField "boolean", "USE_EMULATORS", "false"
         }
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            buildConfigField "String", "FUNCTIONS_HOST", "\"\""  // boş = prod'a git
-            buildConfigField "int",    "FUNCTIONS_PORT", "0"
+            buildConfigField "boolean", "USE_EMULATORS", "false"
+            minifyEnabled true
+            shrinkResources true
         }
     }
+
+
 
 
     compileOptions {

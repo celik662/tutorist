@@ -15,7 +15,6 @@ import com.example.tutorist.repo.BookingRepo;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.*;
 import com.google.firebase.functions.FirebaseFunctions;
-import com.example.tutorist.BuildConfig;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -34,11 +33,9 @@ public class ChooseSlotActivity extends AppCompatActivity {
     private ListenerRegistration availReg;   // weekly availability
     private ListenerRegistration locksReg;   // slot locks
 
-    // Saat modeli (09–21)
-    private final List<Hour> currentHours = new ArrayList<>();
-
-    // Weekly’den gelen “o gün izinli saatler”
+    // Weekly’den gelen o güne açık saatler ve lock’lardan dolu olanlar
     private final Set<Integer> allowedHoursForDay = new HashSet<>();
+    private final Set<Integer> takenHours         = new HashSet<>();
     private boolean availLoadedForDay = false;
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -50,8 +47,6 @@ public class ChooseSlotActivity extends AppCompatActivity {
 
     private FirebaseFunctions functions;
     private static final String FUNCTIONS_REGION = "europe-west1";
-    private static final String CALLBACK_BASE_DEBUG = "http://10.0.2.2:5001/tutorist-f2a46";
-    private static final String CALLBACK_BASE_PROD  = "https://europe-west1-tutorist-f2a46.cloudfunctions.net";
 
     // -------- Lifecycle --------
     @Override protected void onCreate(Bundle b) {
@@ -79,9 +74,6 @@ public class ChooseSlotActivity extends AppCompatActivity {
         rv.setAdapter(adapter);
 
         functions = FirebaseFunctions.getInstance(FUNCTIONS_REGION);
-        if (BuildConfig.DEBUG && BuildConfig.FUNCTIONS_HOST != null && !BuildConfig.FUNCTIONS_HOST.isEmpty()) {
-            functions.useEmulator(BuildConfig.FUNCTIONS_HOST, BuildConfig.FUNCTIONS_PORT);
-        }
 
         // Öğrenci adı (opsiyonel)
         db.collection("users").document(uid).get()
@@ -135,15 +127,11 @@ public class ChooseSlotActivity extends AppCompatActivity {
     // -------- Data wiring --------
     /** Seçili gün için saatleri canlı dinle: weekly availability + slotLocks */
     private void loadDayAvailability() {
-        // Saat modelini sıfırla
-        currentHours.clear();
-        for (int h = 9; h <= 21; h++) currentHours.add(new Hour(h, false, false));
-
         // Eski dinleyicileri kapat
         if (availReg != null) { availReg.remove(); availReg = null; }
         if (locksReg != null) { locksReg.remove(); locksReg = null; }
 
-        // Günün dayOfWeek değerleri (Calendar ve ISO)
+        // Günün dayOfWeek değerini ISO (1=Mon..7=Sun) olarak hesapla
         Calendar dayCal = Calendar.getInstance();
         String[] p = selDateIso.split("-");
         int y = Integer.parseInt(p[0]), m = Integer.parseInt(p[1]) - 1, d = Integer.parseInt(p[2]);
@@ -160,79 +148,75 @@ public class ChooseSlotActivity extends AppCompatActivity {
         availReg = db.collection("availabilities")
                 .document(teacherId)
                 .collection("weekly")
-                .whereIn("dayOfWeek", Arrays.asList(dowCalendar, dowIso))
+                // TEK standart: ISO dayOfWeek
+                .whereEqualTo("dayOfWeek", dowIso)
                 .addSnapshotListener((snap, e) -> {
-                    if (isFinishing() || isDestroyed()) return;
-
+                    if (e != null) {
+                        android.util.Log.e("ChooseSlot","weekly listen error", e);
+                        return;
+                    }
                     allowedHoursForDay.clear();
-
                     if (snap != null) {
                         for (DocumentSnapshot dSnap : snap.getDocuments()) {
                             Integer start = dSnap.getLong("startHour") != null ? dSnap.getLong("startHour").intValue() : null;
                             Integer end   = dSnap.getLong("endHour")   != null ? dSnap.getLong("endHour").intValue()   : null;
+                            android.util.Log.d("ChooseSlot","weekly doc: "+dSnap.getId()+" start="+start+" end="+end);
                             if (start == null || end == null) continue;
 
-                            for (int h = Math.max(9, start); h <= Math.min(21, end); h++) {
+                            // CLAMP YOK — weekly ne verdiyse onu kullan
+                            for (int h = start; h <= end; h++) {
                                 allowedHoursForDay.add(h);
                             }
                         }
                     }
-
                     availLoadedForDay = true;
-                    applyFiltersAndRefresh(); // sadece allowed & future saatleri göster
+
+                    // (İsteğe bağlı fallback; weekly boşsa aşağıyı açabilirsiniz)
+                    // if (allowedHoursForDay.isEmpty()) {
+                    //     for (int h = 9; h <= 21; h++) allowedHoursForDay.add(h);
+                    // }
+
+                    applyFiltersAndRefresh();
                 });
 
-        // 2) SLOT LOCKS → taken (status != declined/cancelled)
-// 2) SLOT LOCKS → taken (pending/accepted dolu sayılır)
+        // 2) SLOT LOCKS → taken (pending/accepted dolu sayılır)
         locksReg = db.collection("slotLocks")
                 .whereEqualTo("teacherId", teacherId)
                 .whereEqualTo("date", selDateIso)
-                // NOT: whereNotIn yerine whereIn — daha tutarlı ve indeks sorunlarına daha az açık
                 .whereIn("status", Arrays.asList("pending", "accepted"))
                 .addSnapshotListener((snap, e) -> {
                     if (isFinishing() || isDestroyed()) return;
 
                     if (e != null) {
-                        // Hata varsa logla ve hiçbir şeyi dolu işaretleme
                         android.util.Log.e("ChooseSlot", "slotLocks listen error: " + e.getMessage(), e);
-                        adapter.submit(cloneHours(currentHours)); // mevcut görünümü koru
+                        applyFiltersAndRefresh(); // görünümü koru
                         return;
                     }
 
-                    // önce tümünü boş kabul et
-                    for (Hour hr : currentHours) hr.taken = false;
-
+                    takenHours.clear();
                     if (snap != null) {
                         for (DocumentSnapshot dSnap : snap.getDocuments()) {
                             Integer hr = dSnap.getLong("hour") != null ? dSnap.getLong("hour").intValue() : null;
-                            if (hr == null) continue;
-                            int idx = hr - 9;
-                            if (idx >= 0 && idx < currentHours.size()) {
-                                currentHours.get(idx).taken = true; // bu saat dolu
-                            }
+                            if (hr != null) takenHours.add(hr);
                         }
                     }
 
-                    if (availLoadedForDay) applyFiltersAndRefresh();
-                    else adapter.submit(cloneHours(currentHours));
+                    applyFiltersAndRefresh();
                 });
-
     }
 
-    /** Availability + geçmiş saat + taken durumuna göre sadece görünmesi gereken saatleri listele */
+    /** Availability + geçmiş saat + taken durumuna göre görünmesi gereken saatler */
     private void applyFiltersAndRefresh() {
         Calendar now = Calendar.getInstance();
         List<Hour> visible = new ArrayList<>();
 
-        for (Hour hr : currentHours) {
-            boolean past    = isPast(selDateIso, hr.h, now);
-            boolean allowed = allowedHoursForDay.contains(hr.h);
+        // Sıralı liste için TreeSet
+        for (int h : new TreeSet<>(allowedHoursForDay)) {
+            boolean past = isPast(selDateIso, h, now);
+            if (past) continue;
 
-            // Sadece allowed ve geçmiş olmayan saatleri göster
-            if (!allowed || past) continue;
-
-            // Dolu olanlar görünür, ama tıklanamaz olacak (adapter tarafı hallediyor)
-            visible.add(new Hour(hr.h, hr.taken, false));
+            boolean taken = takenHours.contains(h);
+            visible.add(new Hour(h, taken, false));
         }
 
         adapter.submit(visible);
@@ -242,13 +226,6 @@ public class ChooseSlotActivity extends AppCompatActivity {
             btnRequest.setEnabled(false);
             tvInfo.setText("Bu gün için müsait saat yok.");
         }
-    }
-
-    /** Adapter’e temiz veri vermek için kopya (referans çakışmasını önler) */
-    private List<Hour> cloneHours(List<Hour> src) {
-        List<Hour> out = new ArrayList<>(src.size());
-        for (Hour h : src) out.add(new Hour(h.h, h.taken, h.disabled));
-        return out;
     }
 
     private boolean isPast(String dateIso, int hour, Calendar now) {
@@ -375,9 +352,6 @@ public class ChooseSlotActivity extends AppCompatActivity {
         bill.put("zipCode", "34000");
         payload.put("billingAddress", bill);
 
-        String callbackBase = BuildConfig.DEBUG ? CALLBACK_BASE_DEBUG : CALLBACK_BASE_PROD;
-        payload.put("callbackBase", callbackBase);
-
         FirebaseFunctions.getInstance(FUNCTIONS_REGION)
                 .getHttpsCallable("iyziInitCheckout")
                 .call(payload)
@@ -390,7 +364,6 @@ public class ChooseSlotActivity extends AppCompatActivity {
                     }
                     com.example.tutorist.payment.PaymentActivity.start(this, bookingId, html);
                 })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Ödeme hatası: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                .addOnFailureListener(e -> Toast.makeText(this, "Ödeme hatası: " + e.getMessage(), Toast.LENGTH_LONG).show());
     }
 }

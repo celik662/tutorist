@@ -1,5 +1,6 @@
 package com.example.tutorist.ui.student;
 
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -107,6 +108,20 @@ public class StudentMainActivity extends AppCompatActivity {
             return true;
         });
 
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 1001);
+            }
+        }
+        com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
+                .addOnSuccessListener(token -> {
+                    String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+                    if (uid == null || token == null || token.isEmpty()) return;
+                    com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                            .collection("users").document(uid)
+                            .update("fcmTokens", com.google.firebase.firestore.FieldValue.arrayUnion(token));
+                });
         // Rozeti MENÜ ÖĞESİNE bağla (mevcut)
         histBadge = nav.getOrCreateBadge(R.id.nav_history);
         histBadge.setVisible(false);

@@ -27,8 +27,6 @@ public class TeacherPayoutActivity extends AppCompatActivity {
     // - Android Emülatör: "10.0.2.2"
     // - Fiziksel cihaz + adb reverse: "127.0.0.1"
     // - Fiziksel cihaz + Wi-Fi/LAN: "192.168.x.x"
-    private static final String DEBUG_FUNCTIONS_HOST = "10.0.2.2";
-    private static final int    DEBUG_FUNCTIONS_PORT = 5001;
 
     private TextInputLayout tilIban, tilHolder, tilTckn;
     private TextInputEditText etIban, etHolder, etTckn;

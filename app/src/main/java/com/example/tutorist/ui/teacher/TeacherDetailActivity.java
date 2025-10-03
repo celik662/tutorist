@@ -124,9 +124,9 @@ public class TeacherDetailActivity extends AppCompatActivity {
                                 bookingRepo.createBooking(
                                                 teacherId,
                                                 studentId,
-                                                studentName,             // <— yeni parametre
+                                                studentName,
                                                 subjectId,
-                                                subjectName,             // <— yeni parametre
+                                                subjectName,
                                                 selectedDateIso(),
                                                 hour
                                         )

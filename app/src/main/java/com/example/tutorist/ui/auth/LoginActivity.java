@@ -7,6 +7,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.tutorist.R;
@@ -15,14 +17,18 @@ import com.example.tutorist.ui.teacher.TeacherMainActivity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
+
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
 public class LoginActivity extends AppCompatActivity {
     private EditText etEmail, etPass;
     private TextView tvMsg, tvBanner;
-    private Button btnForgot, btnResendVerify;
-
-    private Button btnLogin;
+    private Button btnForgot, btnResendVerify, btnLogin;
     private FirebaseAuth auth;
 
     @Override
@@ -39,7 +45,7 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin = findViewById(R.id.btnLogin);
         btnResendVerify = findViewById(R.id.btnResendVerify);
 
-        // Kayıt veya splash'tan gelen bilgilendirme/basılı e-posta
+        // Splash/Register’dan gelen prefill / banner
         Intent i = getIntent();
         String prefill = i.getStringExtra("email");
         if (prefill != null) etEmail.setText(prefill);
@@ -60,14 +66,12 @@ public class LoginActivity extends AppCompatActivity {
         });
         btnResendVerify.setOnClickListener(v -> resendVerification());
 
-
+        // FCM token’ı kaydet (yedek)
         com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
                 .addOnSuccessListener(t -> {
-                    // AppMessagingService.onNewToken çağrılmayabilir; token’ı burada da kaydedelim:
                     new com.example.tutorist.push.AppMessagingService().onNewToken(t);
                 });
     }
-
 
     private void doLogin() {
         String email = etEmail.getText().toString().trim();
@@ -77,8 +81,6 @@ public class LoginActivity extends AppCompatActivity {
             tvMsg.setText("E-posta ve şifre girin.");
             return;
         }
-
-        // (İsteğe bağlı) Ağ kontrolü
         if (!com.example.tutorist.util.NetworkUtil.isOnline(this)) {
             tvMsg.setText("İnternet bağlantısı yok. Lütfen ağınızı kontrol edin.");
             return;
@@ -98,7 +100,6 @@ public class LoginActivity extends AppCompatActivity {
                         return;
                     }
 
-                    // E-posta doğrulama durumunu güncel görmek için
                     user.reload()
                             .addOnSuccessListener(v -> {
                                 if (!user.isEmailVerified()) {
@@ -115,11 +116,26 @@ public class LoginActivity extends AppCompatActivity {
                                     return;
                                 }
 
-                                // E-posta doğrulandı → rol dokümanını oku ve yönlendir
-                                FirebaseFirestore.getInstance()
-                                        .collection("users").document(user.getUid())
+                                // E-posta doğrulandı → users/{uid} oku
+                                FirebaseFirestore db = FirebaseFirestore.getInstance();
+                                db.collection("users").document(user.getUid())
                                         .get()
-                                        .addOnSuccessListener(this::routeByRoleDoc) // mevcut metodunu kullanıyorsun
+                                        .addOnSuccessListener(doc -> {
+                                            // 1) Adı garanti altına al → sonra güncel dokümanla role’ye göre yönlendir + mirror
+                                            ensureDisplayName(user, doc, /*assumedRole*/ null, () -> {
+                                                db.collection("users").document(user.getUid())
+                                                        .get()
+                                                        .addOnSuccessListener(freshDoc -> {
+                                                            routeByRoleDocWithMirror(user, freshDoc);
+                                                            btnLogin.setEnabled(true);
+                                                        })
+                                                        .addOnFailureListener(e -> {
+                                                            tvBanner.setText("Rol bilgisi okunamadı: " + e.getMessage());
+                                                            auth.signOut();
+                                                            btnLogin.setEnabled(true);
+                                                        });
+                                            });
+                                        })
                                         .addOnFailureListener(e -> {
                                             tvBanner.setText("Rol bilgisi okunamadı: " + e.getMessage());
                                             auth.signOut();
@@ -138,6 +154,76 @@ public class LoginActivity extends AppCompatActivity {
                 });
     }
 
+    /* ---------- İSİM GARANTİSİ & AYNALAMA ---------- */
+
+    private static boolean isBlank(@Nullable String s){
+        return s == null || s.trim().isEmpty();
+    }
+
+    /** users/{uid}.fullName’i garanti altına alır (Google displayName → fallback “Yeni …”). */
+    private void ensureDisplayName(FirebaseUser user,
+                                   @Nullable DocumentSnapshot userDoc,
+                                   @Nullable String assumedRole,
+                                   Runnable onDone){
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        String current = (userDoc != null) ? userDoc.getString("fullName") : null;
+        if (!isBlank(current)) { onDone.run(); return; }
+
+        String fromProvider = user.getDisplayName();
+        String fallback;
+        if (!isBlank(fromProvider)) {
+            fallback = fromProvider.trim();
+        } else {
+            if ("teacher".equals(assumedRole)) fallback = "Yeni Öğretmen";
+            else if ("student".equals(assumedRole)) fallback = "Yeni Öğrenci";
+            else fallback = "Yeni eğitmen";
+        }
+
+        Map<String,Object> up = new HashMap<>();
+        up.put("fullName", fallback);
+        up.put("fullNameLower", fallback.toLowerCase(new Locale("tr","TR")));
+        up.put("updatedAt", FieldValue.serverTimestamp());
+
+        db.collection("users").document(user.getUid())
+                .set(up, SetOptions.merge())
+                .addOnSuccessListener(v -> onDone.run())
+                .addOnFailureListener(e -> onDone.run()); // hata olsa da akışı bloklama
+    }
+
+    /** Öğretmense adını teacherProfiles/{uid}.displayName alanına da yazar (mirror). */
+    private void mirrorNameToTeacherProfile(String uid, String name){
+        if (isBlank(uid) || isBlank(name)) return;
+        FirebaseFirestore.getInstance()
+                .collection("teacherProfiles").document(uid)
+                .set(new HashMap<String,Object>() {{
+                         put("displayName", name);
+                         put("displayNameLower", name.toLowerCase(new Locale("tr","TR")));
+                         put("updatedAt", FieldValue.serverTimestamp());
+                     }},
+                        SetOptions.merge());
+    }
+
+    /** Rol dokümanına göre yönlendirir; öğretmense isim mirror’ını yapar. */
+    private void routeByRoleDocWithMirror(FirebaseUser user, DocumentSnapshot doc){
+        String role = (doc.exists() && doc.getString("role") != null) ? doc.getString("role") : "";
+        String name = doc.getString("fullName");
+
+        if ("teacher".equals(role) && !isBlank(name)) {
+            mirrorNameToTeacherProfile(user.getUid(), name);
+            startActivity(new Intent(this, TeacherMainActivity.class));
+            finish();
+        } else if ("student".equals(role)) {
+            startActivity(new Intent(this, StudentMainActivity.class));
+            finish();
+        } else {
+            tvBanner.setText("Hesap rolü eksik veya geçersiz. Lütfen tekrar giriş yapın.");
+            FirebaseAuth.getInstance().signOut();
+        }
+    }
+
+    /* ---------- MEVCUTLAR ---------- */
+
     private String mapAuthError(Exception e) {
         if (e instanceof com.google.firebase.FirebaseNetworkException) {
             return "Ağ hatası: İnternet bağlantınızı kontrol edin.";
@@ -154,21 +240,6 @@ public class LoginActivity extends AppCompatActivity {
         return "Giriş başarısız: " + e.getMessage();
     }
 
-
-    private void routeByRoleDoc(DocumentSnapshot doc) {
-        String role = (doc.exists() && doc.getString("role") != null) ? doc.getString("role") : "";
-        if ("teacher".equals(role)) {
-            startActivity(new Intent(this, TeacherMainActivity.class));
-            finish();
-        } else if ("student".equals(role)) {
-            startActivity(new Intent(this, StudentMainActivity.class));
-            finish();
-        } else {
-            tvBanner.setText("Hesap rolü eksik veya geçersiz. Lütfen tekrar giriş yapın.");
-            FirebaseAuth.getInstance().signOut();
-        }
-    }
-
     private void resendVerification() {
         String email = etEmail.getText().toString().trim();
         String pass  = etPass.getText().toString();
@@ -177,7 +248,6 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        // Geçici giriş yap, doğrulama mailini gönder, sonra oturumu kapat.
         auth.signInWithEmailAndPassword(email, pass)
                 .addOnSuccessListener(res -> {
                     FirebaseUser u = res.getUser();

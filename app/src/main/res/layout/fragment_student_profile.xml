@@ -92,7 +92,7 @@
                 android:layout_weight="1"
                 android:text="Kaydet"
                 app:cornerRadius="14dp"
-                app:icon="@drawable/save_24"
+                app:icon="@drawable/save"
                 app:iconPadding="8dp"
                 app:iconGravity="textStart"
                 app:backgroundTint="@color/tutorist_primary"
@@ -161,8 +161,37 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+
+
         <View
             android:layout_width="match_parent"
             android:layout_height="24dp" />
+
+        <EditText
+            android:id="@+id/etBookingId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Booking ID gir"
+            android:inputType="text"
+            android:layout_marginTop="12dp"/>
+
+        <Button
+            android:id="@+id/btnTestReminder10"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Test: 10 dk hatırlatma gönder"/>
+
+        <Button
+            android:id="@+id/btnTestReminder60"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Test: 60 dk hatırlatma gönder"/>
+
+        <Button
+            android:id="@+id/btnTestPush"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Test Bildirimi Gönder" />
+
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

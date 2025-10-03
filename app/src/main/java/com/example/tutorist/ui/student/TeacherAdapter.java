@@ -20,7 +20,6 @@ import java.util.Objects;
 
 public class TeacherAdapter extends RecyclerView.Adapter<TeacherAdapter.VH> {
 
-    /* ==== PUBLIC API ==== */
 
     public interface OnTeacherClick { void onClick(String teacherId); }
 
@@ -32,6 +31,7 @@ public class TeacherAdapter extends RecyclerView.Adapter<TeacherAdapter.VH> {
         public Double ratingAvg;
         public Long ratingCount;
         public Integer price; // TRY
+        public Long completedCount;
 
         /** içerik karşılaştırması (DiffUtil için) */
         @Override public boolean equals(Object o) {
@@ -43,10 +43,11 @@ public class TeacherAdapter extends RecyclerView.Adapter<TeacherAdapter.VH> {
                     && Objects.equals(bio, that.bio)
                     && Objects.equals(ratingAvg, that.ratingAvg)
                     && Objects.equals(ratingCount, that.ratingCount)
-                    && Objects.equals(price, that.price);
+                    && Objects.equals(price, that.price)
+                    && Objects.equals(completedCount, that.completedCount);
         }
         @Override public int hashCode() {
-            return Objects.hash(id, fullName, bio, ratingAvg, ratingCount, price);
+            return Objects.hash(id, fullName, bio, ratingAvg, ratingCount, price, completedCount);
         }
     }
 
@@ -54,6 +55,19 @@ public class TeacherAdapter extends RecyclerView.Adapter<TeacherAdapter.VH> {
         this.listener = l;
         setHasStableIds(true);
     }
+
+    public void updateCompletedById(String teacherId, long completed){
+        if (teacherId == null) return;
+        for (int i = 0; i < items.size(); i++){
+            TeacherRow row = items.get(i);
+            if (teacherId.equals(row.id)) {
+                row.completedCount = completed;
+                notifyItemChanged(i);
+                return;
+            }
+        }
+    }
+
 
     /** Tam listeyi ver; diff ile animasyonlu ve verimli günceller */
     public void submit(List<TeacherRow> data){
@@ -82,7 +96,7 @@ public class TeacherAdapter extends RecyclerView.Adapter<TeacherAdapter.VH> {
     private List<TeacherRow> items = new ArrayList<>();
 
     static class VH extends RecyclerView.ViewHolder {
-        TextView tvName, tvBio, tvRatingText, tvPrice;
+        TextView tvName, tvBio, tvRatingText, tvPrice, tvCompleted;
         RatingBar rb;
         VH(View v){
             super(v);
@@ -90,6 +104,7 @@ public class TeacherAdapter extends RecyclerView.Adapter<TeacherAdapter.VH> {
             tvBio  = v.findViewById(R.id.tvBio);
             tvRatingText = v.findViewById(R.id.tvRatingText);
             tvPrice = v.findViewById(R.id.tvPrice);
+            tvCompleted = v.findViewById(R.id.tvCompleted);
             rb = v.findViewById(R.id.rb);
         }
     }
@@ -107,6 +122,17 @@ public class TeacherAdapter extends RecyclerView.Adapter<TeacherAdapter.VH> {
         if (h.tvName != null) h.tvName.setText(t.fullName != null ? t.fullName : "Öğretmen");
         if (h.tvBio  != null) h.tvBio.setText(t.bio != null ? t.bio : "—");
 
+// Tamamlanan ders
+        if (h.tvCompleted != null) {
+            long cc = t.completedCount != null ? t.completedCount : 0L;
+            if (cc <= 0) {
+                h.tvCompleted.setText("Aramıza yeni katıldı");
+            } else {
+                h.tvCompleted.setText(cc + " Ders");
+            }
+        }
+
+        h.itemView.setOnClickListener(v -> { if (listener != null) listener.onClick(t.id); });
         // Rating
         float display = displayRatingFrom(t.ratingAvg, t.ratingCount);
         long cnt = t.ratingCount != null ? t.ratingCount : 0L;
@@ -126,9 +152,7 @@ public class TeacherAdapter extends RecyclerView.Adapter<TeacherAdapter.VH> {
             }
         }
 
-        h.itemView.setOnClickListener(v -> {
-            if (listener != null) listener.onClick(t.id);
-        });
+
     }
 
     @Override public int getItemCount(){ return items.size(); }

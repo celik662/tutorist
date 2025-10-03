@@ -1,26 +1,34 @@
+// app/src/main/java/com/example/tutorist/ui/student/StudentProfileFragment.java
 package com.example.tutorist.ui.student;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.*;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
-import com.example.tutorist.BuildConfig;
 import com.example.tutorist.R;
 import com.example.tutorist.payment.PaymentActivity;
 import com.example.tutorist.repo.UserRepo;
 import com.example.tutorist.ui.auth.LoginActivity;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.functions.FirebaseFunctions;
+import com.google.firebase.functions.FirebaseFunctionsException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,13 +36,15 @@ import java.util.Map;
 public class StudentProfileFragment extends Fragment {
 
     private static final String FUNCTIONS_REGION = "europe-west1";
-    private static final String CALLBACK_BASE_DEBUG = "http://10.0.2.2:5001/tutorist-f2a46";
-    private static final String CALLBACK_BASE_PROD  = "https://europe-west1-tutorist-f2a46.cloudfunctions.net";
+    // Sadece PROD callback (Cloud Functions domain’in)
+    private static final String CALLBACK_BASE_PROD =
+            "https://europe-west1-tutorist-f2a46.cloudfunctions.net";
 
     private EditText etName, etPhone;
     private TextView tvMsg;
     private LinearLayout llCards;
     private Button btnAddCard, btnSave, btnLogout;
+
     private final UserRepo userRepo = new UserRepo();
     private FirebaseAuth auth;
     private FirebaseFirestore db;
@@ -43,7 +53,13 @@ public class StudentProfileFragment extends Fragment {
     private String uid;
     private ListenerRegistration userReg;
 
-    @Nullable @Override
+    private EditText etBookingId; // Test için eklendi
+    private Button btnTest10, btnTest60;
+    private Button btnTestPush;
+
+
+    @Nullable
+    @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
@@ -56,18 +72,75 @@ public class StudentProfileFragment extends Fragment {
 
         etName    = v.findViewById(R.id.etName);
         etPhone   = v.findViewById(R.id.etPhone);
-        tvMsg     = v.findViewById(R.id.tvMsg);       // layout’ta yoksa null olabilir (bilerek)
+        tvMsg     = v.findViewById(R.id.tvMsg);       // layout’ta yoksa null olabilir
         llCards   = v.findViewById(R.id.llCards);
         btnAddCard= v.findViewById(R.id.btnAddCard);
         btnSave   = v.findViewById(R.id.btnSave);
         btnLogout = v.findViewById(R.id.btnLogout);
 
+        etBookingId = v.findViewById(R.id.etBookingId);     //test için eklendi
+        btnTest10   = v.findViewById(R.id.btnTestReminder10);
+        btnTest60   = v.findViewById(R.id.btnTestReminder60);
+
+
+
+        View.OnClickListener trigger = click -> {
+            String bookingId = etBookingId.getText() != null ? etBookingId.getText().toString().trim() : "";
+            if (bookingId.isEmpty()) { showError("Önce Booking ID gir."); return; }
+
+            Map<String, Object> req = new HashMap<>();
+            req.put("bookingId", bookingId);
+            req.put("minutes", click == btnTest60 ? 60 : 10);
+
+            FirebaseFunctions.getInstance("europe-west1")
+                    .getHttpsCallable("debugSendReminder")
+                    .call(req)
+                    .addOnSuccessListener(r -> showSuccess("Test bildirimi gönderildi."))
+                    .addOnFailureListener(e -> Log.e("FUNC","err code="+
+                            (e instanceof FirebaseFunctionsException ? ((FirebaseFunctionsException)e).getCode() : "unknown")
+                            + " msg=" + e.getMessage(), e));
+        };
+
+        btnTest10.setOnClickListener(trigger);
+        btnTest60.setOnClickListener(trigger);
+
+        btnTestPush = v.findViewById(R.id.btnTestPush);
+
+        btnTestPush.setOnClickListener(xx -> {
+            // Android 13+ için bildirim izni (ilk kez lazımsa)
+            maybeAskPostNotifications();
+
+            // 1) Cihaz token'ını al
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
+                    .addOnSuccessListener(token -> {
+                        Log.d("FCM","token="+token);
+
+                        // 2) Callable’a isteği gönder
+                        Map<String,Object> req = new HashMap<>();
+                        req.put("token", token);
+
+                        com.google.firebase.functions.FirebaseFunctions.getInstance("europe-west1")
+                                .getHttpsCallable("sendTestDataMsg")
+                                .call(req)
+                                .addOnSuccessListener(r -> Log.d("FUNC","ok "+r.getData()))
+                                .addOnFailureListener(e -> {
+                                    String code = (e instanceof com.google.firebase.functions.FirebaseFunctionsException)
+                                            ? ((com.google.firebase.functions.FirebaseFunctionsException)e).getCode().name()
+                                            : "unknown";
+                                    Log.e("FUNC","err code="+code+" msg="+e.getMessage(), e);
+                                    Toast.makeText(requireContext(), "Fonksiyon hatası: "+code, Toast.LENGTH_LONG).show();
+                                });
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e("FCM","getToken fail", e);
+                        Toast.makeText(requireContext(), "Token alınamadı", Toast.LENGTH_LONG).show();
+                    });
+        });
+
+
         auth = FirebaseAuth.getInstance();
         db   = FirebaseFirestore.getInstance();
         functions = FirebaseFunctions.getInstance(FUNCTIONS_REGION);
-        if (BuildConfig.DEBUG && BuildConfig.FUNCTIONS_HOST != null && !BuildConfig.FUNCTIONS_HOST.isEmpty()) {
-            functions.useEmulator(BuildConfig.FUNCTIONS_HOST, BuildConfig.FUNCTIONS_PORT);
-        }
 
         uid = auth.getUid();
         if (uid == null) {
@@ -85,22 +158,12 @@ public class StudentProfileFragment extends Fragment {
         btnSave.setOnClickListener(x -> {
             String name  = etName != null ? etName.getText().toString().trim() : "";
             String phone = etPhone != null ? etPhone.getText().toString().trim() : "";
-
             if (name.isEmpty()) { showError("Lütfen ad-soyad girin."); return; }
 
             btnSave.setEnabled(false);
-
             userRepo.updateUserBasic(uid, name, phone)
-                    .addOnSuccessListener(s -> {
-                        if (!isAdded()) return;
-                        showSuccess("Kaydedildi ✅");
-                        btnSave.setEnabled(true);
-                    })
-                    .addOnFailureListener(e -> {
-                        if (!isAdded()) return;
-                        showError("Kaydedilemedi: " + (e != null && e.getMessage() != null ? e.getMessage() : ""));
-                        btnSave.setEnabled(true);
-                    });
+                    .addOnSuccessListener(s -> { if (isAdded()) { showSuccess("Kaydedildi ✅"); btnSave.setEnabled(true); }})
+                    .addOnFailureListener(e -> { if (isAdded()) { showError("Kaydedilemedi: " + (e!=null&&e.getMessage()!=null?e.getMessage():"")); btnSave.setEnabled(true); }});
         });
 
         btnLogout.setOnClickListener(x -> {
@@ -109,21 +172,33 @@ public class StudentProfileFragment extends Fragment {
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
             requireActivity().finish();
         });
+
+    }
+
+    private void maybeAskPostNotifications() {
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            if (requireContext().checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                    != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 1001);
+            }
+        }
     }
 
     private void loadProfile() {
-        userRepo.loadUser(uid).addOnSuccessListener(data -> {
-            if (!isAdded()) return;
-            if (data != null) {
-                Object n = data.get("fullName");
-                Object p = data.get("phone");
-                if (etName != null && n != null)  etName.setText(String.valueOf(n));
-                if (etPhone != null && p != null) etPhone.setText(String.valueOf(p));
-            }
-        }).addOnFailureListener(e -> {
-            if (!isAdded()) return;
-            showError("Profil yüklenemedi: " + (e != null && e.getMessage()!=null ? e.getMessage() : ""));
-        });
+        userRepo.loadUser(uid)
+                .addOnSuccessListener(data -> {
+                    if (!isAdded()) return;
+                    if (data != null) {
+                        Object n = data.get("fullName");
+                        Object p = data.get("phone");
+                        if (etName != null && n != null)  etName.setText(String.valueOf(n));
+                        if (etPhone != null && p != null) etPhone.setText(String.valueOf(p));
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (!isAdded()) return;
+                    showError("Profil yüklenemedi: " + (e != null && e.getMessage()!=null ? e.getMessage() : ""));
+                });
     }
 
     private void listenUserCards(String uid) {
@@ -166,7 +241,8 @@ public class StudentProfileFragment extends Fragment {
 
     private void startAddCardFlow() {
         Map<String, Object> payload = new HashMap<>();
-        payload.put("callbackBase", BuildConfig.DEBUG ? CALLBACK_BASE_DEBUG : CALLBACK_BASE_PROD);
+        // Her zaman prod callback kullan
+        payload.put("callbackBase", CALLBACK_BASE_PROD);
 
         functions.getHttpsCallable("iyziInitCardSave")
                 .call(payload)
@@ -193,12 +269,8 @@ public class StudentProfileFragment extends Fragment {
         super.onDestroyView();
     }
 
-    /* ---------- mesaj yardımcıları ---------- */
-
     private void showSuccess(String msg) { showMsg(msg, true); }
-
     private void showError(String msg) { showMsg(msg, false); }
-
     private void showMsg(String msg, boolean success) {
         if (!isAdded()) return;
         View root = getView();

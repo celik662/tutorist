@@ -48,22 +48,29 @@ public class AppMessagingService extends FirebaseMessagingService {
         String uid = FirebaseAuth.getInstance().getUid();
         if (uid == null) return;
 
-        // 1) Eski yapın: devices alt koleksiyonu
-        String deviceId = token;
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        // devices alt koleksiyonu
         Map<String,Object> data = new HashMap<>();
         data.put("token", token);
         data.put("platform", "android");
         data.put("lastSeen", FieldValue.serverTimestamp());
-        FirebaseFirestore.getInstance()
-                .collection("users").document(uid)
-                .collection("devices").document(deviceId)
+        db.collection("users").document(uid)
+                .collection("devices").document(token)
                 .set(data);
 
-        // 2) Yeni: functions’ın okuduğu dizi alanı
-        FirebaseFirestore.getInstance()
-                .collection("users").document(uid)
-                .update("fcmTokens", FieldValue.arrayUnion(token));
+        // fcmTokens alanı — update + fallback
+        db.collection("users").document(uid)
+                .update("fcmTokens", FieldValue.arrayUnion(token))
+                .addOnFailureListener(e -> {
+                    Map<String,Object> m = new HashMap<>();
+                    m.put("fcmTokens", FieldValue.arrayUnion(token));
+                    db.collection("users").document(uid)
+                            .set(m, com.google.firebase.firestore.SetOptions.merge());
+                });
     }
+
+
 
     @Override public void onMessageReceived(@NonNull RemoteMessage msg) {
         super.onMessageReceived(msg);

@@ -133,12 +133,14 @@ public class TeacherMainActivity extends AppCompatActivity {
         if (upcomingReg != null) { upcomingReg.remove(); upcomingReg = null; }
 
         Date now = new Date();
+        long nowMs = System.currentTimeMillis();
+        Date tenMinAgo = new Date(nowMs - 10*60*1000);
 
         upcomingReg = FirebaseFirestore.getInstance()
                 .collection("bookings")
                 .whereEqualTo("teacherId", uid)
                 .whereEqualTo("status", "accepted")
-                .whereGreaterThanOrEqualTo("startAt", now)
+                .whereGreaterThanOrEqualTo("endAt", tenMinAgo)
                 .addSnapshotListener((snap, e) -> {
                     if (e != null) {
                         android.util.Log.e(TAG, "Upcoming listen error", e);

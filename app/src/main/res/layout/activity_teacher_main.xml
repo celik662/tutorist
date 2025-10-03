@@ -153,7 +153,7 @@
         android:text="00:00"
         android:textAllCaps="false"
         android:visibility="gone"
-        app:icon="@drawable/ic_timer"
+        app:icon="@drawable/timer"
         app:iconPadding="8dp"
         app:backgroundTint="@color/tutorist_primary"
         app:iconTint="@color/tutorist_onPrimary"

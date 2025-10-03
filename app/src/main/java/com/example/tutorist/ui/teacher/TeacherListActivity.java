@@ -118,6 +118,8 @@ public class TeacherListActivity extends AppCompatActivity {
             row.ratingAvg   = d.getDouble("ratingAvg");
             row.ratingCount = d.getLong("ratingCount");
             row.price       = extractPriceFromProfile(d, subjectId);
+            row.completedCount = d.getLong("completedCount");
+
             list.add(row);
         }
 
@@ -143,9 +145,35 @@ public class TeacherListActivity extends AppCompatActivity {
             }
         }
 
+        for (int i = 0; i < list.size(); i++) {
+            TeacherAdapter.TeacherRow row = list.get(i);
+            if (row.completedCount == null) {
+                fetchCompletedFallback(row);
+            }
+        }
+
         showLoading(false);
         tvEmpty.setVisibility(all.isEmpty() ? View.VISIBLE : View.GONE);
     }
+
+    private void fetchCompletedFallback(TeacherAdapter.TeacherRow row) {
+        db.collection("bookings")
+                .whereEqualTo("teacherId", row.id)
+                .whereEqualTo("status", "completed")
+                .get()
+                .addOnSuccessListener(snap -> {
+                    long cnt = snap.getDocuments().size();
+                    // UI'ı güncelle
+                    adapter.updateCompletedById(row.id, cnt);
+
+                    // İstersen cache için profiline de yaz (merge)
+                    HashMap<String, Object> up = new HashMap<>();
+                    up.put("completedCount", cnt);
+                    up.put("updatedAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+                    db.collection("teacherProfiles").document(row.id).set(up, SetOptions.merge());
+                });
+    }
+
 
     private void loadPriceForRow(String teacherId, String subjectId){
         if (teacherId == null || subjectId == null) {

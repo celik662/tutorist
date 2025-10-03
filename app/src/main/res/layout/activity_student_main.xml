@@ -24,7 +24,7 @@
         app:backgroundTint="@color/tutorist_primary"
         android:textColor="@color/tutorist_onPrimary"
         app:iconTint="@color/tutorist_onPrimary"
-        app:icon="@drawable/ic_timer" />
+        app:icon="@drawable/timer" />
     <!-- /FAB -->
     <!-- İnce bir ayraç, içerik ile nav arasında nefes -->
     <com.google.android.material.divider.MaterialDivider

@@ -29,10 +29,7 @@ public class StudentProfileActivity extends AppCompatActivity {
     private static final String FUNCTIONS_REGION = "europe-west1";
 
     // DEBUG (emülatör) ve PROD callback base — proje id'nizi girin
-    private static final String CALLBACK_BASE_DEBUG =
-            "http://10.0.2.2:5001/tutorist-f2a46";
-    private static final String CALLBACK_BASE_PROD  =
-            "https://europe-west1-tutorist-f2a46.cloudfunctions.net";
+
 
     private EditText etName, etPhone;
     private TextView tvMsg;
@@ -65,9 +62,7 @@ public class StudentProfileActivity extends AppCompatActivity {
         auth = FirebaseAuth.getInstance();
         db   = FirebaseFirestore.getInstance();
         functions = FirebaseFunctions.getInstance(FUNCTIONS_REGION);
-        if (BuildConfig.DEBUG && BuildConfig.FUNCTIONS_HOST != null && !BuildConfig.FUNCTIONS_HOST.isEmpty()) {
-            functions.useEmulator(BuildConfig.FUNCTIONS_HOST, BuildConfig.FUNCTIONS_PORT);
-        }
+
 
         uid = auth.getUid();
         if (uid == null) {
@@ -158,10 +153,6 @@ public class StudentProfileActivity extends AppCompatActivity {
 
     private void startAddCardFlow() {
         Map<String, Object> payload = new HashMap<>();
-        // Emülatör/prod callback base gönder (fonksiyonun bekliyorsa)
-        String callbackBase = BuildConfig.DEBUG ? CALLBACK_BASE_DEBUG : CALLBACK_BASE_PROD;
-        payload.put("callbackBase", callbackBase);
-
         functions.getHttpsCallable("iyziInitCardSave")
                 .call(payload)
                 .addOnSuccessListener(r -> {

@@ -71,9 +71,9 @@
                 android:isIndicator="true"
                 android:numStars="5"
                 android:stepSize="0.5"
-            android:progressTint="@color/tutorist_warning"
-            android:secondaryProgressTint="@color/tutorist_warning"
-            android:progressBackgroundTint="@color/tutorist_surfaceVariant" />
+                android:progressTint="@color/tutorist_warning"
+                android:secondaryProgressTint="@color/tutorist_warning"
+                android:progressBackgroundTint="@color/tutorist_surfaceVariant" />
 
             <TextView
                 android:id="@+id/tvRatingText"
@@ -84,6 +84,25 @@
                 android:text="5.0 (0)"
                 android:textColor="@color/tutorist_onSurface"
                 android:alpha="0.85"/>
+
+            <!-- ayraç -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
+                android:text="•"
+                android:alpha="0.5"/>
+
+            <!-- TAMAMLANAN DERS -->
+            <TextView
+                android:id="@+id/tvCompleted"
+                style="?attr/textAppearanceBodySmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 tamamlanan ders"
+                android:textColor="@color/tutorist_onSurface"
+                android:alpha="0.85"/>
         </LinearLayout>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>
