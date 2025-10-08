@@ -1,143 +1,156 @@
+// app/src/main/java/com/example/tutorist/repo/BookingRepo.java
 package com.example.tutorist.repo;
-
-import static android.content.ContentValues.TAG;
-
-import android.util.Log;
-
-import androidx.annotation.NonNull;
 
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.*;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class BookingRepo {
+
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
+    /** Aynı slotu tekil kimlikle temsil etmek için */
     public static String slotId(String teacherId, String dateIso, int hour) {
         return teacherId + "_" + dateIso + "_" + hour;
     }
 
-    private DocumentReference bookingDoc(String id){
-        return db.collection("bookings").document(id);
-    }
-    private DocumentReference lockDoc(String id){
-        return db.collection("slotLocks").document(id);
-    }
-    // yardımcı:
-    private static java.util.Date buildDate(String dateIso, int hour) {
-        String[] p = dateIso.split("-");
-        int y = Integer.parseInt(p[0]);
-        int m = Integer.parseInt(p[1]); // 1..12
-        int d = Integer.parseInt(p[2]);
-        java.util.Calendar c = java.util.Calendar.getInstance(java.util.TimeZone.getDefault());
-        c.set(java.util.Calendar.YEAR, y);
-        c.set(java.util.Calendar.MONTH, m - 1); // 0-based
-        c.set(java.util.Calendar.DAY_OF_MONTH, d);
-        c.set(java.util.Calendar.HOUR_OF_DAY, hour);
-        c.set(java.util.Calendar.MINUTE, 0);
-        c.set(java.util.Calendar.SECOND, 0);
-        c.set(java.util.Calendar.MILLISECOND, 0);
-        return c.getTime();
+    private DocumentReference bookingRef(String bookingId) {
+        return db.collection("bookings").document(bookingId);
     }
 
-
-    // BookingRepo.java
-    public Task<Void> createBooking(String teacherId,
-                                    String studentId,
-                                    String studentName,
-                                    String subjectId,
-                                    String subjectName,
-                                    String dateIso,
-                                    int hour) {
-        final String id  = slotId(teacherId, dateIso, hour);
-        final DocumentReference bRef = bookingDoc(id);
-        final DocumentReference lRef = lockDoc(id);
-
-        java.util.Date startAt = buildDate(dateIso, hour);
-        java.util.Date endAt   = new java.util.Date(startAt.getTime() + 60L*60L*1000L); // 1 saat
-
-        // ÖNCE map’i oluştur
-        Map<String, Object> booking = new HashMap<>();
-        booking.put("teacherId", teacherId);
-        booking.put("studentId", studentId);
-        booking.put("studentName", studentName);   // yeni
-        booking.put("subjectId", subjectId);
-        booking.put("subjectName", subjectName);   // yeni
-        booking.put("date", dateIso);
-        booking.put("hour", hour);
-        booking.put("status", "pending");
-        booking.put("createdAt", FieldValue.serverTimestamp());
-        booking.put("updatedAt", FieldValue.serverTimestamp());
-        booking.put("startAt", startAt);
-        booking.put("endAt",   endAt);
-
-        Map<String, Object> lock = new HashMap<>();
-        lock.put("teacherId", teacherId);
-        lock.put("studentId", studentId);
-        lock.put("date", dateIso);
-        lock.put("hour", hour);
-        lock.put("status", "pending");
-        lock.put("updatedAt", FieldValue.serverTimestamp());
-
-        // Slot çakışması kontrolü (varsa ALREADY_EXISTS fırlatır)
-        return lRef.get().continueWithTask(t -> {
-            DocumentSnapshot lockSnap = t.getResult();
-            if (lockSnap != null && lockSnap.exists()) {
-                throw new FirebaseFirestoreException(
-                        "Slot already taken", FirebaseFirestoreException.Code.ALREADY_EXISTS);
-            }
-            WriteBatch batch = db.batch();
-            batch.set(bRef, booking);
-            batch.set(lRef, lock);
-            return batch.commit();
-        });
+    private DocumentReference lockRef(String teacherId, String dateIso, int hour) {
+        return db.collection("slotLocks").document(slotId(teacherId, dateIso, hour));
     }
 
-
-
-
-    /** Kolaylık: elinde bookingId varsa direkt */
-    public Task<Void> updateStatusById(@NonNull String bookingId, @NonNull String newStatus) {
-        Log.d("BookingRepo", "updateStatusById path=bookings/" + bookingId + " newStatus=" + newStatus);
+    /**
+     * Slotu atomik olarak kilitle + booking oluştur.
+     * DOLULUK kontrolü SADECE slotLocks üstünden yapılır.
+     * - lock.status in [pending, accepted] ise: “dolu” hatası at.
+     * - aksi halde lock=pending + bookings/{id}=pending yaz.
+     */
+    public Task<Void> createBooking(
+            String teacherId,
+            String studentId,
+            String studentName,
+            String subjectId,
+            String subjectName,
+            String dateIso,   // yyyy-MM-dd
+            int hour          // 0..23
+    ) {
+        final String bookingId = slotId(teacherId, dateIso, hour);
+        final DocumentReference bRef = bookingRef(bookingId);
+        final DocumentReference lRef = lockRef(teacherId, dateIso, hour);
 
         return db.runTransaction(tr -> {
-            // ---------- TÜM OKUMALAR (READS) ----------
-            DocumentReference bRef = db.collection("bookings").document(bookingId);
-            DocumentSnapshot bSnap = tr.get(bRef); // 1. okuma
-            if (!bSnap.exists()) {
-                throw new FirebaseFirestoreException(
-                        "Booking not found: " + bookingId,
-                        FirebaseFirestoreException.Code.NOT_FOUND
-                );
+            // 1) Mevcut LOCK var mı?
+            DocumentSnapshot l = tr.get(lRef);
+            if (l.exists()) {
+                String st = String.valueOf(l.get("status"));
+                if ("pending".equals(st) || "accepted".equals(st)) {
+                    throw new IllegalStateException("Bu saat zaten dolu.");
+                }
             }
 
-            String teacherId = bSnap.getString("teacherId");
-            String date      = bSnap.getString("date");
-            Long   hourLong  = bSnap.getLong("hour");
-            int    hour      = hourLong == null ? -1 : hourLong.intValue();
+            // 2) LOCK oluştur/aktif et
+            Map<String, Object> lock = new HashMap<>();
+            lock.put("teacherId", teacherId);
+            lock.put("date", dateIso);
+            lock.put("hour", hour);
+            lock.put("status", "pending"); // ödeme & onay süreci
+            lock.put("updatedAt", FieldValue.serverTimestamp());
+            tr.set(lRef, lock, SetOptions.merge());
 
-            DocumentReference lRef = null;
-            DocumentSnapshot lSnap = null;
-            if (teacherId != null && date != null && hour >= 0) {
-                String slotId = teacherId + "_" + date + "_" + hour;
-                lRef = db.collection("slotLocks").document(slotId);
-                lSnap = tr.get(lRef); // 2. okuma (VARSA)
-            }
+            // 3) BOOKING yaz (pending)
+            // startAt & endAt
+            String[] p = dateIso.split("-");
+            int y = Integer.parseInt(p[0]), m = Integer.parseInt(p[1]) - 1, d = Integer.parseInt(p[2]);
+            Calendar c = Calendar.getInstance();
+            c.set(Calendar.MILLISECOND, 0);
+            c.set(y, m, d, hour, 0, 0);
+            Date startAt = c.getTime();
+            c.add(Calendar.HOUR_OF_DAY, 1);
+            Date endAt = c.getTime();
 
-            // ---------- TÜM YAZMALAR (WRITES) ----------
-            Map<String, Object> up = new HashMap<>();
-            up.put("status", newStatus);
-            up.put("updatedAt", FieldValue.serverTimestamp());
+            Map<String, Object> b = new HashMap<>();
+            b.put("teacherId", teacherId);
+            b.put("studentId", studentId);
+            b.put("studentName", studentName != null ? studentName : "");
+            b.put("subjectId", subjectId != null ? subjectId : "");
+            b.put("subjectName", subjectName != null ? subjectName : "");
+            b.put("date", dateIso);
+            b.put("hour", hour);
+            b.put("status", "pending");
+            b.put("startAt", startAt);
+            b.put("endAt", endAt);
+            b.put("createdAt", FieldValue.serverTimestamp());
+            b.put("updatedAt", FieldValue.serverTimestamp());
 
-            tr.update(bRef, up);                 // booking yaz
-            if (lRef != null && lSnap.exists())  // slotLock varsa yaz
-                tr.update(lRef, up);
+            tr.set(bRef, b, SetOptions.merge());
 
             return null;
         });
     }
 
+    /**
+     * Booking durumunu güncelle.
+     * - Dokümanı ASLA silme (geçmiş görünür kalsın)
+     * - İptal/Red gibi durumlarda LOCK'ı kaldır (slot yeniden açılır)
+     */
+    public Task<Void> updateStatusById(String bookingId, String newStatus) {
+        final DocumentReference bRef = bookingRef(bookingId);
+
+        return db.runTransaction(tr -> {
+            DocumentSnapshot b = tr.get(bRef);
+            if (!b.exists()) return null;
+
+            String teacherId = b.getString("teacherId");
+            String dateIso   = b.getString("date");
+            Number hourN     = (Number) b.get("hour");
+            int hour         = hourN != null ? hourN.intValue() : -1;
+
+            Map<String, Object> up = new HashMap<>();
+            up.put("status", normalizeStatus(newStatus));
+            up.put("updatedAt", FieldValue.serverTimestamp());
+            tr.set(bRef, up, SetOptions.merge());
+
+            // Kilidi serbest bırakılacak durumlar
+            String s = String.valueOf(up.get("status"));
+            if (Arrays.asList("cancelled","student_cancelled","declined","teacher_declined").contains(s)) {
+                if (teacherId != null && dateIso != null && hour >= 0) {
+                    tr.delete(lockRef(teacherId, dateIso, hour));
+                }
+            }
+
+            return null;
+        });
+    }
+
+    // Aynı normalize mantığını basitçe burada da tutalım
+    private static String normalizeStatus(String raw) {
+        if (raw == null) return "pending";
+        String s = raw.trim().toLowerCase(Locale.ROOT);
+        if (s.equals("canceled")) s = "cancelled";
+        if (s.equals("rejected") || s.equals("denied")) s = "declined";
+        if (s.equals("teacher_rejected") || s.equals("declined_by_teacher")) s = "teacher_declined";
+        if (s.equals("teacher_canceled") || s.equals("teacher_cancelled")) s = "teacher_cancelled";
+        if (s.equals("student_canceled") || s.equals("student_cancelled")) s = "student_cancelled";
+        if (s.equals("done") || s.equals("finished")) s = "completed";
+
+        switch (s) {
+            case "pending":
+            case "accepted":
+            case "declined":
+            case "teacher_declined":
+            case "cancelled":
+            case "student_cancelled":
+            case "teacher_cancelled":
+            case "completed":
+            case "expired":
+            case "no_show":
+                return s;
+            default:
+                return "pending";
+        }
+    }
 }

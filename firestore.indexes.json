@@ -43,6 +43,15 @@
         { "fieldPath": "status",    "order": "ASCENDING" },
         { "fieldPath": "startAt",   "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "bookings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "teacherId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "endAt", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

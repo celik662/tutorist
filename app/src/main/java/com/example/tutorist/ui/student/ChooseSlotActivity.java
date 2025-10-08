@@ -1,3 +1,4 @@
+// app/src/main/java/com/example/tutorist/ui/student/ChooseSlotActivity.java
 package com.example.tutorist.ui.student;
 
 import android.annotation.SuppressLint;
@@ -5,6 +6,7 @@ import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.widget.*;
 import android.view.*;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -171,15 +173,10 @@ public class ChooseSlotActivity extends AppCompatActivity {
                     }
                     availLoadedForDay = true;
 
-                    // (İsteğe bağlı fallback; weekly boşsa aşağıyı açabilirsiniz)
-                    // if (allowedHoursForDay.isEmpty()) {
-                    //     for (int h = 9; h <= 21; h++) allowedHoursForDay.add(h);
-                    // }
-
                     applyFiltersAndRefresh();
                 });
 
-        // 2) SLOT LOCKS → taken (pending/accepted dolu sayılır)
+        // 2) SLOT LOCKS → taken (yalnızca pending/accepted dolu)
         locksReg = db.collection("slotLocks")
                 .whereEqualTo("teacherId", teacherId)
                 .whereEqualTo("date", selDateIso)

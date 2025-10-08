@@ -82,19 +82,25 @@ exports.remindUpcomingLessons = onSchedule(
     const windows = [60, 10].map((min) => {
       const target = now + min * 60_000;
       return {
-        from: new Date(target - 30_000),
-        to:   new Date(target + 30_000),
+        from: new Date(target - 120_000), // -2 dk
+        to:   new Date(target + 120_000), // +2 dk
         flag: min === 60 ? "sent60" : "sent10",
         min,
       };
     });
 
     for (const w of windows) {
+      console.log("Window", w.flag, w.from.toISOString(), w.to.toISOString());
+
       const snap = await db.collection("bookings")
         .where("status", "==", "accepted")
         .where("startAt", ">=", w.from)
         .where("startAt", "<=", w.to)
+        // isteğe bağlı: index zaten var, sıralama debug için yardımcı
+        .orderBy("startAt")
         .get();
+
+      console.log("Match count", w.flag, snap.size);
 
       for (const doc of snap.docs) {
         const ref = doc.ref, b = doc.data();
