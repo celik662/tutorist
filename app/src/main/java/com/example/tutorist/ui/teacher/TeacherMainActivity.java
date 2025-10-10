@@ -213,6 +213,10 @@ public class TeacherMainActivity extends AppCompatActivity {
                 });
     }
 
+    @Override protected void onResume() {
+        super.onResume();
+        com.example.tutorist.push.AppMessagingService.syncCurrentFcmToken();
+    }
     private void openUpcomingSheet() {
         if (upcomingDialog == null) {
             View content = getLayoutInflater().inflate(R.layout.sheet_teacher_upcoming, null, false);
@@ -377,6 +381,8 @@ public class TeacherMainActivity extends AppCompatActivity {
                 btnJoin = v.findViewById(R.id.btnJoin);
             }
         }
+
+
 
         @NonNull @Override public VH onCreateViewHolder(@NonNull ViewGroup p, int vt) {
             View v = LayoutInflater.from(p.getContext()).inflate(R.layout.item_teacher_upcoming, p, false);

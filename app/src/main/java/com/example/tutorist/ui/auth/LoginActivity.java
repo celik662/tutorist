@@ -1,15 +1,24 @@
+// app/src/main/java/com/example/tutorist/ui/auth/LoginActivity.java
 package com.example.tutorist.ui.auth;
 
-import android.widget.Toast;
+import android.Manifest;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationManagerCompat;
 
 import com.example.tutorist.R;
 import com.example.tutorist.ui.student.StudentMainActivity;
@@ -26,6 +35,10 @@ import java.util.Locale;
 import java.util.Map;
 
 public class LoginActivity extends AppCompatActivity {
+
+    private static final int REQ_NOTIF = 1001;
+    private static final String CHANNEL_ID = "booking_updates"; // NEW
+
     private EditText etEmail, etPass;
     private TextView tvMsg, tvBanner;
     private Button btnForgot, btnResendVerify, btnLogin;
@@ -35,6 +48,7 @@ public class LoginActivity extends AppCompatActivity {
     protected void onCreate(Bundle b) {
         super.onCreate(b);
         setContentView(R.layout.activity_login);
+
         auth = FirebaseAuth.getInstance();
 
         etEmail = findViewById(R.id.etEmail);
@@ -44,6 +58,9 @@ public class LoginActivity extends AppCompatActivity {
         btnForgot = findViewById(R.id.btnForgot);
         btnLogin = findViewById(R.id.btnLogin);
         btnResendVerify = findViewById(R.id.btnResendVerify);
+
+        ensurePushChannel(this);              // NEW: Kanalı oluştur
+        requestNotificationPermissionIfNeeded(); // İzni iste (Android 13+)
 
         // Splash/Register’dan gelen prefill / banner
         Intent i = getIntent();
@@ -65,22 +82,62 @@ public class LoginActivity extends AppCompatActivity {
             startActivity(new Intent(this, ForgotPasswordActivity.class).putExtra("email", email));
         });
         btnResendVerify.setOnClickListener(v -> resendVerification());
+    }
 
-        // FCM token’ı kaydet (yedek)
-        com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
-                .addOnSuccessListener(t -> {
-                    new com.example.tutorist.push.AppMessagingService().onNewToken(t);
-                });
+    @Override protected void onResume() {
+        super.onResume();
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            com.example.tutorist.push.AppMessagingService.syncCurrentFcmToken();
+        }
+    }
+
+
+    private void requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= 33) {
+            boolean enabled = NotificationManagerCompat.from(this).areNotificationsEnabled();
+            if (!enabled && ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                        this,
+                        new String[]{ Manifest.permission.POST_NOTIFICATIONS },
+                        REQ_NOTIF
+                );
+            }
+        }
+    }
+
+    // NEW: Bildirim kanalını garantiye al
+    private void ensurePushChannel(Context ctx) {
+        if (Build.VERSION.SDK_INT >= 26) {
+            NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm.getNotificationChannel(CHANNEL_ID) == null) {
+                NotificationChannel ch = new NotificationChannel(
+                        CHANNEL_ID,
+                        "Ders Güncellemeleri",
+                        NotificationManager.IMPORTANCE_HIGH
+                );
+                ch.setDescription("Rezervasyon ve dersle ilgili bildirimler");
+                nm.createNotificationChannel(ch);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int reqCode, String[] perms, int[] grantResults) {
+        super.onRequestPermissionsResult(reqCode, perms, grantResults);
+        if (reqCode == REQ_NOTIF && grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            // NEW: İzin verildiyse kanal kurulu kalsın, token’ı senk et
+            ensurePushChannel(this);
+            com.example.tutorist.push.AppMessagingService.syncCurrentFcmToken();
+        }
     }
 
     private void doLogin() {
         String email = etEmail.getText().toString().trim();
         String pass  = etPass.getText().toString();
 
-        if (email.isEmpty() || pass.isEmpty()) {
-            tvMsg.setText("E-posta ve şifre girin.");
-            return;
-        }
+        if (email.isEmpty() || pass.isEmpty()) { tvMsg.setText("E-posta ve şifre girin."); return; }
         if (!com.example.tutorist.util.NetworkUtil.isOnline(this)) {
             tvMsg.setText("İnternet bağlantısı yok. Lütfen ağınızı kontrol edin.");
             return;
@@ -94,11 +151,7 @@ public class LoginActivity extends AppCompatActivity {
         auth.signInWithEmailAndPassword(email, pass)
                 .addOnSuccessListener(result -> {
                     FirebaseUser user = auth.getCurrentUser();
-                    if (user == null) {
-                        tvMsg.setText("Kullanıcı bulunamadı.");
-                        btnLogin.setEnabled(true);
-                        return;
-                    }
+                    if (user == null) { tvMsg.setText("Kullanıcı bulunamadı."); btnLogin.setEnabled(true); return; }
 
                     user.reload()
                             .addOnSuccessListener(v -> {
@@ -116,12 +169,27 @@ public class LoginActivity extends AppCompatActivity {
                                     return;
                                 }
 
-                                // E-posta doğrulandı → users/{uid} oku
+// başarılı login ve email doğrulama SONRASINDA:
+                                com.example.tutorist.push.AppMessagingService.attachCurrentTokenToUser(
+                                        getApplicationContext(),
+                                        user.getUid()
+                                );
+
+                                // users/{uid} oku ve yönlendir
                                 FirebaseFirestore db = FirebaseFirestore.getInstance();
                                 db.collection("users").document(user.getUid())
                                         .get()
                                         .addOnSuccessListener(doc -> {
-                                            // 1) Adı garanti altına al → sonra güncel dokümanla role’ye göre yönlendir + mirror
+                                            // yoksa oluştur
+                                            if (!doc.exists()) {
+                                                Map<String,Object> seed = new HashMap<>();
+                                                seed.put("email", user.getEmail());
+                                                seed.put("createdAt", FieldValue.serverTimestamp());
+                                                seed.put("lastLoginAt", FieldValue.serverTimestamp());
+                                                db.collection("users").document(user.getUid())
+                                                        .set(seed, SetOptions.merge());
+                                            }
+                                            // isim garantisi + route
                                             ensureDisplayName(user, doc, /*assumedRole*/ null, () -> {
                                                 db.collection("users").document(user.getUid())
                                                         .get()
@@ -154,13 +222,12 @@ public class LoginActivity extends AppCompatActivity {
                 });
     }
 
-    /* ---------- İSİM GARANTİSİ & AYNALAMA ---------- */
+    /* ---------- İSİM GARANTİSİ & AYNALAMA (sizin kodunuz) ---------- */
 
     private static boolean isBlank(@Nullable String s){
         return s == null || s.trim().isEmpty();
     }
 
-    /** users/{uid}.fullName’i garanti altına alır (Google displayName → fallback “Yeni …”). */
     private void ensureDisplayName(FirebaseUser user,
                                    @Nullable DocumentSnapshot userDoc,
                                    @Nullable String assumedRole,
@@ -188,10 +255,9 @@ public class LoginActivity extends AppCompatActivity {
         db.collection("users").document(user.getUid())
                 .set(up, SetOptions.merge())
                 .addOnSuccessListener(v -> onDone.run())
-                .addOnFailureListener(e -> onDone.run()); // hata olsa da akışı bloklama
+                .addOnFailureListener(e -> onDone.run());
     }
 
-    /** Öğretmense adını teacherProfiles/{uid}.displayName alanına da yazar (mirror). */
     private void mirrorNameToTeacherProfile(String uid, String name){
         if (isBlank(uid) || isBlank(name)) return;
         FirebaseFirestore.getInstance()
@@ -204,7 +270,6 @@ public class LoginActivity extends AppCompatActivity {
                         SetOptions.merge());
     }
 
-    /** Rol dokümanına göre yönlendirir; öğretmense isim mirror’ını yapar. */
     private void routeByRoleDocWithMirror(FirebaseUser user, DocumentSnapshot doc){
         String role = (doc.exists() && doc.getString("role") != null) ? doc.getString("role") : "";
         String name = doc.getString("fullName");
@@ -222,7 +287,7 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    /* ---------- MEVCUTLAR ---------- */
+    /* ---------- mevcut hata haritalama & resend ---------- */
 
     private String mapAuthError(Exception e) {
         if (e instanceof com.google.firebase.FirebaseNetworkException) {

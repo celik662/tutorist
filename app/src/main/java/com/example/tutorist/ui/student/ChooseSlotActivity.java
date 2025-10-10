@@ -119,6 +119,10 @@ public class ChooseSlotActivity extends AppCompatActivity {
         refreshButtons();
     }
 
+    @Override protected void onResume() {
+        super.onResume();
+        com.example.tutorist.push.AppMessagingService.syncCurrentFcmToken();
+    }
     private void refreshButtons() {
         btnRequest.setEnabled(selHour != null);
         tvInfo.setText(selHour == null

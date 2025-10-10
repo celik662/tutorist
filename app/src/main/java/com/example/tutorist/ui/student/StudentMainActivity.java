@@ -134,6 +134,11 @@ public class StudentMainActivity extends AppCompatActivity {
         nav.setSelectedItemId(R.id.nav_lessons);
     }
 
+    @Override protected void onResume() {
+        super.onResume();
+        com.example.tutorist.push.AppMessagingService.syncCurrentFcmToken();
+    }
+
 
     @Override protected void onStart() {
         super.onStart();

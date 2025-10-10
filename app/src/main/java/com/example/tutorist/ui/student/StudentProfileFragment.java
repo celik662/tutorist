@@ -20,6 +20,7 @@ import androidx.fragment.app.Fragment;
 
 import com.example.tutorist.R;
 import com.example.tutorist.payment.PaymentActivity;
+import com.example.tutorist.push.AppMessagingService;
 import com.example.tutorist.repo.UserRepo;
 import com.example.tutorist.ui.auth.LoginActivity;
 import com.google.android.material.snackbar.Snackbar;
@@ -29,6 +30,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.functions.FirebaseFunctions;
 import com.google.firebase.functions.FirebaseFunctionsException;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -67,20 +69,20 @@ public class StudentProfileFragment extends Fragment {
     }
 
     @Override
-    public void onViewCreated(@NonNull View v, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(v, savedInstanceState);
+    public void onViewCreated(@NonNull View root, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(root, savedInstanceState);
 
-        etName    = v.findViewById(R.id.etName);
-        etPhone   = v.findViewById(R.id.etPhone);
-        tvMsg     = v.findViewById(R.id.tvMsg);       // layout’ta yoksa null olabilir
-        llCards   = v.findViewById(R.id.llCards);
-        btnAddCard= v.findViewById(R.id.btnAddCard);
-        btnSave   = v.findViewById(R.id.btnSave);
-        btnLogout = v.findViewById(R.id.btnLogout);
+        etName    = root.findViewById(R.id.etName);
+        etPhone   = root.findViewById(R.id.etPhone);
+        tvMsg     = root.findViewById(R.id.tvMsg);
+        llCards   = root.findViewById(R.id.llCards);
+        btnAddCard= root.findViewById(R.id.btnAddCard);
+        btnSave   = root.findViewById(R.id.btnSave);
+        btnLogout = root.findViewById(R.id.btnLogout);
 
-        etBookingId = v.findViewById(R.id.etBookingId);     //test için eklendi
-        btnTest10   = v.findViewById(R.id.btnTestReminder10);
-        btnTest60   = v.findViewById(R.id.btnTestReminder60);
+        etBookingId = root.findViewById(R.id.etBookingId);     //test için eklendi
+        btnTest10   = root.findViewById(R.id.btnTestReminder10);
+        btnTest60   = root.findViewById(R.id.btnTestReminder60);
 
 
 
@@ -104,36 +106,17 @@ public class StudentProfileFragment extends Fragment {
         btnTest10.setOnClickListener(trigger);
         btnTest60.setOnClickListener(trigger);
 
-        btnTestPush = v.findViewById(R.id.btnTestPush);
+        btnTestPush = root.findViewById(R.id.btnTestPush);
 
         btnTestPush.setOnClickListener(xx -> {
-            // Android 13+ için bildirim izni (ilk kez lazımsa)
-            maybeAskPostNotifications();
-
-            // 1) Cihaz token'ını al
-            com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
+            FirebaseMessaging.getInstance().getToken()
                     .addOnSuccessListener(token -> {
-                        Log.d("FCM","token="+token);
-
-                        // 2) Callable’a isteği gönder
-                        Map<String,Object> req = new HashMap<>();
-                        req.put("token", token);
-
-                        com.google.firebase.functions.FirebaseFunctions.getInstance("europe-west1")
-                                .getHttpsCallable("sendTestDataMsg")
-                                .call(req)
-                                .addOnSuccessListener(r -> Log.d("FUNC","ok "+r.getData()))
-                                .addOnFailureListener(e -> {
-                                    String code = (e instanceof com.google.firebase.functions.FirebaseFunctionsException)
-                                            ? ((com.google.firebase.functions.FirebaseFunctionsException)e).getCode().name()
-                                            : "unknown";
-                                    Log.e("FUNC","err code="+code+" msg="+e.getMessage(), e);
-                                    Toast.makeText(requireContext(), "Fonksiyon hatası: "+code, Toast.LENGTH_LONG).show();
-                                });
+                        Log.d("TEST_PUSH", "token=" + token);
+                        sendTestPush(token); // mevcut metodun
                     })
                     .addOnFailureListener(e -> {
-                        Log.e("FCM","getToken fail", e);
-                        Toast.makeText(requireContext(), "Token alınamadı", Toast.LENGTH_LONG).show();
+                        Log.e("TEST_PUSH", "token fail", e);
+                        showError("FCM token alınamadı: " + (e.getMessage()!=null?e.getMessage():""));
                     });
         });
 
@@ -166,22 +149,42 @@ public class StudentProfileFragment extends Fragment {
                     .addOnFailureListener(e -> { if (isAdded()) { showError("Kaydedilemedi: " + (e!=null&&e.getMessage()!=null?e.getMessage():"")); btnSave.setEnabled(true); }});
         });
 
-        btnLogout.setOnClickListener(x -> {
-            auth.signOut();
-            startActivity(new Intent(requireContext(), LoginActivity.class)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
-            requireActivity().finish();
+        btnLogout.setOnClickListener(clicked -> {
+            new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setTitle("Çıkış yapılsın mı?")
+                    .setMessage("Hesabınızdan çıkış yapacaksınız.")
+                    .setNegativeButton("İptal", null)
+                    .setPositiveButton("Çıkış yap", (d, w) -> {
+                        // çift tıklamayı engelle
+                        clicked.setEnabled(false);
+
+                        // 1) önce token’ı kullanıcıdan kopar + cihazdan sil
+                        com.example.tutorist.push.AppMessagingService
+                                .detachTokenFromCurrentUserAndDeleteAsync(requireContext())
+                                .addOnCompleteListener(t -> {
+                                    // 2) sonra signOut
+                                    FirebaseAuth.getInstance().signOut();
+
+                                    // 3) login’e tertemiz dönüş
+                                    Intent i = new Intent(requireContext(), com.example.tutorist.ui.auth.LoginActivity.class);
+                                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                    startActivity(i);
+                                    requireActivity().finish();
+                                });
+                    })
+                    .show();
         });
 
     }
 
-    private void maybeAskPostNotifications() {
-        if (android.os.Build.VERSION.SDK_INT >= 33) {
-            if (requireContext().checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
-                    != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 1001);
-            }
-        }
+    private void sendTestPush(String token){
+        FirebaseFunctions.getInstance("europe-west1")
+                .getHttpsCallable("sendTestDataMsg")
+                .call(new java.util.HashMap<String,Object>() {{
+                    put("token", token);
+                }})
+                .addOnSuccessListener(r -> android.util.Log.d("TEST_PUSH","ok"))
+                .addOnFailureListener(e -> android.util.Log.e("TEST_PUSH","fail", e));
     }
 
     private void loadProfile() {

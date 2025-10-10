@@ -5,4 +5,9 @@
     <string name="kvkk_url">https://tutorist.web.app/kvkk/v1.html</string>
     <string name="profile_photo" />
 
+    <string name="default_notification_channel_id">booking_updates</string>
+
+    <string name="notification_channel_name">Rezervasyon Bildirimleri</string>
+    <string name="notification_channel_desc">Rezervasyon ve istek bildirimleri</string>
+
 </resources>

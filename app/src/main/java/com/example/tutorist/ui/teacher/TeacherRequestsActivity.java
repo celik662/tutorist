@@ -64,6 +64,11 @@ public class TeacherRequestsActivity extends AppCompatActivity {
         });
     }
 
+    @Override protected void onResume() {
+        super.onResume();
+        com.example.tutorist.push.AppMessagingService.syncCurrentFcmToken();
+    }
+
     @Override protected void onStart() {
         super.onStart();
         listenPending();
@@ -205,6 +210,8 @@ public class TeacherRequestsActivity extends AppCompatActivity {
         }
 
         @Override public int getItemCount(){ return items.size(); }
+
+
 
         private String fmtDate(String ymd) {
             // "2025-08-25" → "25 Ağu 2025"
