@@ -1,7 +1,12 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+<resources>
     <style name="Base.Theme.Tutorist" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <item name="colorPrimary">@color/tutorist_primary</item>
+        <item name="colorOnPrimary">@color/tutorist_onPrimary</item>
+
+        <item name="colorSurface">@color/tutorist_surface</item>
+        <item name="colorOnSurface">@color/tutorist_onSurface</item>
+        <item name="colorSurfaceVariant">@color/tutorist_surfaceVariant</item>
+        <item name="colorOnSurfaceVariant">@color/tutorist_onSurfaceVariant</item>
+        <item name="colorOutline">@color/tutorist_outline</item>
     </style>
 </resources>

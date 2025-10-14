@@ -21,6 +21,7 @@ import com.example.tutorist.R;
 import com.google.android.material.badge.BadgeDrawable;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
@@ -215,11 +216,6 @@ public class StudentMainActivity extends AppCompatActivity {
     }
 
 
-
-    /** Bottom nav rozetini (badge) güncel tut: pending + accepted (gelecek/süren dersler) */
-    /** Bottom nav rozetini ve FAB verisini güncel tut:
-     *  status in ['pending','accepted'] AND startAt >= now
-     */
     private void subscribeHistoryBadge() {
         String uid = FirebaseAuth.getInstance().getUid();
         if (uid == null) {
@@ -231,85 +227,55 @@ public class StudentMainActivity extends AppCompatActivity {
         List<String> statuses = Arrays.asList("pending", "accepted");
         Date now = new Date();
 
+        // 🔧 ÖNEMLİ: range kullandık → aynı alana orderBy şart
         Query q = FirebaseFirestore.getInstance()
                 .collection("bookings")
                 .whereEqualTo("studentId", uid)
-                .whereIn("status", statuses)
-                .whereGreaterThanOrEqualTo("startAt", now);
+                .whereEqualTo("status", "accepted")
+                .whereGreaterThanOrEqualTo("endAt", new Date())
+                .orderBy("endAt", Query.Direction.ASCENDING);
 
-        Log.d(TAG, "subscribeHistoryBadge: listen start (uid=" + uid + ")");
+        Log.d(TAG, "subscribeHistoryBadge: listen start (uid=" + uid + ", now=" + now + ")");
+
         histReg = q.addSnapshotListener((snap, e) -> {
             if (e != null) {
-                Log.e(TAG, "badge snapshot error: " + e.getMessage(), e);
+                Log.e(TAG, "UpcomingFab listen FAILED: " + e.getMessage(), e);
                 if (histBadge != null) histBadge.setVisible(false);
-                // Hata durumunda FAB’ı da gizle
                 nextStartAt = nextEndAt = null;
+                nextLabelSubject = nextLabelTeacher = "";
                 updateFabState();
                 return;
             }
 
             int count = (snap != null) ? snap.size() : 0;
+            Log.d(TAG, "UpcomingFab: query returned " + count + " docs");
+
+            if (snap != null) {
+                for (DocumentSnapshot d : snap.getDocuments()) {
+                    String id = d.getId();
+                    String st = String.valueOf(d.get("status"));
+                    Object tsS = d.get("startAt");
+                    com.google.firebase.Timestamp tS = (tsS instanceof com.google.firebase.Timestamp) ? (com.google.firebase.Timestamp) tsS : null;
+                    Log.d(TAG, "→ " + id + " status=" + st + " startAt=" + (tS != null ? tS.toDate() : tsS));
+                }
+            }
+
+            // Rozet
             if (histBadge != null) {
                 histBadge.setVisible(count > 0);
                 histBadge.setNumber(count);
             }
 
-            // --- FAB için en yakın "accepted & future" dersi çıkar ---
-            nextStartAt = null; nextEndAt = null;
-            nextLabelSubject = ""; nextLabelTeacher = "";
-
-            if (snap != null && !snap.isEmpty()) {
-                Date bestStart = null; Date bestEnd = null;
-                String bestSubject = ""; String bestTeacher = "";
-
-                for (var d : snap.getDocuments()) {
-                    String status = String.valueOf(d.get("status"));
-                    if (!"accepted".equalsIgnoreCase(status)) continue;
-
-                    Object tsStart = d.get("startAt");
-                    Object tsEnd = d.get("endAt");
-                    Date s = tsStart instanceof com.google.firebase.Timestamp
-                            ? ((com.google.firebase.Timestamp) tsStart).toDate()
-                            : (tsStart instanceof Date ? (Date) tsStart : null);
-                    Date eEnd = tsEnd instanceof com.google.firebase.Timestamp
-                            ? ((com.google.firebase.Timestamp) tsEnd).toDate()
-                            : (tsEnd instanceof Date ? (Date) tsEnd : null);
-
-                    if (s == null) continue;
-                    if (s.before(now)) continue; // sadece gelecekte olanlar
-
-                    // en yakını seç
-                    if (bestStart == null || s.before(bestStart)) {
-                        bestStart = s;
-                        bestEnd = eEnd;
-
-                        // Etiketler (opsiyonel – sheet’te gösteririz)
-                        Object subj = d.get("subjectName");
-                        bestSubject = subj != null ? String.valueOf(subj) : "";
-                        // Öğretmen adını burada çekmiyoruz; FAB’da metin gerekmiyor. (Sheet’te repo/cache’den doldururuz)
-                        bestTeacher = "";
-                    }
-                }
-
-                nextStartAt = bestStart;
-                nextEndAt = bestEnd;
-                nextLabelSubject = bestSubject;
-                nextLabelTeacher = bestTeacher;
-            }
-
-            // ... snap geldikten sonra:
-            nextStartAt = null; nextEndAt = null;
-            nextLabelSubject = ""; nextLabelTeacher = "";
-
-// YENİ: upcomingItems’ı doldur
+            // --- FAB ve Sheet verisi: en yakın ACCEPTED dersi ve liste ---
             upcomingItems.clear();
+            nextStartAt = null; nextEndAt = null;
+            nextLabelSubject = ""; nextLabelTeacher = "";
 
             if (snap != null && !snap.isEmpty()) {
                 Date nowLocal = new Date();
-                Date bestStart = null; Date bestEnd = null;
-                String bestSubject = ""; String bestTeacher = "";
+                Date bestStart = null; Date bestEnd = null; String bestSubject = "";
 
-                for (var d : snap.getDocuments()) {
+                for (DocumentSnapshot d : snap.getDocuments()) {
                     String status = String.valueOf(d.get("status"));
                     if (!"accepted".equalsIgnoreCase(status)) continue;
 
@@ -321,8 +287,7 @@ public class StudentMainActivity extends AppCompatActivity {
                     Date eEnd = tsEnd instanceof com.google.firebase.Timestamp
                             ? ((com.google.firebase.Timestamp) tsEnd).toDate()
                             : (tsEnd instanceof Date ? (Date) tsEnd : null);
-                    if (s == null) continue;
-                    if (!s.after(nowLocal)) continue; // sadece gelecektekiler
+                    if (s == null || !s.after(nowLocal)) continue;
 
                     UpcomingItem ui = new UpcomingItem();
                     ui.id = d.getId();
@@ -335,12 +300,11 @@ public class StudentMainActivity extends AppCompatActivity {
                     upcomingItems.add(ui);
 
                     if (bestStart == null || s.before(bestStart)) {
-                        bestStart = s; bestEnd = eEnd;
-                        bestSubject = ui.subjectName;
+                        bestStart = s; bestEnd = eEnd; bestSubject = ui.subjectName;
                     }
                 }
 
-                // sırala
+                // Listeyi sırala
                 upcomingItems.sort(Comparator.comparing(u -> u.startAt));
 
                 nextStartAt = bestStart;
@@ -348,14 +312,14 @@ public class StudentMainActivity extends AppCompatActivity {
                 nextLabelSubject = bestSubject;
             }
 
+            Log.d(TAG, "UpcomingFab: nextStartAt=" + nextStartAt + " nextEndAt=" + nextEndAt
+                    + " items=" + upcomingItems.size());
+
             updateFabState();
-            if (upcomingAdapter != null) {
-                upcomingAdapter.notifyDataSetChanged();
-            }
-
-
+            if (upcomingAdapter != null) upcomingAdapter.notifyDataSetChanged();
         });
     }
+
 
 
     private void syncFabVisibilityWithTab() {

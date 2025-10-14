@@ -55,12 +55,20 @@ public class TeacherAvailabilityActivity extends AppCompatActivity {
         uid = FirebaseAuth.getInstance().getUid();
         if (uid == null) { finish(); return; }
 
+        // ❌ BURADA YENİDEN TANIMLAMA YAPMA
+        // MaterialAutoCompleteTextView spDay   = findViewById(R.id.spDay);
+
+        // ✅ SINIF ALANLARINI ATA
         spDay   = findViewById(R.id.spDay);
         spStart = findViewById(R.id.spStart);
         spEnd   = findViewById(R.id.spEnd);
         btnAdd  = findViewById(R.id.btnAdd);
         tvMsg   = findViewById(R.id.tvMsg);
         rv      = findViewById(R.id.rvBlocks);
+
+        makeSelectionOnly(spDay);
+        makeSelectionOnly(spStart);
+        makeSelectionOnly(spEnd);
 
         rv.setLayoutManager(new LinearLayoutManager(this));
         adapter = new Adapter(items, this::onDelete);
@@ -69,12 +77,42 @@ public class TeacherAvailabilityActivity extends AppCompatActivity {
         initDropdowns();
         btnAdd.setOnClickListener(v -> onAdd());
 
-        // Varsayılan gün: Pazartesi
-        spDay.setText(DAY_LABELS[0], false);
+        // Varsayılanlar
+        spDay.setText(DAY_LABELS[0], /*dismissDropDown=*/false);
         spStart.setText("09:00", false);
         spEnd.setText("18:00", false);
-        loadDay(); // ilk yükleme
+
+        loadDay();
     }
+
+
+    private void makeSelectionOnly(com.google.android.material.textfield.MaterialAutoCompleteTextView v) {
+        // Yazı girişi / yapıştırmayı kapat
+        v.setKeyListener(null);
+        v.setLongClickable(false);
+        v.setTextIsSelectable(false);
+
+        // Sadece tıklayınca açılır menüyü göster
+        v.setOnClickListener(view -> v.showDropDown());
+        v.setOnFocusChangeListener((view, hasFocus) -> { if (hasFocus) v.showDropDown(); });
+
+        // Serbest yazı gelirse (ör. programatik) listede yoksa temizle (opsiyonel güvenlik)
+        v.setOnDismissListener(() -> {
+            android.widget.ListAdapter ad = v.getAdapter();
+            CharSequence cur = v.getText();
+            boolean match = false;
+            if (ad != null && cur != null) {
+                for (int i = 0; i < ad.getCount(); i++) {
+                    Object it = ad.getItem(i);
+                    if (it != null && cur.toString().contentEquals(String.valueOf(it))) {
+                        match = true; break;
+                    }
+                }
+            }
+            if (!match) v.setText("");  // listede olmayan serbest değerleri reddet
+        });
+    }
+
 
     // ---- Dropdown’ları hazırla ----
     private void initDropdowns() {

@@ -6,6 +6,7 @@ import com.google.firebase.BuildConfig;
 import com.google.firebase.appcheck.FirebaseAppCheck;
 import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory;
 import com.google.firebase.FirebaseApp;
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory;
 
 public class App extends Application {
     private static App INSTANCE;
@@ -21,6 +22,11 @@ public class App extends Application {
                     DebugAppCheckProviderFactory.getInstance()
             );
         }
+
+        FirebaseAppCheck appCheck = FirebaseAppCheck.getInstance();
+        // Prod:
+        appCheck.installAppCheckProviderFactory(
+                PlayIntegrityAppCheckProviderFactory.getInstance());
     }
 
     /** Uygulama context’i için kolay erişim */

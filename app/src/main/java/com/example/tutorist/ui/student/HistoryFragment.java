@@ -1,12 +1,7 @@
 package com.example.tutorist.ui.student;
 
 import android.annotation.SuppressLint;
-import android.graphics.Typeface;
 import android.os.Bundle;
-import android.text.SpannableString;
-import android.text.Spanned;
-import android.text.style.ForegroundColorSpan;
-import android.text.style.StyleSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -60,12 +55,11 @@ public class HistoryFragment extends Fragment {
 
     private Adapter adapter;
 
-    // Zaman bazlı görünürlük/enable değişimleri için hafif "tick"
     private final Runnable tick = new Runnable() {
         @Override public void run() {
             if (!isAdded() || rv == null) return;
             if (adapter != null) adapter.notifyDataSetChanged();
-            rv.postDelayed(this, 30_000); // 30 sn
+            rv.postDelayed(this, 30_000);
         }
     };
 
@@ -106,7 +100,6 @@ public class HistoryFragment extends Fragment {
             @Override public void onItemRangeRemoved(int positionStart, int itemCount) { updateEmptyState(); }
         });
 
-        // Başlangıç sekmesini adapter'a yansıt
         adapter.setHistoryTab(currentFilter == Filter.HISTORY);
 
         rgFilter.setOnCheckedChangeListener((g, id) -> {
@@ -118,25 +111,10 @@ public class HistoryFragment extends Fragment {
         setLoading(true);
     }
 
-    @Override public void onStart() {
-        super.onStart();
-        if (uid != null) listen(currentFilter);
-    }
-
-    @Override public void onResume() {
-        super.onResume();
-        if (rv != null) rv.post(tick);
-    }
-
-    @Override public void onPause() {
-        if (rv != null) rv.removeCallbacks(tick);
-        super.onPause();
-    }
-
-    @Override public void onStop() {
-        if (reg != null) { reg.remove(); reg = null; }
-        super.onStop();
-    }
+    @Override public void onStart() { super.onStart(); if (uid != null) listen(currentFilter); }
+    @Override public void onResume() { super.onResume(); if (rv != null) rv.post(tick); }
+    @Override public void onPause() { if (rv != null) rv.removeCallbacks(tick); super.onPause(); }
+    @Override public void onStop() { if (reg != null) { reg.remove(); reg = null; } super.onStop(); }
 
     private void setLoading(boolean loading) {
         if (!isAdded()) return;
@@ -166,7 +144,7 @@ public class HistoryFragment extends Fragment {
         if (filter == Filter.PENDING) {
             q = q.whereIn("status", Arrays.asList("pending","accepted"))
                     .whereGreaterThanOrEqualTo("startAt", new Date())
-                    .orderBy("startAt", Query.Direction.ASCENDING); // gerekirse index
+                    .orderBy("startAt", Query.Direction.ASCENDING);
         } else {
             q = q.whereIn("status", Adapter.HISTORY_STATUSES_WHEREIN);
         }
@@ -231,7 +209,6 @@ public class HistoryFragment extends Fragment {
                 return Integer.compare(a.hour, b.hour);
             });
 
-            // --- Toplu profil yükleme ve tek seferde çizme (flicker yok) ---
             List<String> missing = new ArrayList<>();
             for (String tid : teacherIdsSeen) {
                 boolean nameMissing  = !teacherNameCache.containsKey(tid);
@@ -245,7 +222,7 @@ public class HistoryFragment extends Fragment {
                 return;
             }
 
-            setLoading(true); // kısa bir spinner (opsiyonel)
+            setLoading(true);
 
             List<Task<DocumentSnapshot>> gets = new ArrayList<>();
             for (String tid : missing) {
@@ -263,7 +240,6 @@ public class HistoryFragment extends Fragment {
                             Object dn = doc.get("displayName");
                             if (dn == null) dn = doc.get("fullName");
                             if (dn != null) name = String.valueOf(dn);
-                            // İSİM YOKSA BİLE "" koyuyoruz (id'ye asla düşmeyelim)
                             teacherNameCache.put(tid, (name != null && !name.isEmpty()) ? name : "");
 
                             Map<String, Double> map = new HashMap<>();
@@ -284,7 +260,6 @@ public class HistoryFragment extends Fragment {
                         updateEmptyState();
                     })
                     .addOnFailureListener(err -> {
-                        // Yükleme patlarsa bile id'ye düşmeyeceğiz; placeholder görünecek
                         setLoading(false);
                         adapter.notifyDataSetChanged();
                         updateEmptyState();
@@ -312,7 +287,6 @@ public class HistoryFragment extends Fragment {
                 .addOnFailureListener(e -> { /* yok say */ });
     }
 
-    // İSİM YOKSA ASLA ID'YE DÜŞME — boş string dön, UI placeholder gösterecek.
     private String teacherNameOf(String teacherId) {
         String n = teacherNameCache.get(teacherId);
         return (n != null && !n.isEmpty()) ? n : "";
@@ -352,10 +326,13 @@ public class HistoryFragment extends Fragment {
 
                     db.collection("teacherReviews").document(r.id)
                             .set(data, SetOptions.merge())
-                            .addOnSuccessListener(v -> {
+                            .addOnSuccessListener(vx -> {
                                 Toast.makeText(requireContext(), "Teşekkürler! Değerlendirmen kaydedildi.", Toast.LENGTH_SHORT).show();
                                 r.hasReview = true;
                                 if (isAdded()) adapter.notifyDataSetChanged();
+
+                                // ⬇️ Agregasyonu GÜNCELLE
+                                updateTeacherRatingAgg(r.teacherId, rating);
                             })
                             .addOnFailureListener(e ->
                                     Toast.makeText(requireContext(), e.getMessage(), Toast.LENGTH_LONG).show());
@@ -363,6 +340,7 @@ public class HistoryFragment extends Fragment {
                 .show();
     }
 
+    // ——— Agregasyon: ratingCount/ratingSum/ratingAvg ———
     @SuppressWarnings("ConstantConditions")
     private void updateTeacherRatingAgg(String teacherId, int newRating){
         DocumentReference ref = db.collection("teacherProfiles").document(teacherId);
@@ -377,10 +355,12 @@ public class HistoryFragment extends Fragment {
             }
             count += 1;
             sum   += newRating;
+
             Map<String,Object> up = new HashMap<>();
             up.put("ratingCount", count);
             up.put("ratingSum", sum);
-            up.put("avgRating", sum / Math.max(1, count));
+            // ÖNEMLİ: okumada TeacherDetailSheet 'ratingAvg' alanına bakıyor.
+            up.put("ratingAvg", sum / Math.max(1, count));
             tr.set(ref, up, SetOptions.merge());
             return null;
         });
@@ -419,7 +399,6 @@ public class HistoryFragment extends Fragment {
         private final OnReview onReview;
         private final OnNote onNote;
 
-        // History sekmesinde "Katıl" asla görünmesin
         private boolean historyTab = false;
         void setHistoryTab(boolean isHistory) { this.historyTab = isHistory; }
 
@@ -451,13 +430,13 @@ public class HistoryFragment extends Fragment {
             }
         }
 
-        @NonNull
-        @Override
+        @NonNull @Override
         public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             View v = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.item_student_booking, parent, false);
             return new VH(v);
         }
+
         @SuppressLint("SetTextI18n")
         @Override public void onBindViewHolder(@NonNull VH h, int pos) {
             Row r = items.get(pos);
@@ -477,7 +456,7 @@ public class HistoryFragment extends Fragment {
 
             long now = System.currentTimeMillis();
             boolean showJoin = false;
-            boolean enableJoinTmp = false;   // geçici hesaplama
+            boolean enableJoinTmp = false;
 
             if (accepted && r.startAt != null && r.endAt != null) {
                 long openAt  = r.startAt.getTime() - 5 * 60 * 1000;
@@ -488,7 +467,7 @@ public class HistoryFragment extends Fragment {
                 enableJoinTmp = (now >= openAt) && (now <= closeAt);
             }
 
-            final boolean enableJoin = enableJoinTmp;   // 👈 lambda için final kopya
+            final boolean enableJoin = enableJoinTmp;
 
             h.btnJoin.setVisibility(showJoin ? View.VISIBLE : View.GONE);
             h.btnJoin.setEnabled(enableJoin);
@@ -503,23 +482,16 @@ public class HistoryFragment extends Fragment {
                 v.postDelayed(() -> h.btnJoin.setEnabled(true), 1200);
             });
 
-
-            // Status chip & alt satır
             StatusUi ui = statusUi(h.itemView, r.status);
 
-// tv2: sadece tarih (+ varsa ücret)
-            String line = priceStr == null || priceStr.isEmpty()
-                    ? dt
-                    : String.format(Locale.getDefault(), "%s  %s", dt, priceStr);
+            String line = (priceStr == null || priceStr.isEmpty()) ? dt : (dt + "  " + priceStr);
             h.tv2.setText(line);
 
-// Sağdaki chip zaten durumu gösteriyor
             if (h.tvStatus != null) {
                 h.tvStatus.setText(ui.label);
                 h.tvStatus.setBackgroundResource(ui.chipBgRes);
                 h.tvStatus.setTextColor(ContextCompat.getColor(h.itemView.getContext(), ui.chipTextColor));
             }
-
 
             boolean canReview = r.endAt != null
                     && new Date().after(r.endAt)

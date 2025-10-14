@@ -194,6 +194,19 @@ exports.onBookingRejectedOrDeclined = onDocumentUpdated(
     console.log("[BOOKING_REJECTED/DECLINED] notified student", ref.id);
   }
 );
+// === JOIN TOKEN CALLABLE ===
+exports.getJoinToken = onCall({ region: REGION }, async (req) => {
+  const bookingId = String(req.data?.bookingId || "");
+  if (!bookingId) throw new HttpsError("invalid-argument", "bookingId required");
+
+  // (İsteğe göre burada bookings/{id} kontrolü yap)
+  const snap = await db.collection("bookings").doc(bookingId).get();
+  if (!snap.exists) throw new HttpsError("not-found", "booking not found");
+
+  // Burada gerçek token üretimini yap (örn. Daily/Agora/Zoom vs).
+  // Şimdilik stub dönelim ki NOT_FOUND kalksın:
+  return { token: "stub-token", roomName: snap.data().roomName || bookingId };
+});
 
 /* ====== TEST CALLABLE’LAR ====== */
 exports.sendTestDataMsg = onCall({ region: REGION }, async (req) => {
@@ -217,6 +230,70 @@ exports.debugSendReminder = onCall({ region: REGION }, async (req) => {
   console.log("debugSendReminder", { bookingId, minutes });
   return { ok: true, bookingId, minutes };
 });
+
+/* ====== DAILY.JS — JOIN TOKEN ====== */
+exports.dailyGetJoinToken = onCall({ region: REGION }, async (req) => {
+  // İsteği yapan kullanıcı
+  const uid = req.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "auth required");
+
+  const bookingId = String(req.data?.bookingId || "");
+  if (!bookingId) throw new HttpsError("invalid-argument", "bookingId required");
+
+  // Rezervasyonu oku (kimlik kontrolü istersen burada yap)
+  const snap = await db.collection("bookings").doc(bookingId).get();
+  if (!snap.exists) throw new HttpsError("not-found", "booking not found");
+
+  const b = snap.data();
+  // (İsteğe bağlı) Sadece ilgili öğretmen/öğrenci girsin:
+  // if (![b.studentId, b.teacherId].includes(uid)) {
+  //   throw new HttpsError("permission-denied", "not allowed");
+  // }
+
+  // Odanın adını belirle (örn: bookings/{id} alanından)
+  // yoksa deterministik bir isim üret
+  const roomName = b.dailyRoom || `booking_${bookingId}`;
+
+  // Daily API anahtarını çek (Functions config/secrets)
+  const DAILY_API_KEY = process.env.DAILY_API_KEY || process.env.DAILY_API_TOKEN;
+  if (!DAILY_API_KEY) {
+    console.error("Missing DAILY_API_KEY");
+    throw new HttpsError("failed-precondition", "Server missing DAILY_API_KEY");
+  }
+
+  // Node 18+ ortamında fetch global; yoksa node-fetch/axios kullan
+  const resp = await fetch("https://api.daily.co/v1/meeting-tokens", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${DAILY_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      properties: {
+        room_name: roomName,
+        // İsteğe bağlı özellikler:
+        // is_owner: false,
+        // user_name: b.studentId === uid ? "Öğrenci" : "Öğretmen",
+        // exp: Math.floor(Date.now()/1000) + 60*60  // 1 saat
+      },
+    }),
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text().catch(()=>"");
+    console.error("Daily token fail", resp.status, text);
+    if (resp.status === 404) throw new HttpsError("not-found", "Daily room not found");
+    if (resp.status === 401 || resp.status === 403) throw new HttpsError("permission-denied", "Daily auth error");
+    throw new HttpsError("internal", "Daily token error");
+  }
+
+  const json = await resp.json();
+  const token = json?.token;
+  if (!token) throw new HttpsError("internal", "No token in response");
+
+  return { token, roomName };
+});
+
 
 /* ====== ZAMANLI HATIRLATICILAR (10 dk & 60 dk) ======
    Her dakika çalışır; 10±1 dk ve 60±1 dk pencerelerinde başlayacak ACCEPTED

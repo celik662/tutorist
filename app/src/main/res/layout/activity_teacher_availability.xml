@@ -21,10 +21,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
 
+        <!-- AÇIKLAMA: alpha kaldırıldı, renk night-friendly -->
         <TextView
             style="?attr/textAppearanceBodyMedium"
             android:text="Gün ve saat aralığını seç, + Aralık Ekle."
-            android:alpha="0.8"
+            android:textColor="@color/tutorist_onSurfaceVariant"
             android:layout_marginTop="2dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
@@ -35,7 +36,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             app:cardCornerRadius="16dp"
-            app:strokeColor="@color/tutorist_surfaceVariant">
+            app:strokeColor="@color/tutorist_outline">
 
             <LinearLayout
                 android:orientation="vertical"
@@ -53,7 +54,10 @@
                     <com.google.android.material.textfield.MaterialAutoCompleteTextView
                         android:id="@+id/spDay"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"/>
+                        android:layout_height="wrap_content"
+                        android:inputType="none"
+                        android:cursorVisible="false"
+                        android:importantForAutofill="no"/>
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- Başlangıç -->
@@ -67,7 +71,10 @@
                     <com.google.android.material.textfield.MaterialAutoCompleteTextView
                         android:id="@+id/spStart"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"/>
+                        android:layout_height="wrap_content"
+                        android:inputType="none"
+                        android:cursorVisible="false"
+                        android:importantForAutofill="no"/>
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- Bitiş -->
@@ -81,7 +88,10 @@
                     <com.google.android.material.textfield.MaterialAutoCompleteTextView
                         android:id="@+id/spEnd"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"/>
+                        android:layout_height="wrap_content"
+                        android:inputType="none"
+                        android:cursorVisible="false"
+                        android:importantForAutofill="no"/>
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.button.MaterialButton
@@ -97,12 +107,12 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- MESAJ: alpha kaldırıldı, night-friendly renk -->
         <TextView
             android:id="@+id/tvMsg"
             style="?attr/textAppearanceBodySmall"
             android:layout_marginTop="8dp"
-            android:textColor="@color/tutorist_onSurface"
-            android:alpha="0.8"
+            android:textColor="@color/tutorist_onSurfaceVariant"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
@@ -121,7 +131,7 @@
             android:layout_weight="1"
             android:layout_marginTop="6dp"
             app:cardCornerRadius="16dp"
-            app:strokeColor="@color/tutorist_surfaceVariant">
+            app:strokeColor="@color/tutorist_outline">
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvBlocks"

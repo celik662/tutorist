@@ -3,6 +3,7 @@ package com.example.tutorist.ui.teacher;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,8 +16,10 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.tutorist.R;
 import com.example.tutorist.ui.student.ChooseSlotActivity;
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
@@ -29,7 +32,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-public class TeacherDetailSheet extends com.google.android.material.bottomsheet.BottomSheetDialogFragment {
+public class TeacherDetailSheet extends BottomSheetDialogFragment {
 
     public static TeacherDetailSheet newInstance(String teacherId, String subjectId, String subjectName) {
         Bundle b = new Bundle();
@@ -41,11 +44,13 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
         return f;
     }
 
+    private static final String TAG = "TeacherDetailSheet";
+
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private ListenerRegistration profReg, revReg;
 
     private ImageView img;
-    private TextView tvName, tvBio, tvCount, tvPrice; // tvPrice eklendi
+    private TextView tvName, tvBio, tvCount, tvPrice;
     private RatingBar ratingBar;
     private RecyclerView rv;
     private ReviewAdapter reviewAdapter;
@@ -54,21 +59,19 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
     private String subjectId;
     private String subjectName;
 
-    private Integer currentPrice = null; // seçili dersin fiyatı (TRY)
+    private Integer currentPrice = null;
 
-    // ChooseSlotActivity’ye geçirirken aynı key’leri kullanalım
     private static final String EX_TEACHER_NAME  = "ex_teacher_name";
     private static final String EX_SUBJECT_PRICE = "ex_subject_price";
 
-    @Nullable
-    @Override
+    @Nullable @Override
     public View onCreateView(@NonNull LayoutInflater inf, @Nullable ViewGroup c, @Nullable Bundle s) {
         View v = inf.inflate(R.layout.sheet_teacher_detail, c, false);
         img       = v.findViewById(R.id.img);
         tvName    = v.findViewById(R.id.tvName);
         tvBio     = v.findViewById(R.id.tvBio);
         tvCount   = v.findViewById(R.id.tvCount);
-        tvPrice   = v.findViewById(R.id.tvPrice);  // layout’ta bu id olmalı
+        tvPrice   = v.findViewById(R.id.tvPrice);
         ratingBar = v.findViewById(R.id.ratingBar);
 
         rv = v.findViewById(R.id.rvReviews);
@@ -81,7 +84,6 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
         subjectId   = args != null ? args.getString("sid")   : null;
         subjectName = args != null ? args.getString("sname") : null;
 
-        // Rezervasyon butonu
         v.findViewById(R.id.btnBook).setOnClickListener(btn -> {
             Context ctx = getContext();
             if (ctx != null) {
@@ -89,7 +91,6 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
                 it.putExtra("teacherId", teacherId);
                 if (subjectId != null)   it.putExtra("subjectId", subjectId);
                 if (subjectName != null) it.putExtra("subjectName", subjectName);
-                // ÖZETTE DOĞRU GÖRÜNMEK İÇİN extras:
                 if (tvName != null)      it.putExtra(EX_TEACHER_NAME, tvName.getText().toString());
                 if (currentPrice != null && currentPrice > 0) {
                     it.putExtra(EX_SUBJECT_PRICE, currentPrice);
@@ -99,13 +100,10 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
             dismissAllowingStateLoss();
         });
 
-        startListening();       // profil + yorumları dinle
-        loadPriceForDetail();   // fiyatı getir (profilden dene, olmazsa fallback)
-
+        startListening();
+        loadPriceForDetail();
         return v;
     }
-
-    /* ---------- Yardımcılar ---------- */
 
     @Nullable
     private Integer toIntOrNull(Object o){
@@ -114,23 +112,19 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
         try { return Integer.parseInt(String.valueOf(o)); } catch (Exception ignore){ return null; }
     }
 
-    /** teacherProfiles dokümanından subject fiyatını çıkarır. */
     @Nullable
     private Integer extractPriceFromProfile(DocumentSnapshot d, String subjectId){
         if (d == null || subjectId == null) return null;
 
-        // 1) prices.{subjectId}
         Integer n = toIntOrNull(d.get("prices." + subjectId));
         if (n != null && n > 0) return n;
 
-        // 2) subjectsMap.{subjectId}.price  (nested obje)
         Object sm = d.get("subjectsMap." + subjectId);
         if (sm instanceof Map) {
             Integer n2 = toIntOrNull(((Map<?,?>) sm).get("price"));
             if (n2 != null && n2 > 0) return n2;
         }
 
-        // 3) subjectsMap.{subjectId} doğrudan sayı (senin ekran görüntündeki senaryo)
         Integer n3 = toIntOrNull(sm);
         if (n3 != null && n3 > 0) return n3;
 
@@ -139,19 +133,13 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
 
     private void setPriceText(@Nullable Integer price){
         if (tvPrice == null) return;
-        if (price != null && price > 0) {
-            tvPrice.setText("₺" + price);
-        } else {
-            tvPrice.setText("—");
-        }
+        if (price != null && price > 0) tvPrice.setText("₺" + price);
+        else tvPrice.setText("—");
     }
-
-    /* ---------- Fiyat: profil → teacherSubjects → subjects fallback ---------- */
 
     private void loadPriceForDetail() {
         if (subjectId == null || teacherId == null) { setPriceText(null); return; }
 
-        // Önce profilden tek sefer oku (dinleyicide de tekrar deniyoruz)
         db.collection("teacherProfiles").document(teacherId).get()
                 .addOnSuccessListener(prof -> {
                     Integer fromProf = extractPriceFromProfile(prof, subjectId);
@@ -159,7 +147,6 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
                         currentPrice = fromProf;
                         setPriceText(currentPrice);
                     } else {
-                        // A) teacherSubjects/{teacherId_subjectId}
                         final String tsId = teacherId + "_" + subjectId;
                         db.collection("teacherSubjects").document(tsId).get()
                                 .addOnSuccessListener(d -> {
@@ -167,7 +154,6 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
                                     if (p != null && p > 0) {
                                         currentPrice = p; setPriceText(currentPrice);
                                     } else {
-                                        // B) teacherSubjects/{teacherId}/subjects/{subjectId}
                                         db.collection("teacherSubjects").document(teacherId)
                                                 .collection("subjects").document(subjectId).get()
                                                 .addOnSuccessListener(sd -> {
@@ -175,7 +161,6 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
                                                     if (p2 != null && p2 > 0) {
                                                         currentPrice = p2; setPriceText(currentPrice);
                                                     } else {
-                                                        // C) subjects/{subjectId}.price (genel)
                                                         db.collection("subjects").document(subjectId).get()
                                                                 .addOnSuccessListener(s -> {
                                                                     Integer p3 = toIntOrNull(s.get("price"));
@@ -194,8 +179,6 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
                 .addOnFailureListener(e -> setPriceText(null));
     }
 
-    /* ---------- Profil + Yorum dinleme ---------- */
-
     private void startListening() {
         if (teacherId == null) return;
 
@@ -203,49 +186,57 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
         profReg = db.collection("teacherProfiles").document(teacherId)
                 .addSnapshotListener((snap, e) -> {
                     if (e != null || snap == null || !snap.exists()) {
+                        Log.w(TAG, "profile listen error", e);
                         fetchRatingFallbackFromReviews();
                         return;
                     }
                     String name  = snap.getString("displayName");
                     String bio   = snap.getString("bio");
+
+                    // ratingAvg oku; yoksa avgRating yedeğini dene
                     Double avg   = snap.getDouble("ratingAvg");
+                    if (avg == null) avg = snap.getDouble("avgRating");
                     Long   count = snap.getLong("ratingCount");
+
                     String photo = snap.getString("photoUrl");
 
                     if (tvName != null) tvName.setText(name != null ? name : "Öğretmen");
                     if (tvBio  != null) tvBio.setText(bio != null ? bio : "—");
 
-                    // FOTOĞRAF: yoksa placeholder
                     if (img != null) {
                         if (photo != null && !photo.isEmpty()) {
-                            com.bumptech.glide.Glide.with(requireContext())
+                            Glide.with(requireContext())
                                     .load(photo)
                                     .placeholder(R.drawable.person_100)
                                     .error(R.drawable.person_100)
-                                    .centerCrop()          // XML’de already bg ring var; centerCrop yeterli
+                                    .centerCrop()
                                     .into(img);
                         } else {
                             img.setImageResource(R.drawable.person_100);
                         }
                     }
-                    // Fiyatı profilden tekrar dene (profil güncellenmiş olabilir)
                     Integer p = extractPriceFromProfile(snap, subjectId);
                     if (p != null && p > 0) {
                         currentPrice = p;
                         setPriceText(currentPrice);
                     }
 
-                    if (avg == null || count == null) fetchRatingFallbackFromReviews();
+                    // ÖNEMLİ: 0 yorumda da fallback çalışsın
+                    if (count == null || count == 0) fetchRatingFallbackFromReviews();
                     else bindRating(avg, count);
                 });
 
-        // Yorumlar (son 20)
+        // Yorumlar (son 20) — hata görünür olsun
         revReg = db.collection("teacherReviews")
                 .whereEqualTo("teacherId", teacherId)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .limit(20)
                 .addSnapshotListener((snap, e) -> {
-                    if (e != null || snap == null) return;
+                    if (e != null) {
+                        Log.e(TAG, "reviews listen error", e);
+                        return;
+                    }
+                    if (snap == null) return;
                     List<Review> list = new ArrayList<>();
                     for (DocumentSnapshot d : snap.getDocuments()) {
                         Review r = new Review();
@@ -259,9 +250,8 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
     }
 
     private void bindRating(Double ratingAvg, Long ratingCount) {
-        double avg  = ratingAvg  == null ? 0.0 : ratingAvg;
-        long   cnt  = ratingCount == null ? 0L  : ratingCount;
-        float  disp = (float)(cnt > 0 ? avg : 5.0);
+        long cnt = ratingCount == null ? 0L : ratingCount;
+        float disp = (float) ((cnt > 0 && ratingAvg != null) ? ratingAvg : 0.0);
         ratingBar.setRating(disp);
         tvCount.setText(String.format(Locale.getDefault(), "%.1f (%d)", disp, cnt));
     }
@@ -286,7 +276,8 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
                         db.collection("teacherProfiles").document(teacherId)
                                 .set(up, SetOptions.merge());
                     }
-                });
+                })
+                .addOnFailureListener(e -> Log.e(TAG, "fallback agg failed", e));
     }
 
     @Override public void onDestroyView() {
@@ -295,7 +286,6 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
         super.onDestroyView();
     }
 
-    /* --- dto + adapter (aynı) --- */
     static class Review { int rating; String comment; com.google.firebase.Timestamp createdAt; }
     static class ReviewVH extends RecyclerView.ViewHolder {
         RatingBar rb; TextView tvWhen, tvComment;
@@ -320,11 +310,5 @@ public class TeacherDetailSheet extends com.google.android.material.bottomsheet.
             h.tvWhen.setText(when);
         }
         @Override public int getItemCount(){ return items.size(); }
-    }
-
-    private static float displayRatingFrom(Double ratingAvg, Long ratingCount) {
-        double avg = ratingAvg == null ? 0.0 : ratingAvg;
-        long count = ratingCount == null ? 0L : ratingCount;
-        return (float) (count > 0 ? avg : 5.0);
     }
 }

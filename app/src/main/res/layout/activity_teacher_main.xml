@@ -49,7 +49,6 @@
                     android:id="@+id/tvHint"
                     style="?attr/textAppearanceBodyMedium"
                     android:text="Hızlı aksiyonlar aşağıda."
-                    android:alpha="0.8"
                     android:textColor="@color/tutorist_onPrimaryContainer"
                     android:layout_marginTop="2dp"
                     android:layout_width="wrap_content"
