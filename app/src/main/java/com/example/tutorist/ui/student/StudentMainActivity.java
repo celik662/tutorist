@@ -1,5 +1,6 @@
 package com.example.tutorist.ui.student;
 
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
@@ -18,6 +19,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.tutorist.R;
+import com.example.tutorist.ui.auth.LoginActivity;
 import com.google.android.material.badge.BadgeDrawable;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
@@ -137,14 +139,32 @@ public class StudentMainActivity extends AppCompatActivity {
 
     @Override protected void onResume() {
         super.onResume();
+        requireAuthOrFinish();
         com.example.tutorist.push.AppMessagingService.syncCurrentFcmToken();
     }
 
 
     @Override protected void onStart() {
         super.onStart();
+
+        requireAuthOrFinish();              // 🔒 önce yetki kontrolü
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) return;
+
         subscribeHistoryBadge();
         fabUpcoming.post(countdownTick);
+    }
+    private void requireAuthOrFinish() {
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) {
+            // varsa listener ve runnable’ları bırak
+            if (histReg != null) { histReg.remove(); histReg = null; }
+            if (fabUpcoming != null) fabUpcoming.removeCallbacks(countdownTick);
+
+            // Login'e tertemiz dön
+            Intent i = new Intent(this, LoginActivity.class);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(i);
+            finishAffinity();
+        }
     }
 
     @Override protected void onStop() {
@@ -446,7 +466,6 @@ public class StudentMainActivity extends AppCompatActivity {
             if (canJoin) {
                 h.btnJoin.setBackgroundResource(R.drawable.bg_btn_outline_primary);
                 h.btnJoin.setTextColor(ContextCompat.getColor(h.itemView.getContext(), R.color.tutorist_primary));
-                h.btnJoin.setOnClickListener(v -> onJoin.run(u, v));
             } else {
                 h.btnJoin.setBackgroundResource(R.drawable.bg_btn_outline_primary_disabled);
                 h.btnJoin.setTextColor(ContextCompat.getColor(h.itemView.getContext(), R.color.tutorist_onSurfaceVariant));

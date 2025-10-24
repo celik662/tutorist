@@ -84,7 +84,9 @@ public class StudentProfileActivity extends AppCompatActivity {
         });
 
         btnLogout.setOnClickListener(v -> {
-            auth.signOut();
+            if (userReg != null) { userReg.remove(); userReg = null; }
+
+            FirebaseAuth.getInstance().signOut();
             goLogin();
         });
     }
@@ -93,7 +95,8 @@ public class StudentProfileActivity extends AppCompatActivity {
         Intent i = new Intent(this, LoginActivity.class);
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(i);
-        finish();
+        // Eski activity zincirini kesin kapat
+        finishAffinity();
     }
 
     private void loadProfile() {

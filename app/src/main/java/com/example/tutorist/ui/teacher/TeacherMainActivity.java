@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.tutorist.R;
+import com.example.tutorist.ui.auth.LoginActivity;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
@@ -85,8 +86,28 @@ public class TeacherMainActivity extends AppCompatActivity {
         }
     }
 
+    private void requireAuthOrFinish() {
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) {
+            // Dinleyicileri ve runnable'ı bırak
+            if (pendingReg != null) { pendingReg.remove(); pendingReg = null; }
+            if (upcomingReg != null) { upcomingReg.remove(); upcomingReg = null; }
+            if (fabUpcoming != null) fabUpcoming.removeCallbacks(countdownTick);
+
+            // Login'e tertemiz dön
+            Intent i = new Intent(this, LoginActivity.class);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(i);
+            finishAffinity();
+        }
+    }
+
+
     @Override protected void onStart() {
         super.onStart();
+
+        requireAuthOrFinish();                                // 🔒 önce kontrol
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) return;
+
         subscribePendingBadge();
         subscribeUpcomingForFab();
         if (fabUpcoming != null) fabUpcoming.post(countdownTick);
@@ -98,6 +119,8 @@ public class TeacherMainActivity extends AppCompatActivity {
         if (fabUpcoming != null) fabUpcoming.removeCallbacks(countdownTick);
         super.onStop();
     }
+
+
 
     // ---------- FAB görünürlük ve metin ----------
     private void updateFabState() {
@@ -215,8 +238,12 @@ public class TeacherMainActivity extends AppCompatActivity {
 
     @Override protected void onResume() {
         super.onResume();
-        com.example.tutorist.push.AppMessagingService.syncCurrentFcmToken();
+        requireAuthOrFinish();                                // opsiyonel
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            com.example.tutorist.push.AppMessagingService.syncCurrentFcmToken();
+        }
     }
+
     private void openUpcomingSheet() {
         if (upcomingDialog == null) {
             View content = getLayoutInflater().inflate(R.layout.sheet_teacher_upcoming, null, false);
