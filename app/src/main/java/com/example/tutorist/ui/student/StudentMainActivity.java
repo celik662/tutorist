@@ -40,7 +40,11 @@ import java.util.Map;
 
 public class StudentMainActivity extends AppCompatActivity {
     private static final String TAG = "StudentMain";
-    private ListenerRegistration histReg;
+
+    // 🔔 Rozet ve yaklaşan (accepted) için ayrı listener’lar
+    private ListenerRegistration badgeReg;
+    private ListenerRegistration upcomingReg;
+
     private BadgeDrawable histBadge;
     private BottomNavigationView nav;
     private com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton fabUpcoming;
@@ -60,7 +64,7 @@ public class StudentMainActivity extends AppCompatActivity {
     private String nextLabelSubject = "";
     private String nextLabelTeacher = "";
 
-    // StudentMainActivity alanlarına ekle
+    // BottomSheet
     private com.google.android.material.bottomsheet.BottomSheetDialog upcomingDialog;
     private RecyclerView upcomingRv;
     private UpcomingAdapter upcomingAdapter;
@@ -68,7 +72,7 @@ public class StudentMainActivity extends AppCompatActivity {
     // accepted & future derslerin cache’i (tek sorgudan doldurulacak)
     private final List<UpcomingItem> upcomingItems = new ArrayList<>();
 
-    // Opsiyonel: öğretmen adını sheet’te göstermek için hafif cache
+    // Öğretmen adı hafif cache
     private final Map<String, String> teacherNameCache = new HashMap<>();
 
     public static class UpcomingItem {
@@ -81,6 +85,7 @@ public class StudentMainActivity extends AppCompatActivity {
 
     // Hangi tab açık?
     private int currentTabId = R.id.nav_lessons;
+
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
@@ -92,7 +97,7 @@ public class StudentMainActivity extends AppCompatActivity {
         nav.setOnItemSelectedListener(item -> {
             Fragment f;
             int id = item.getItemId();
-            currentTabId = id; // 👈 aktif sekmeyi takip et
+            currentTabId = id;
 
             if (id == R.id.nav_lessons) {
                 f = new LessonsFragment();
@@ -106,7 +111,6 @@ public class StudentMainActivity extends AppCompatActivity {
                     .replace(R.id.fragment_container, f)
                     .commit();
 
-            // Dersler sekmesi dışındayken FAB görünmesin
             syncFabVisibilityWithTab();
             return true;
         });
@@ -117,6 +121,7 @@ public class StudentMainActivity extends AppCompatActivity {
                 requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 1001);
             }
         }
+
         com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
                 .addOnSuccessListener(token -> {
                     String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
@@ -125,13 +130,13 @@ public class StudentMainActivity extends AppCompatActivity {
                             .collection("users").document(uid)
                             .update("fcmTokens", com.google.firebase.firestore.FieldValue.arrayUnion(token));
                 });
-        // Rozeti MENÜ ÖĞESİNE bağla (mevcut)
+
+        // Rozeti MENÜ ÖĞESİNE bağla
         histBadge = nav.getOrCreateBadge(R.id.nav_history);
         histBadge.setVisible(false);
         histBadge.setMaxCharacterCount(3);
 
-        // FAB tıklaması: şimdilik sadece “Katıl” penceresi kurallarına saygılı bir sheet açacağız
-        fabUpcoming.setOnClickListener(v -> openUpcomingSheet()); // Sheet’i sonraki adımda detaylandıracağız
+        fabUpcoming.setOnClickListener(v -> openUpcomingSheet());
 
         // Varsayılan sekme
         nav.setSelectedItemId(R.id.nav_lessons);
@@ -143,23 +148,28 @@ public class StudentMainActivity extends AppCompatActivity {
         com.example.tutorist.push.AppMessagingService.syncCurrentFcmToken();
     }
 
-
     @Override protected void onStart() {
         super.onStart();
-
-        requireAuthOrFinish();              // 🔒 önce yetki kontrolü
+        requireAuthOrFinish();
         if (FirebaseAuth.getInstance().getCurrentUser() == null) return;
 
-        subscribeHistoryBadge();
+        // 🔴 Rozet: henüz başlamamış (startAt >= now) tüm pending+accepted dersler
+        subscribeUpcomingBadge();
+
+        // ▶️ FAB/Sheet: accepted ve henüz bitmemiş (endAt >= now) dersler
+        subscribeUpcomingAccepted();
+
         fabUpcoming.post(countdownTick);
     }
+
     private void requireAuthOrFinish() {
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {
-            // varsa listener ve runnable’ları bırak
-            if (histReg != null) { histReg.remove(); histReg = null; }
+            // listener ve runnable’ları bırak
+            if (badgeReg != null) { badgeReg.remove(); badgeReg = null; }
+            if (upcomingReg != null) { upcomingReg.remove(); upcomingReg = null; }
             if (fabUpcoming != null) fabUpcoming.removeCallbacks(countdownTick);
 
-            // Login'e tertemiz dön
+            // Login'e dön
             Intent i = new Intent(this, LoginActivity.class);
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(i);
@@ -169,9 +179,11 @@ public class StudentMainActivity extends AppCompatActivity {
 
     @Override protected void onStop() {
         super.onStop();
-        if (histReg != null) { histReg.remove(); histReg = null; }
+        if (badgeReg != null) { badgeReg.remove(); badgeReg = null; }
+        if (upcomingReg != null) { upcomingReg.remove(); upcomingReg = null; }
         fabUpcoming.removeCallbacks(countdownTick);
     }
+
     private void openUpcomingSheet() {
         if (upcomingDialog == null) {
             View content = getLayoutInflater().inflate(R.layout.sheet_upcoming, null, false);
@@ -180,8 +192,8 @@ public class StudentMainActivity extends AppCompatActivity {
 
             upcomingAdapter = new UpcomingAdapter(
                     upcomingItems,
-                    this::getTeacherName,    // lazily cache’leyeceğiz
-                    this::joinWithWindow     // Katıl kuralı aynı
+                    this::getTeacherName,
+                    this::joinWithWindow
             );
             upcomingRv.setAdapter(upcomingAdapter);
 
@@ -189,12 +201,11 @@ public class StudentMainActivity extends AppCompatActivity {
             upcomingDialog.setContentView(content);
         }
 
-        // Veri güncel → göster
         upcomingAdapter.notifyDataSetChanged();
         upcomingDialog.show();
     }
 
-    // Öğretmen adını hafifçe cache’le (sheet görünürken bind olunca 1-1 doküman çekebilir)
+    // Öğretmen adını cache’le
     private void getTeacherName(String teacherId, java.util.function.Consumer<String> cb) {
         if (teacherId == null || teacherId.isEmpty()) { cb.accept(""); return; }
         String cached = teacherNameCache.get(teacherId);
@@ -235,19 +246,52 @@ public class StudentMainActivity extends AppCompatActivity {
         source.postDelayed(() -> source.setEnabled(true), 1200);
     }
 
-
-    private void subscribeHistoryBadge() {
+    /* ---------------------- R O Z E T  (pending+accepted, başlamamış) ---------------------- */
+    private void subscribeUpcomingBadge() {
         String uid = FirebaseAuth.getInstance().getUid();
         if (uid == null) {
-            Log.w(TAG, "subscribeHistoryBadge: uid null");
+            Log.w(TAG, "subscribeUpcomingBadge: uid null");
             return;
         }
-        if (histReg != null) { histReg.remove(); histReg = null; }
+        if (badgeReg != null) { badgeReg.remove(); badgeReg = null; }
 
         List<String> statuses = Arrays.asList("pending", "accepted");
-        Date now = new Date();
 
-        // 🔧 ÖNEMLİ: range kullandık → aynı alana orderBy şart
+        Query q = FirebaseFirestore.getInstance()
+                .collection("bookings")
+                .whereEqualTo("studentId", uid)
+                .whereIn("status", statuses)
+                .whereGreaterThanOrEqualTo("startAt", new Date())
+                .orderBy("startAt", Query.Direction.ASCENDING);
+
+        Log.d(TAG, "subscribeUpcomingBadge: listen start (uid=" + uid + ")");
+
+        badgeReg = q.addSnapshotListener((snap, e) -> {
+            if (e != null) {
+                Log.e(TAG, "UpcomingBadge listen FAILED: " + e.getMessage(), e);
+                if (histBadge != null) histBadge.setVisible(false);
+                return;
+            }
+
+            int count = (snap != null) ? snap.size() : 0;
+            Log.d(TAG, "UpcomingBadge: count=" + count);
+
+            if (histBadge != null) {
+                histBadge.setVisible(count > 0);
+                histBadge.setNumber(count);
+            }
+        });
+    }
+
+    /* --------------- F A B  +  S H E E T  (accepted, henüz bitmemiş) ---------------- */
+    private void subscribeUpcomingAccepted() {
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid == null) {
+            Log.w(TAG, "subscribeUpcomingAccepted: uid null");
+            return;
+        }
+        if (upcomingReg != null) { upcomingReg.remove(); upcomingReg = null; }
+
         Query q = FirebaseFirestore.getInstance()
                 .collection("bookings")
                 .whereEqualTo("studentId", uid)
@@ -255,38 +299,19 @@ public class StudentMainActivity extends AppCompatActivity {
                 .whereGreaterThanOrEqualTo("endAt", new Date())
                 .orderBy("endAt", Query.Direction.ASCENDING);
 
-        Log.d(TAG, "subscribeHistoryBadge: listen start (uid=" + uid + ", now=" + now + ")");
+        Log.d(TAG, "subscribeUpcomingAccepted: listen start (uid=" + uid + ")");
 
-        histReg = q.addSnapshotListener((snap, e) -> {
+        upcomingReg = q.addSnapshotListener((snap, e) -> {
             if (e != null) {
-                Log.e(TAG, "UpcomingFab listen FAILED: " + e.getMessage(), e);
-                if (histBadge != null) histBadge.setVisible(false);
+                Log.e(TAG, "UpcomingAccepted listen FAILED: " + e.getMessage(), e);
                 nextStartAt = nextEndAt = null;
                 nextLabelSubject = nextLabelTeacher = "";
+                upcomingItems.clear();
                 updateFabState();
+                if (upcomingAdapter != null) upcomingAdapter.notifyDataSetChanged();
                 return;
             }
 
-            int count = (snap != null) ? snap.size() : 0;
-            Log.d(TAG, "UpcomingFab: query returned " + count + " docs");
-
-            if (snap != null) {
-                for (DocumentSnapshot d : snap.getDocuments()) {
-                    String id = d.getId();
-                    String st = String.valueOf(d.get("status"));
-                    Object tsS = d.get("startAt");
-                    com.google.firebase.Timestamp tS = (tsS instanceof com.google.firebase.Timestamp) ? (com.google.firebase.Timestamp) tsS : null;
-                    Log.d(TAG, "→ " + id + " status=" + st + " startAt=" + (tS != null ? tS.toDate() : tsS));
-                }
-            }
-
-            // Rozet
-            if (histBadge != null) {
-                histBadge.setVisible(count > 0);
-                histBadge.setNumber(count);
-            }
-
-            // --- FAB ve Sheet verisi: en yakın ACCEPTED dersi ve liste ---
             upcomingItems.clear();
             nextStartAt = null; nextEndAt = null;
             nextLabelSubject = ""; nextLabelTeacher = "";
@@ -299,14 +324,8 @@ public class StudentMainActivity extends AppCompatActivity {
                     String status = String.valueOf(d.get("status"));
                     if (!"accepted".equalsIgnoreCase(status)) continue;
 
-                    Object tsStart = d.get("startAt");
-                    Object tsEnd   = d.get("endAt");
-                    Date s = tsStart instanceof com.google.firebase.Timestamp
-                            ? ((com.google.firebase.Timestamp) tsStart).toDate()
-                            : (tsStart instanceof Date ? (Date) tsStart : null);
-                    Date eEnd = tsEnd instanceof com.google.firebase.Timestamp
-                            ? ((com.google.firebase.Timestamp) tsEnd).toDate()
-                            : (tsEnd instanceof Date ? (Date) tsEnd : null);
+                    Date s = d.getDate("startAt");
+                    Date eEnd = d.getDate("endAt");
                     if (s == null || !s.after(nowLocal)) continue;
 
                     UpcomingItem ui = new UpcomingItem();
@@ -324,7 +343,6 @@ public class StudentMainActivity extends AppCompatActivity {
                     }
                 }
 
-                // Listeyi sırala
                 upcomingItems.sort(Comparator.comparing(u -> u.startAt));
 
                 nextStartAt = bestStart;
@@ -332,15 +350,13 @@ public class StudentMainActivity extends AppCompatActivity {
                 nextLabelSubject = bestSubject;
             }
 
-            Log.d(TAG, "UpcomingFab: nextStartAt=" + nextStartAt + " nextEndAt=" + nextEndAt
+            Log.d(TAG, "UpcomingAccepted: nextStartAt=" + nextStartAt + " nextEndAt=" + nextEndAt
                     + " items=" + upcomingItems.size());
 
             updateFabState();
             if (upcomingAdapter != null) upcomingAdapter.notifyDataSetChanged();
         });
     }
-
-
 
     private void syncFabVisibilityWithTab() {
         // Sadece Dersler sekmesinde görünsün
@@ -379,10 +395,8 @@ public class StudentMainActivity extends AppCompatActivity {
 
         String text;
         if (days > 0) {
-            // örn: 2g 05:07
             text = String.format(Locale.getDefault(), "%dg %02d:%02d", days, hours, minutes);
         } else {
-            // örn: 05:07
             text = String.format(Locale.getDefault(), "%02d:%02d", hours, minutes);
         }
 
@@ -439,7 +453,6 @@ public class StudentMainActivity extends AppCompatActivity {
                 h.tvWhen.setText(df.format(u.startAt) + " • " + tf.format(u.startAt));
             } else h.tvWhen.setText("");
 
-            // Countdown → chipCountdown
             long now = System.currentTimeMillis();
             String countdownText = "00:00";
             if (u.startAt != null) {
@@ -469,14 +482,11 @@ public class StudentMainActivity extends AppCompatActivity {
             } else {
                 h.btnJoin.setBackgroundResource(R.drawable.bg_btn_outline_primary_disabled);
                 h.btnJoin.setTextColor(ContextCompat.getColor(h.itemView.getContext(), R.color.tutorist_onSurfaceVariant));
-                h.btnJoin.setOnClickListener(null); // tıklama tamamen kaldırılır
+                h.btnJoin.setOnClickListener(null);
             }
             h.btnJoin.setOnClickListener(v -> onJoin.run(u, v));
         }
 
-
         @Override public int getItemCount() { return data.size(); }
     }
-
-
 }

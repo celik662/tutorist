@@ -26,7 +26,21 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_goneMarginEnd="8dp"/>
 
-        <!-- Not ikonu -->
+        <!-- Öğrenci yorumu bilgi ikonu (yeni) -->
+        <ImageView
+            android:id="@+id/ivReviewInfo"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:padding="2dp"
+            android:src="@android:drawable/ic_menu_info_details"
+            android:visibility="gone"
+            app:tint="@color/tutorist_info"
+            app:layout_constraintEnd_toStartOf="@id/ivNote"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="@id/tvLine1"
+            app:layout_goneMarginEnd="6dp"/>
+
+        <!-- Not ikonu (öğretmen notu) -->
         <ImageView
             android:id="@+id/ivNote"
             android:layout_width="20dp"
@@ -37,7 +51,8 @@
             app:tint="@color/tutorist_info"
             app:layout_constraintEnd_toStartOf="@id/tvStatus"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="@id/tvLine1"/>
+            app:layout_constraintBottom_toBottomOf="@id/tvLine1"
+            app:layout_goneMarginEnd="6dp"/>
 
         <!-- Durum chip -->
         <TextView
@@ -114,8 +129,6 @@
                 android:textColor="@color/tutorist_primary"
                 android:visibility="gone"/>
         </LinearLayout>
-
-
 
         <!-- Yerel kayıt ipucu -->
         <TextView

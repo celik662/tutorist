@@ -90,7 +90,8 @@ public class HistoryFragment extends Fragment {
                 this::teacherNameOf,
                 this::priceOf,
                 this::onReviewClicked,
-                this::onNoteClicked
+                this::onNoteClicked,
+                this::showReviewInfo          // 👈 yeni: bilgi ikonuna basınca
         );
         rv.setAdapter(adapter);
 
@@ -331,13 +332,45 @@ public class HistoryFragment extends Fragment {
                                 r.hasReview = true;
                                 if (isAdded()) adapter.notifyDataSetChanged();
 
-                                // ⬇️ Agregasyonu GÜNCELLE
                                 updateTeacherRatingAgg(r.teacherId, rating);
                             })
                             .addOnFailureListener(e ->
                                     Toast.makeText(requireContext(), e.getMessage(), Toast.LENGTH_LONG).show());
                 })
                 .show();
+    }
+
+    // ——— Read-only popup: öğrencinin kendi yorumu ve puanı ———
+    private void showReviewInfo(Row r) {
+        db.collection("teacherReviews").document(r.id).get()
+                .addOnSuccessListener(doc -> {
+                    if (doc == null || !doc.exists()) {
+                        Toast.makeText(requireContext(), "Yorum bulunamadı.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    Number ratingN = (Number) doc.get("rating");
+                    String comment = String.valueOf(doc.get("comment"));
+                    int rating = ratingN != null ? Math.max(1, Math.min(5, ratingN.intValue())) : 0;
+
+                    View view = LayoutInflater.from(requireContext())
+                            .inflate(R.layout.dialog_teacher_review, null, false);
+                    RatingBar ratingBar = view.findViewById(R.id.ratingBar);
+                    EditText et = view.findViewById(R.id.etReview);
+
+                    ratingBar.setRating(rating);
+                    ratingBar.setIsIndicator(true);           // read-only
+                    et.setText(comment != null ? comment : "");
+                    et.setEnabled(false);
+                    et.setFocusable(false);
+
+                    new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                            .setTitle("Değerlendirmen")
+                            .setView(view)
+                            .setPositiveButton("Kapat", null)
+                            .show();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(requireContext(), e.getMessage(), Toast.LENGTH_LONG).show());
     }
 
     // ——— Agregasyon: ratingCount/ratingSum/ratingAvg ———
@@ -359,7 +392,6 @@ public class HistoryFragment extends Fragment {
             Map<String,Object> up = new HashMap<>();
             up.put("ratingCount", count);
             up.put("ratingSum", sum);
-            // ÖNEMLİ: okumada TeacherDetailSheet 'ratingAvg' alanına bakıyor.
             up.put("ratingAvg", sum / Math.max(1, count));
             tr.set(ref, up, SetOptions.merge());
             return null;
@@ -391,6 +423,7 @@ public class HistoryFragment extends Fragment {
         interface PriceProvider { Double apply(String teacherId, String subjectId); }
         interface OnReview { void run(Row r); }
         interface OnNote { void run(Row r); }
+        interface OnReviewInfo { void run(Row r); }   // 👈 yeni
 
         private final List<Row> items;
         private final OnCancel onCancel;
@@ -398,24 +431,27 @@ public class HistoryFragment extends Fragment {
         private final PriceProvider priceProvider;
         private final OnReview onReview;
         private final OnNote onNote;
+        private final OnReviewInfo onReviewInfo;
 
         private boolean historyTab = false;
         void setHistoryTab(boolean isHistory) { this.historyTab = isHistory; }
 
         Adapter(List<Row> items, OnCancel onCancel, NameProvider nameProvider,
-                PriceProvider priceProvider, OnReview onReview, OnNote onNote) {
+                PriceProvider priceProvider, OnReview onReview, OnNote onNote,
+                OnReviewInfo onReviewInfo) {
             this.items = items;
             this.onCancel = onCancel;
             this.nameProvider = nameProvider;
             this.priceProvider = priceProvider;
             this.onReview = onReview;
             this.onNote = onNote;
+            this.onReviewInfo = onReviewInfo;
         }
 
         static class VH extends RecyclerView.ViewHolder {
             TextView tv1, tv2, tvStatus, tvLocalRecordHint;
             Button btnCancel, btnReview, btnJoin;
-            ImageView ivNote;
+            ImageView ivNote, ivReviewInfo;   // 👈 yeni
 
             VH(View v){
                 super(v);
@@ -427,6 +463,7 @@ public class HistoryFragment extends Fragment {
                 btnJoin = v.findViewById(R.id.btnJoin);
                 tvLocalRecordHint = v.findViewById(R.id.tvLocalRecordHint);
                 ivNote = v.findViewById(R.id.ivNote);
+                ivReviewInfo = v.findViewById(R.id.ivReviewInfo); // 👈 yeni
             }
         }
 
@@ -509,11 +546,21 @@ public class HistoryFragment extends Fragment {
                 h.btnReview.setEnabled(true);
             });
 
+            // 🔹 Öğretmen notu “i” ikonu
             boolean showNote = r.hasTeacherNote && r.endAt != null && new Date().after(r.endAt);
             if (h.ivNote != null) {
                 h.ivNote.setVisibility(showNote ? View.VISIBLE : View.GONE);
                 h.ivNote.setOnClickListener(v -> { if (showNote) onNote.run(r); });
             }
+
+            // 🔹 Öğrenci kendi yorumu için “i” ikonu
+            boolean showReviewInfo = historyTab && r.hasReview;
+            if (h.ivReviewInfo != null) {
+                h.ivReviewInfo.setVisibility(showReviewInfo ? View.VISIBLE : View.GONE);
+                h.ivReviewInfo.setOnClickListener(v -> { if (showReviewInfo) onReviewInfo.run(r); });
+            }
+
+            // Satır tıklaması: varsa öğretmen notunu aç
             h.itemView.setOnClickListener(v -> { if (showNote) onNote.run(r); });
         }
 
