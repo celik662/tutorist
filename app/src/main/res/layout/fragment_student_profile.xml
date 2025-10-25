@@ -113,55 +113,6 @@
                 app:iconGravity="textStart"/>
         </LinearLayout>
 
-        <!-- Ödeme bilgileri -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            app:cardCornerRadius="16dp"
-            app:strokeColor="@color/tutorist_surfaceVariant"
-            app:cardBackgroundColor="@android:color/white">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="14dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    style="?attr/textAppearanceTitleMedium"
-                    android:text="Ödeme bilgileri"
-                    android:textColor="@color/tutorist_onSurface"/>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="8dp"/>
-
-                <LinearLayout
-                    android:id="@+id/llCards"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"/>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="8dp"/>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnAddCard"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Kart ekle"
-                    app:icon="@drawable/credit_card_24"
-                    app:iconPadding="8dp"
-                    app:iconGravity="textStart"/>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-
 
         <View
             android:layout_width="match_parent"
