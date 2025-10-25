@@ -360,9 +360,6 @@ exports.reminderSweep = onSchedule(
   }
 );
 
-const { onSchedule } = require("firebase-functions/v2/scheduler");
-const admin = require("firebase-admin");
-const db = admin.firestore();
 
 exports.completionSweep = onSchedule(
   { region: REGION, schedule: "every 2 minutes", timeZone: "Europe/Istanbul" },

@@ -24,6 +24,8 @@ import java.util.*;
 
 public class HistoryFragment extends Fragment {
 
+    private static final int PAGE_LIMIT = 30; // 👈 ilk ekranda 30 kayıt
+
     private enum Filter { PENDING, HISTORY }
 
     private RecyclerView rv;
@@ -91,7 +93,7 @@ public class HistoryFragment extends Fragment {
                 this::priceOf,
                 this::onReviewClicked,
                 this::onNoteClicked,
-                this::showReviewInfo          // 👈 yeni: bilgi ikonuna basınca
+                this::showReviewInfo
         );
         rv.setAdapter(adapter);
 
@@ -137,14 +139,13 @@ public class HistoryFragment extends Fragment {
         rv.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
     }
 
-    // HistoryFragment içinde ekle
+    // ---------- Review'u transaction ile kaydet ----------
     private void saveOrUpdateReviewTransaction(Row r, int newRating, String comment) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
-        DocumentReference reviewRef = db.collection("teacherReviews").document(r.id);          // bookingId ile
+        DocumentReference reviewRef = db.collection("teacherReviews").document(r.id);
         DocumentReference teacherRef = db.collection("teacherProfiles").document(r.teacherId);
 
         db.runTransaction(tr -> {
-            // 1) Mevcut review'u oku (varsa eskiRating'i al)
             DocumentSnapshot reviewSnap = tr.get(reviewRef);
             Integer oldRating = null;
             if (reviewSnap.exists()) {
@@ -152,7 +153,6 @@ public class HistoryFragment extends Fragment {
                 if (rn != null) oldRating = rn.intValue();
             }
 
-            // 2) Öğretmen profilindeki mevcut agregasyonu oku
             DocumentSnapshot tSnap = tr.get(teacherRef);
             long count = 0L;
             double sum = 0.0;
@@ -163,19 +163,11 @@ public class HistoryFragment extends Fragment {
                 if (s != null) sum  = s.doubleValue();
             }
 
-            // 3) Delta’yı uygula
-            if (oldRating == null) {
-                // ilk kez oy veriliyor
-                count += 1;
-                sum   += newRating;
-            } else {
-                // güncelleme: sadece fark kadar düzelt
-                sum   += (newRating - oldRating);
-            }
+            if (oldRating == null) { count += 1; sum += newRating; }
+            else { sum += (newRating - oldRating); }
 
             double avg = (count > 0) ? (sum / count) : 0.0;
 
-            // 4) Review'u yaz (comment dahil), serverTimestamp ile
             Map<String, Object> reviewData = new HashMap<>();
             reviewData.put("bookingId", r.id);
             reviewData.put("teacherId", r.teacherId);
@@ -185,7 +177,6 @@ public class HistoryFragment extends Fragment {
             reviewData.put("createdAt", FieldValue.serverTimestamp());
             tr.set(reviewRef, reviewData, SetOptions.merge());
 
-            // 5) Agregasyonu yaz
             Map<String,Object> up = new HashMap<>();
             up.put("ratingCount", count);
             up.put("ratingSum", sum);
@@ -202,18 +193,67 @@ public class HistoryFragment extends Fragment {
         );
     }
 
+    private void onNoteClicked(Row r) {
+        db.collection("teacherNotes").document(r.id).get()
+                .addOnSuccessListener(doc -> {
+                    if (doc == null || !doc.exists()) {
+                        Toast.makeText(requireContext(), "Öğretmen notu bulunamadı.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    String note = String.valueOf(doc.get("note"));
+                    new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                            .setTitle("Öğretmen Notu")
+                            .setMessage(note != null ? note : "")
+                            .setPositiveButton("Kapat", null)
+                            .show();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(requireContext(), e.getMessage(), Toast.LENGTH_LONG).show());
+    }
+
+    // ---------- Tek seferde varlık (exists) toplayıcı ----------
+    private void fetchExistsMap(String collection, List<String> ids, java.util.function.Consumer<Set<String>> cb) {
+        if (ids == null || ids.isEmpty()) { cb.accept(Collections.emptySet()); return; }
+
+        List<Task<DocumentSnapshot>> tasks = new ArrayList<>();
+        for (String id : ids) {
+            tasks.add(db.collection(collection).document(id).get());
+        }
+
+        Tasks.whenAllSuccess(tasks)
+                .addOnSuccessListener(results -> {
+                    Set<String> exist = new HashSet<>();
+                    for (Object obj : results) {
+                        if (obj instanceof DocumentSnapshot) {
+                            DocumentSnapshot ds = (DocumentSnapshot) obj;
+                            if (ds.exists()) exist.add(ds.getId());
+                        }
+                    }
+                    cb.accept(exist);
+                })
+                .addOnFailureListener(e -> cb.accept(Collections.emptySet()));
+    }
+
 
     private void listen(Filter filter) {
         if (reg != null) { reg.remove(); reg = null; }
         setLoading(true);
 
-        Query q = db.collection("bookings").whereEqualTo("studentId", uid);
+        // Yalnızca ihtiyaç duyulan alanları çek + sayfa kısıtı
+        Query base = db.collection("bookings")
+                .whereEqualTo("studentId", uid)
+                .limit(PAGE_LIMIT);
+
+        Query q;
         if (filter == Filter.PENDING) {
-            q = q.whereIn("status", Arrays.asList("pending","accepted"))
+            q = base.whereIn("status", Arrays.asList("pending","accepted"))
                     .whereGreaterThanOrEqualTo("startAt", new Date())
-                    .orderBy("startAt", Query.Direction.ASCENDING);
+                    .orderBy("startAt", Query.Direction.ASCENDING)
+                    .limit(PAGE_LIMIT);
         } else {
-            q = q.whereIn("status", Adapter.HISTORY_STATUSES_WHEREIN);
+            q = base.whereIn("status", Adapter.HISTORY_STATUSES_WHEREIN)
+                    .orderBy("endAt", Query.Direction.DESCENDING)
+                    .limit(PAGE_LIMIT);
         }
 
         reg = q.addSnapshotListener((snap, e) -> {
@@ -232,8 +272,8 @@ public class HistoryFragment extends Fragment {
                 r.id         = d.getId();
                 r.teacherId  = String.valueOf(d.get("teacherId"));
                 r.subjectId  = String.valueOf(d.get("subjectId"));
-                Object sn    = d.get("subjectName");
-                r.subjectName = (sn != null) ? String.valueOf(sn) : r.subjectId;
+                Object snv   = d.get("subjectName");
+                r.subjectName = (snv != null) ? String.valueOf(snv) : r.subjectId;
                 r.status     = Adapter.normalizeStatus(String.valueOf(d.get("status")));
                 r.date       = String.valueOf(d.get("date"));
                 r.hour       = d.getLong("hour") != null ? d.getLong("hour").intValue() : 0;
@@ -254,28 +294,45 @@ public class HistoryFragment extends Fragment {
                     r.status = "expired";
                 }
 
-                r.teacherName = teacherNameOf(r.teacherId);
-                r.price       = priceOf(r.teacherId, r.subjectId);
-
-                r.hasReview = false;
+                r.teacherName = teacherNameOf(r.teacherId);              // cache’den
+                r.price       = priceOf(r.teacherId, r.subjectId);       // cache’den
+                r.hasReview = false;                                     // toplu getAll ile sonra set edilecek
                 r.hasTeacherNote = false;
-
-                checkReviewExists(r);
-                checkTeacherNoteExists(r);
 
                 teacherIdsSeen.add(r.teacherId);
                 items.add(r);
             }
 
-            items.sort((a,b) -> {
-                if (a.endAt != null && b.endAt != null) return a.endAt.compareTo(b.endAt);
-                if (a.endAt != null) return -1;
-                if (b.endAt != null) return 1;
-                int c = String.valueOf(a.date).compareTo(String.valueOf(b.date));
-                if (c != 0) return c;
-                return Integer.compare(a.hour, b.hour);
+            // Sıralama (HISTORY'de zaten endAt DESC var; PENDING’de startAt ASC geliyor)
+            if (filter == Filter.PENDING) {
+                items.sort((a,b) -> {
+                    if (a.startAt != null && b.startAt != null) return a.startAt.compareTo(b.startAt);
+                    if (a.startAt != null) return -1;
+                    if (b.startAt != null) return 1;
+                    return 0;
+                });
+            }
+
+            // Listeyi HEMEN göster
+            adapter.notifyDataSetChanged();
+            updateEmptyState();
+            rv.setVisibility(View.VISIBLE);
+
+            // 1) Review/Note var mı? → getAll ile tek seferde
+            List<String> bookingIds = new ArrayList<>();
+            for (Row r : items) bookingIds.add(r.id);
+
+            fetchExistsMap("teacherReviews", bookingIds, existSet -> {
+                for (Row r : items) r.hasReview = existSet.contains(r.id);
+                if (isAdded()) adapter.notifyDataSetChanged();
             });
 
+            fetchExistsMap("teacherNotes", bookingIds, existSet -> {
+                for (Row r : items) r.hasTeacherNote = existSet.contains(r.id);
+                if (isAdded()) adapter.notifyDataSetChanged();
+            });
+
+            // 2) Eksik öğretmen profilleri → 10'luk parçalarda whereIn
             List<String> missing = new ArrayList<>();
             for (String tid : teacherIdsSeen) {
                 boolean nameMissing  = !teacherNameCache.containsKey(tid);
@@ -283,76 +340,52 @@ public class HistoryFragment extends Fragment {
                 if (nameMissing || priceMissing) missing.add(tid);
             }
 
-            if (missing.isEmpty()) {
-                adapter.notifyDataSetChanged();
-                updateEmptyState();
-                return;
-            }
+            if (!missing.isEmpty()) {
+                List<String> chunk = new ArrayList<>();
+                for (int i = 0; i < missing.size(); i++) {
+                    chunk.add(missing.get(i));
+                    if (chunk.size() == 10 || i == missing.size() - 1) {
+                        db.collection("teacherProfiles")
+                                .whereIn(FieldPath.documentId(), new ArrayList<>(chunk))
+                                .get()
+                                .addOnSuccessListener(snp -> {
+                                    for (DocumentSnapshot doc : snp) {
+                                        String tid = doc.getId();
 
-            setLoading(true);
+                                        String name = null;
+                                        Object dn = doc.get("displayName");
+                                        if (dn == null) dn = doc.get("fullName");
+                                        if (dn != null) name = String.valueOf(dn);
+                                        teacherNameCache.put(tid, (name != null && !name.isEmpty()) ? name : "");
 
-            List<Task<DocumentSnapshot>> gets = new ArrayList<>();
-            for (String tid : missing) {
-                gets.add(db.collection("teacherProfiles").document(tid).get());
-            }
-
-            Tasks.whenAllSuccess(gets)
-                    .addOnSuccessListener(results -> {
-                        for (Object obj : results) {
-                            if (!(obj instanceof DocumentSnapshot)) continue;
-                            DocumentSnapshot doc = (DocumentSnapshot) obj;
-                            String tid = doc.getId();
-
-                            String name = null;
-                            Object dn = doc.get("displayName");
-                            if (dn == null) dn = doc.get("fullName");
-                            if (dn != null) name = String.valueOf(dn);
-                            teacherNameCache.put(tid, (name != null && !name.isEmpty()) ? name : "");
-
-                            Map<String, Double> map = new HashMap<>();
-                            Object raw = doc.get("subjectsMap");
-                            if (raw instanceof Map) {
-                                Map<?,?> m = (Map<?,?>) raw;
-                                for (Map.Entry<?,?> en : m.entrySet()) {
-                                    Object k = en.getKey(), v = en.getValue();
-                                    if (k != null && v instanceof Number) {
-                                        map.put(String.valueOf(k), ((Number)v).doubleValue());
+                                        Map<String, Double> map = new HashMap<>();
+                                        Object raw = doc.get("subjectsMap");
+                                        if (raw instanceof Map) {
+                                            Map<?,?> m = (Map<?,?>) raw;
+                                            for (Map.Entry<?,?> en : m.entrySet()) {
+                                                Object k = en.getKey(), v = en.getValue();
+                                                if (k != null && v instanceof Number) {
+                                                    map.put(String.valueOf(k), ((Number)v).doubleValue());
+                                                }
+                                            }
+                                        }
+                                        teacherPricesCache.put(tid, map);
                                     }
-                                }
-                            }
-                            teacherPricesCache.put(tid, map);
-                        }
-                        setLoading(false);
-                        adapter.notifyDataSetChanged();
-                        updateEmptyState();
-                    })
-                    .addOnFailureListener(err -> {
-                        setLoading(false);
-                        adapter.notifyDataSetChanged();
-                        updateEmptyState();
-                    });
+                                    if (isAdded()) adapter.notifyDataSetChanged();
+                                });
+                        chunk.clear();
+                    }
+                }
+            }
         });
     }
 
+    // (Artık kullanılmıyor) — tekil sorgu yerine getAll kullanıyoruz.
     @SuppressLint("NotifyDataSetChanged")
-    private void checkReviewExists(Row r) {
-        db.collection("teacherReviews").document(r.id).get()
-                .addOnSuccessListener(ds -> {
-                    r.hasReview = ds.exists();
-                    if (isAdded()) adapter.notifyDataSetChanged();
-                })
-                .addOnFailureListener(e -> { /* yok say */ });
-    }
+    private void checkReviewExists(Row r) { /* no-op */ }
 
     @SuppressLint("NotifyDataSetChanged")
-    private void checkTeacherNoteExists(Row r) {
-        db.collection("teacherNotes").document(r.id).get()
-                .addOnSuccessListener(ds -> {
-                    r.hasTeacherNote = ds.exists();
-                    if (isAdded()) adapter.notifyDataSetChanged();
-                })
-                .addOnFailureListener(e -> { /* yok say */ });
-    }
+    private void checkTeacherNoteExists(Row r) { /* no-op */ }
 
     private String teacherNameOf(String teacherId) {
         String n = teacherNameCache.get(teacherId);
@@ -384,9 +417,8 @@ public class HistoryFragment extends Fragment {
                 .setPositiveButton("Gönder", (d, w) -> {
                     int rating = Math.max(1, Math.min(5, Math.round(ratingBar.getRating())));
                     String comment = et.getText().toString().trim();
-                    saveOrUpdateReviewTransaction(r, rating, comment); // 👈 tek atomik işlem
+                    saveOrUpdateReviewTransaction(r, rating, comment);
                 })
-
                 .show();
     }
 
@@ -408,7 +440,7 @@ public class HistoryFragment extends Fragment {
                     EditText et = view.findViewById(R.id.etReview);
 
                     ratingBar.setRating(rating);
-                    ratingBar.setIsIndicator(true);           // read-only
+                    ratingBar.setIsIndicator(true);
                     et.setText(comment != null ? comment : "");
                     et.setEnabled(false);
                     et.setFocusable(false);
@@ -423,49 +455,6 @@ public class HistoryFragment extends Fragment {
                         Toast.makeText(requireContext(), e.getMessage(), Toast.LENGTH_LONG).show());
     }
 
-    // ——— Agregasyon: ratingCount/ratingSum/ratingAvg ———
-    @SuppressWarnings("ConstantConditions")
-    private void updateTeacherRatingAgg(String teacherId, int newRating){
-        DocumentReference ref = db.collection("teacherProfiles").document(teacherId);
-        db.runTransaction(tr -> {
-            DocumentSnapshot snap = tr.get(ref);
-            long count = 0L; double sum = 0.0;
-            if (snap.exists()) {
-                Number c = (Number) snap.get("ratingCount");
-                Number s = (Number) snap.get("ratingSum");
-                count = c != null ? c.longValue() : 0L;
-                sum   = s != null ? s.doubleValue() : 0.0;
-            }
-            count += 1;
-            sum   += newRating;
-
-            Map<String,Object> up = new HashMap<>();
-            up.put("ratingCount", count);
-            up.put("ratingSum", sum);
-            up.put("ratingAvg", sum / Math.max(1, count));
-            tr.set(ref, up, SetOptions.merge());
-            return null;
-        });
-    }
-
-    private void onNoteClicked(Row r) {
-        db.collection("teacherNotes").document(r.id).get()
-                .addOnSuccessListener(doc -> {
-                    if (doc == null || !doc.exists()) {
-                        Toast.makeText(requireContext(), "Öğretmen notu bulunamadı.", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    String note = String.valueOf(doc.get("note"));
-                    new androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                            .setTitle("Öğretmen Notu")
-                            .setMessage(note != null ? note : "")
-                            .setPositiveButton("Kapat", null)
-                            .show();
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(requireContext(), e.getMessage(), Toast.LENGTH_LONG).show());
-    }
-
     // ---------------- Adapter ----------------
     static class Adapter extends RecyclerView.Adapter<Adapter.VH> {
         interface OnCancel { void run(Row r); }
@@ -473,7 +462,7 @@ public class HistoryFragment extends Fragment {
         interface PriceProvider { Double apply(String teacherId, String subjectId); }
         interface OnReview { void run(Row r); }
         interface OnNote { void run(Row r); }
-        interface OnReviewInfo { void run(Row r); }   // 👈 yeni
+        interface OnReviewInfo { void run(Row r); }
 
         private final List<Row> items;
         private final OnCancel onCancel;
@@ -501,7 +490,7 @@ public class HistoryFragment extends Fragment {
         static class VH extends RecyclerView.ViewHolder {
             TextView tv1, tv2, tvStatus, tvLocalRecordHint;
             Button btnCancel, btnReview, btnJoin;
-            ImageView ivNote, ivReviewInfo;   // 👈 yeni
+            ImageView ivNote, ivReviewInfo;
 
             VH(View v){
                 super(v);
@@ -513,7 +502,7 @@ public class HistoryFragment extends Fragment {
                 btnJoin = v.findViewById(R.id.btnJoin);
                 tvLocalRecordHint = v.findViewById(R.id.tvLocalRecordHint);
                 ivNote = v.findViewById(R.id.ivNote);
-                ivReviewInfo = v.findViewById(R.id.ivReviewInfo); // 👈 yeni
+                ivReviewInfo = v.findViewById(R.id.ivReviewInfo);
             }
         }
 
@@ -596,21 +585,18 @@ public class HistoryFragment extends Fragment {
                 h.btnReview.setEnabled(true);
             });
 
-            // 🔹 Öğretmen notu “i” ikonu
             boolean showNote = r.hasTeacherNote && r.endAt != null && new Date().after(r.endAt);
             if (h.ivNote != null) {
                 h.ivNote.setVisibility(showNote ? View.VISIBLE : View.GONE);
                 h.ivNote.setOnClickListener(v -> { if (showNote) onNote.run(r); });
             }
 
-            // 🔹 Öğrenci kendi yorumu için “i” ikonu
             boolean showReviewInfo = historyTab && r.hasReview;
             if (h.ivReviewInfo != null) {
                 h.ivReviewInfo.setVisibility(showReviewInfo ? View.VISIBLE : View.GONE);
                 h.ivReviewInfo.setOnClickListener(v -> { if (showReviewInfo) onReviewInfo.run(r); });
             }
 
-            // Satır tıklaması: varsa öğretmen notunu aç
             h.itemView.setOnClickListener(v -> { if (showNote) onNote.run(r); });
         }
 
