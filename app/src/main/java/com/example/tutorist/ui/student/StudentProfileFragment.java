@@ -20,7 +20,6 @@ import androidx.fragment.app.Fragment;
 
 import com.example.tutorist.R;
 import com.example.tutorist.payment.PaymentActivity;
-import com.example.tutorist.push.AppMessagingService;
 import com.example.tutorist.repo.UserRepo;
 import com.example.tutorist.ui.auth.LoginActivity;
 import com.google.android.material.snackbar.Snackbar;
@@ -38,7 +37,6 @@ import java.util.Map;
 public class StudentProfileFragment extends Fragment {
 
     private static final String FUNCTIONS_REGION = "europe-west1";
-    // Sadece PROD callback (Cloud Functions domain’in)
     private static final String CALLBACK_BASE_PROD =
             "https://europe-west1-tutorist-f2a46.cloudfunctions.net";
 
@@ -55,72 +53,39 @@ public class StudentProfileFragment extends Fragment {
     private String uid;
     private ListenerRegistration userReg;
 
-    private EditText etBookingId; // Test için eklendi
-    private Button btnTest10, btnTest60;
-    private Button btnTestPush;
-
+    // Opsiyonel test kontrolleri – layout’ta yoksa null olur (NPE korumalı)
+    private EditText etBookingId;
+    private Button btnTest10, btnTest60, btnTestPush;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
+        // Doğru fragment layout’u
         return inflater.inflate(R.layout.fragment_student_profile, container, false);
     }
 
     @Override
-    public void onViewCreated(@NonNull View root, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(root, savedInstanceState);
+    public void onViewCreated(@NonNull View root, @Nullable Bundle b) {
+        super.onViewCreated(root, b);
 
-        etName    = root.findViewById(R.id.etName);
-        etPhone   = root.findViewById(R.id.etPhone);
-        tvMsg     = root.findViewById(R.id.tvMsg);
-        llCards   = root.findViewById(R.id.llCards);
-        btnAddCard= root.findViewById(R.id.btnAddCard);
-        btnSave   = root.findViewById(R.id.btnSave);
-        btnLogout = root.findViewById(R.id.btnLogout);
+        // ---- UI ----
+        etName     = root.findViewById(R.id.etName);
+        etPhone    = root.findViewById(R.id.etPhone);
+        tvMsg      = root.findViewById(R.id.tvMsg);
+        llCards    = root.findViewById(R.id.llCards);
+        btnAddCard = root.findViewById(R.id.btnAddCard);
+        btnSave    = root.findViewById(R.id.btnSave);
+        btnLogout  = root.findViewById(R.id.btnLogout);
 
-        etBookingId = root.findViewById(R.id.etBookingId);     //test için eklendi
+        // Opsiyonel test alanları (bazı layout’larda olmayabilir)
+        etBookingId = root.findViewById(R.id.etBookingId);
         btnTest10   = root.findViewById(R.id.btnTestReminder10);
         btnTest60   = root.findViewById(R.id.btnTestReminder60);
-
-
-
-        View.OnClickListener trigger = click -> {
-            String bookingId = etBookingId.getText() != null ? etBookingId.getText().toString().trim() : "";
-            if (bookingId.isEmpty()) { showError("Önce Booking ID gir."); return; }
-
-            Map<String, Object> req = new HashMap<>();
-            req.put("bookingId", bookingId);
-            req.put("minutes", click == btnTest60 ? 60 : 10);
-
-            FirebaseFunctions.getInstance("europe-west1")
-                    .getHttpsCallable("debugSendReminder")
-                    .call(req)
-                    .addOnSuccessListener(r -> showSuccess("Test bildirimi gönderildi."))
-                    .addOnFailureListener(e -> Log.e("FUNC","err code="+
-                            (e instanceof FirebaseFunctionsException ? ((FirebaseFunctionsException)e).getCode() : "unknown")
-                            + " msg=" + e.getMessage(), e));
-        };
-
-        btnTest10.setOnClickListener(trigger);
-        btnTest60.setOnClickListener(trigger);
-
         btnTestPush = root.findViewById(R.id.btnTestPush);
 
-        btnTestPush.setOnClickListener(xx -> {
-            FirebaseMessaging.getInstance().getToken()
-                    .addOnSuccessListener(token -> {
-                        Log.d("TEST_PUSH", "token=" + token);
-                        sendTestPush(token); // mevcut metodun
-                    })
-                    .addOnFailureListener(e -> {
-                        Log.e("TEST_PUSH", "token fail", e);
-                        showError("FCM token alınamadı: " + (e.getMessage()!=null?e.getMessage():""));
-                    });
-        });
-
-
+        // ---- Firebase ----
         auth = FirebaseAuth.getInstance();
         db   = FirebaseFirestore.getInstance();
         functions = FirebaseFunctions.getInstance(FUNCTIONS_REGION);
@@ -133,56 +98,91 @@ public class StudentProfileFragment extends Fragment {
             return;
         }
 
+        // ---- Test butonları: sadece varlarsa bağla (NPE’den kaçın) ----
+        if (btnTest10 != null && btnTest60 != null && etBookingId != null) {
+            View.OnClickListener trigger = click -> {
+                String bookingId = etBookingId.getText() != null
+                        ? etBookingId.getText().toString().trim() : "";
+                if (bookingId.isEmpty()) { showError("Önce Booking ID gir."); return; }
+
+                Map<String, Object> req = new HashMap<>();
+                req.put("bookingId", bookingId);
+                req.put("minutes", click == btnTest60 ? 60 : 10);
+
+                FirebaseFunctions.getInstance(FUNCTIONS_REGION)
+                        .getHttpsCallable("debugSendReminder")
+                        .call(req)
+                        .addOnSuccessListener(r -> showSuccess("Test bildirimi gönderildi."))
+                        .addOnFailureListener(e -> Log.e("FUNC","err code="+
+                                (e instanceof FirebaseFunctionsException ? ((FirebaseFunctionsException)e).getCode() : "unknown")
+                                + " msg=" + e.getMessage(), e));
+            };
+            btnTest10.setOnClickListener(trigger);
+            btnTest60.setOnClickListener(trigger);
+        }
+
+        if (btnTestPush != null) {
+            btnTestPush.setOnClickListener(v -> {
+                FirebaseMessaging.getInstance().getToken()
+                        .addOnSuccessListener(token -> {
+                            Log.d("TEST_PUSH", "token=" + token);
+                            sendTestPush(token);
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e("TEST_PUSH", "token fail", e);
+                            showError("FCM token alınamadı: " + (e.getMessage()!=null?e.getMessage():""));
+                        });
+            });
+        }
+
+        // ---- Veri yükleme & dinleme ----
         loadProfile();
         listenUserCards(uid);
 
-        btnAddCard.setOnClickListener(x -> startAddCardFlow());
+        if (btnAddCard != null) {
+            btnAddCard.setOnClickListener(x -> startAddCardFlow());
+        }
 
-        btnSave.setOnClickListener(x -> {
-            String name  = etName != null ? etName.getText().toString().trim() : "";
-            String phone = etPhone != null ? etPhone.getText().toString().trim() : "";
-            if (name.isEmpty()) { showError("Lütfen ad-soyad girin."); return; }
+        if (btnSave != null) {
+            btnSave.setOnClickListener(x -> {
+                String name  = etName != null ? etName.getText().toString().trim() : "";
+                String phone = etPhone != null ? etPhone.getText().toString().trim() : "";
+                if (name.isEmpty()) { showError("Lütfen ad-soyad girin."); return; }
 
-            btnSave.setEnabled(false);
-            userRepo.updateUserBasic(uid, name, phone)
-                    .addOnSuccessListener(s -> { if (isAdded()) { showSuccess("Kaydedildi ✅"); btnSave.setEnabled(true); }})
-                    .addOnFailureListener(e -> { if (isAdded()) { showError("Kaydedilemedi: " + (e!=null&&e.getMessage()!=null?e.getMessage():"")); btnSave.setEnabled(true); }});
-        });
+                btnSave.setEnabled(false);
+                userRepo.updateUserBasic(uid, name, phone)
+                        .addOnSuccessListener(s -> { if (isAdded()) { showSuccess("Kaydedildi ✅"); btnSave.setEnabled(true); }})
+                        .addOnFailureListener(e -> { if (isAdded()) { showError("Kaydedilemedi: " + (e!=null&&e.getMessage()!=null?e.getMessage():"")); btnSave.setEnabled(true); }});
+            });
+        }
 
-        btnLogout.setOnClickListener(clicked -> {
-            new androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                    .setTitle("Çıkış yapılsın mı?")
-                    .setMessage("Hesabınızdan çıkış yapacaksınız.")
-                    .setNegativeButton("İptal", null)
-                    .setPositiveButton("Çıkış yap", (d, w) -> {
-                        // çift tıklamayı engelle
-                        clicked.setEnabled(false);
-
-                        // 1) önce token’ı kullanıcıdan kopar + cihazdan sil
-                        com.example.tutorist.push.AppMessagingService
-                                .detachTokenFromCurrentUserAndDeleteAsync(requireContext())
-                                .addOnCompleteListener(t -> {
-                                    // 2) sonra signOut
-                                    FirebaseAuth.getInstance().signOut();
-
-                                    // 3) login’e tertemiz dönüş
-                                    Intent i = new Intent(requireContext(), com.example.tutorist.ui.auth.LoginActivity.class);
-                                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                    startActivity(i);
-                                    requireActivity().finish();
-                                });
-                    })
-                    .show();
-        });
-
+        if (btnLogout != null) {
+            btnLogout.setOnClickListener(clicked -> {
+                new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                        .setTitle("Çıkış yapılsın mı?")
+                        .setMessage("Hesabınızdan çıkış yapacaksınız.")
+                        .setNegativeButton("İptal", null)
+                        .setPositiveButton("Çıkış yap", (d, w) -> {
+                            clicked.setEnabled(false);
+                            com.example.tutorist.push.AppMessagingService
+                                    .detachTokenFromCurrentUserAndDeleteAsync(requireContext())
+                                    .addOnCompleteListener(t -> {
+                                        FirebaseAuth.getInstance().signOut();
+                                        Intent i = new Intent(requireContext(), LoginActivity.class);
+                                        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                        startActivity(i);
+                                        requireActivity().finish();
+                                    });
+                        })
+                        .show();
+            });
+        }
     }
 
     private void sendTestPush(String token){
-        FirebaseFunctions.getInstance("europe-west1")
+        FirebaseFunctions.getInstance(FUNCTIONS_REGION)
                 .getHttpsCallable("sendTestDataMsg")
-                .call(new java.util.HashMap<String,Object>() {{
-                    put("token", token);
-                }})
+                .call(new java.util.HashMap<String,Object>() {{ put("token", token); }})
                 .addOnSuccessListener(r -> android.util.Log.d("TEST_PUSH","ok"))
                 .addOnFailureListener(e -> android.util.Log.e("TEST_PUSH","fail", e));
     }
@@ -267,13 +267,18 @@ public class StudentProfileFragment extends Fragment {
                 });
     }
 
-    @Override public void onDestroyView() {
-        if (userReg != null) userReg.remove();
+    @Override
+    public void onDestroyView() {
+        if (userReg != null) { userReg.remove(); userReg = null; }
+        // View referanslarını sıfırlamak ek sızıntıları önler
+        etName = null; etPhone = null; tvMsg = null; llCards = null;
+        btnAddCard = null; btnSave = null; btnLogout = null;
+        etBookingId = null; btnTest10 = null; btnTest60 = null; btnTestPush = null;
         super.onDestroyView();
     }
 
     private void showSuccess(String msg) { showMsg(msg, true); }
-    private void showError(String msg) { showMsg(msg, false); }
+    private void showError(String msg)   { showMsg(msg, false); }
     private void showMsg(String msg, boolean success) {
         if (!isAdded()) return;
         View root = getView();
