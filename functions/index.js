@@ -359,3 +359,110 @@ exports.reminderSweep = onSchedule(
     console.log("[REMINDER] sweep done");
   }
 );
+
+const { onSchedule } = require("firebase-functions/v2/scheduler");
+const admin = require("firebase-admin");
+const db = admin.firestore();
+
+exports.completionSweep = onSchedule(
+  { region: REGION, schedule: "every 2 minutes", timeZone: "Europe/Istanbul" },
+  async () => {
+    const now = Date.now();
+    const GRACE = 5 * 60 * 1000; // bitişten sonra 5 dk tolerans
+
+    // 1) accepted & endAt < now-GRACE  -> completed
+    {
+      const snap = await db.collection("bookings")
+        .where("status", "==", "accepted")
+        .where("endAt", "<", new Date(now - GRACE))
+        .get();
+
+      if (!snap.empty) console.log("[COMPLETION] candidates:", snap.size);
+
+      for (const doc of snap.docs) {
+        await db.runTransaction(async (tr) => {
+          const bRef = doc.ref;
+          const b    = (await tr.get(bRef)).data();
+          if (!b || b.status !== "accepted") return; // idempotent
+
+          // booking -> completed
+          tr.set(bRef, {
+            status: "completed",
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          }, { merge: true });
+
+          // slot lock temizliği (opsiyonel ama tavsiye)
+          if (b.teacherId && b.date && Number.isFinite(b.hour)) {
+            const lockId = `${b.teacherId}_${b.date}_${b.hour}`;
+            tr.delete(db.collection("slotLocks").doc(lockId));
+          }
+
+          // completedCount agregasyonu (idempotent bayrakla)
+          if (!b.stats?.countedCompleted) {
+            const tRef = db.collection("teacherProfiles").doc(b.teacherId);
+            const tSnap = await tr.get(tRef);
+            const curr = (tSnap.data()?.completedCount || 0) + 1;
+            tr.set(tRef, { completedCount: curr }, { merge: true });
+            tr.set(bRef, { stats: { ...(b.stats || {}), countedCompleted: true } }, { merge: true });
+          }
+        });
+      }
+    }
+
+    // 2) pending & endAt < now-GRACE -> expired
+    {
+      const snap = await db.collection("bookings")
+        .where("status", "==", "pending")
+        .where("endAt", "<", new Date(now - GRACE))
+        .get();
+
+      if (!snap.empty) console.log("[EXPIRE] candidates:", snap.size);
+
+      const batch = db.batch();
+      for (const doc of snap.docs) {
+        const b = doc.data();
+        batch.set(doc.ref, {
+          status: "expired",
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+
+        // kilidi aç
+        if (b.teacherId && b.date && Number.isFinite(b.hour)) {
+          const lockId = `${b.teacherId}_${b.date}_${b.hour}`;
+          batch.delete(db.collection("slotLocks").doc(lockId));
+        }
+      }
+      if (!snap.empty) await batch.commit();
+    }
+
+    console.log("[SWEEP] done");
+  }
+);
+
+const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
+
+exports.onBookingCompletedAgg = onDocumentUpdated(
+  { region: REGION, document: "bookings/{id}" },
+  async (event) => {
+    const before = event.data.before.data();
+    const after  = event.data.after.data();
+    if (!before || !after) return;
+
+    const becameCompleted = before.status !== "completed" && after.status === "completed";
+    if (!becameCompleted) return;
+
+    const ref = event.data.after.ref;
+    await db.runTransaction(async (tr) => {
+      const snap = await tr.get(ref);
+      const b = snap.data();
+      if (b?.stats?.countedCompleted) return; // idempotent
+
+      const tRef = db.collection("teacherProfiles").doc(after.teacherId);
+      const tSnap = await tr.get(tRef);
+      const curr = (tSnap.data()?.completedCount || 0) + 1;
+      tr.set(tRef, { completedCount: curr }, { merge: true });
+      tr.set(ref, { stats: { ...(b?.stats || {}), countedCompleted: true } }, { merge: true });
+    });
+  }
+);
+

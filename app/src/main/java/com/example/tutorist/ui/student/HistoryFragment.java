@@ -137,6 +137,72 @@ public class HistoryFragment extends Fragment {
         rv.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
     }
 
+    // HistoryFragment içinde ekle
+    private void saveOrUpdateReviewTransaction(Row r, int newRating, String comment) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        DocumentReference reviewRef = db.collection("teacherReviews").document(r.id);          // bookingId ile
+        DocumentReference teacherRef = db.collection("teacherProfiles").document(r.teacherId);
+
+        db.runTransaction(tr -> {
+            // 1) Mevcut review'u oku (varsa eskiRating'i al)
+            DocumentSnapshot reviewSnap = tr.get(reviewRef);
+            Integer oldRating = null;
+            if (reviewSnap.exists()) {
+                Number rn = (Number) reviewSnap.get("rating");
+                if (rn != null) oldRating = rn.intValue();
+            }
+
+            // 2) Öğretmen profilindeki mevcut agregasyonu oku
+            DocumentSnapshot tSnap = tr.get(teacherRef);
+            long count = 0L;
+            double sum = 0.0;
+            if (tSnap.exists()) {
+                Number c = (Number) tSnap.get("ratingCount");
+                Number s = (Number) tSnap.get("ratingSum");
+                if (c != null) count = c.longValue();
+                if (s != null) sum  = s.doubleValue();
+            }
+
+            // 3) Delta’yı uygula
+            if (oldRating == null) {
+                // ilk kez oy veriliyor
+                count += 1;
+                sum   += newRating;
+            } else {
+                // güncelleme: sadece fark kadar düzelt
+                sum   += (newRating - oldRating);
+            }
+
+            double avg = (count > 0) ? (sum / count) : 0.0;
+
+            // 4) Review'u yaz (comment dahil), serverTimestamp ile
+            Map<String, Object> reviewData = new HashMap<>();
+            reviewData.put("bookingId", r.id);
+            reviewData.put("teacherId", r.teacherId);
+            reviewData.put("studentId", uid);
+            reviewData.put("rating", newRating);
+            reviewData.put("comment", comment);
+            reviewData.put("createdAt", FieldValue.serverTimestamp());
+            tr.set(reviewRef, reviewData, SetOptions.merge());
+
+            // 5) Agregasyonu yaz
+            Map<String,Object> up = new HashMap<>();
+            up.put("ratingCount", count);
+            up.put("ratingSum", sum);
+            up.put("ratingAvg", avg);
+            tr.set(teacherRef, up, SetOptions.merge());
+
+            return null;
+        }).addOnSuccessListener(v -> {
+            Toast.makeText(requireContext(), "Teşekkürler! Değerlendirmen kaydedildi.", Toast.LENGTH_SHORT).show();
+            r.hasReview = true;
+            if (isAdded() && adapter != null) adapter.notifyDataSetChanged();
+        }).addOnFailureListener(e ->
+                Toast.makeText(requireContext(), "Kaydetme hatası: " + e.getMessage(), Toast.LENGTH_LONG).show()
+        );
+    }
+
+
     private void listen(Filter filter) {
         if (reg != null) { reg.remove(); reg = null; }
         setLoading(true);
@@ -317,26 +383,10 @@ public class HistoryFragment extends Fragment {
                 .setNegativeButton("Vazgeç", null)
                 .setPositiveButton("Gönder", (d, w) -> {
                     int rating = Math.max(1, Math.min(5, Math.round(ratingBar.getRating())));
-                    Map<String, Object> data = new HashMap<>();
-                    data.put("bookingId", r.id);
-                    data.put("teacherId", r.teacherId);
-                    data.put("studentId", uid);
-                    data.put("rating", rating);
-                    data.put("comment", et.getText().toString().trim());
-                    data.put("createdAt", FieldValue.serverTimestamp());
-
-                    db.collection("teacherReviews").document(r.id)
-                            .set(data, SetOptions.merge())
-                            .addOnSuccessListener(vx -> {
-                                Toast.makeText(requireContext(), "Teşekkürler! Değerlendirmen kaydedildi.", Toast.LENGTH_SHORT).show();
-                                r.hasReview = true;
-                                if (isAdded()) adapter.notifyDataSetChanged();
-
-                                updateTeacherRatingAgg(r.teacherId, rating);
-                            })
-                            .addOnFailureListener(e ->
-                                    Toast.makeText(requireContext(), e.getMessage(), Toast.LENGTH_LONG).show());
+                    String comment = et.getText().toString().trim();
+                    saveOrUpdateReviewTransaction(r, rating, comment); // 👈 tek atomik işlem
                 })
+
                 .show();
     }
 
@@ -633,12 +683,12 @@ public class HistoryFragment extends Fragment {
                             R.color.status_declined);
                 case "cancelled":
                 case "student_cancelled":
-                    return new StatusUi("Öğrenci iptal etti",
+                    return new StatusUi("Vazgeçildi",
                             ContextCompat.getColor(c, R.color.status_cancelled),
                             R.drawable.bg_status_canceled,
                             R.color.status_cancelled);
                 case "teacher_cancelled":
-                    return new StatusUi("Öğretmen iptal etti",
+                    return new StatusUi("Reddedildi",
                             ContextCompat.getColor(c, R.color.status_cancelled),
                             R.drawable.bg_status_canceled,
                             R.color.status_cancelled);
